@@ -281,7 +281,7 @@ fn factorial(n: Nat) -> Nat
   | n -> n * factorial(n - 1)
 ```
 
-Direct structural recursion is verified in {{cure_vversion}}; mutual recursion is scheduled for a later release.
+Direct structural recursion is verified in v0.17.0; mutual recursion is scheduled for v0.19.0.
 
 ### Path-sensitive refinement
 
@@ -295,7 +295,9 @@ Inside the `then` branch, `x` is refined to `{x: Int | x != 0}`, so the division
 
 ### Error codes
 
-The dependent-type machinery contributes a dedicated range of error codes `E011`-`E020` (implicit-argument failures, sigma destructuring, totality failures, unfilled holes, refinement counterexamples, dependent-type mismatches, equality-proof mismatches, doctest mismatches). Every code has a detailed explanation available via `cure explain Edd` or `cure why Edd`.
+The dependent-type machinery contributes a dedicated range of error codes `E011`-`E020` (implicit-argument failures, sigma destructuring, totality failures, unfilled holes, refinement counterexamples, dependent-type mismatches, equality-proof mismatches, doctest mismatches).
+
+v0.18.0 adds codes `E021`-`E025` for the pattern engine: unknown record field in a pattern, record-pattern field type mismatch, non-literal map-pattern key, unbound pin variable, and non-exhaustive nested match. Every code has a detailed explanation available via `cure explain Edd` or `cure why Edd`.
 
 ## Pattern exhaustiveness
 
@@ -380,6 +382,18 @@ fn nested(x: Option(Result(Int, String))) -> Int =
     None() -> 0
 # Exhaustive: all three paths covered
 ```
+
+v0.18.0 adds a **Maranget-style** column walker for tuple scrutinees whose
+element types are enumerable (Bool, Result, Option). Missing witnesses are
+rendered as source-shaped strings and reported under code `E025`:
+
+```text
+Warning: match expression has nested non-exhaustive cases (E025)
+  missing: %[Error(_), _]
+```
+
+The original flat classifier is kept as a fast-path for simple,
+single-level matches.
 
 ## Guard-based flow typing
 

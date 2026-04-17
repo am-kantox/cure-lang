@@ -1,6 +1,6 @@
 %{
   title: "Standard Library",
-  description: "Self-hosted stdlib written in Cure itself: 18 modules, ~200 functions.",
+  description: "Self-hosted stdlib written in Cure itself: 21 modules, ~230 functions.",
   order: 6
 }
 ---
@@ -9,7 +9,7 @@ The standard library is self-hosted -- written in Cure under `lib/std/`.
 Compile it with `mix cure.compile_stdlib` or `cure stdlib`. The output goes
 to `_build/cure/ebin/` as regular `.beam` files callable from Erlang or Elixir.
 
-18 modules. ~200 functions. No Elixir runtime dependency beyond FFI calls
+21 modules. ~230 functions. No Elixir runtime dependency beyond FFI calls
 to `:erlang`, `:math`, `:maps`, `:lists`, `:string`, `:binary`, `:io`, and `:os`.
 
 All modules are documented with `##` doc comments. Run `cure doc lib/std/`
@@ -111,7 +111,8 @@ mod Example
 
 ## Std.List
 
-25 functions. Recursive list processing.
+27 functions. Recursive list processing. `uncons/1` and `split_first/2`
+were added in v0.18.0 to exercise the new cons-pattern compiler.
 
 ```cure
 @extern(:erlang, :length, 1)
@@ -141,6 +142,10 @@ fn all(list: List(T), pred: T -> Bool) -> Bool
 fn sum(list: List(Int)) -> Int
 fn product(list: List(Int)) -> Int
 fn count(list: List(T), pred: T -> Bool) -> Int
+
+# v0.18.0
+fn uncons(list: List(T)) -> Tuple              # %[[h], t] or %[[], []]
+fn split_first(list: List(T), default: T) -> Tuple
 ```
 
 Note: `foldl` and `foldr` use curried callbacks: `fn(x) -> fn(acc) -> ...`.
@@ -578,6 +583,37 @@ fn is_empty(vec: Tuple) -> Bool
 `cons` increments the tracked length. `append` sums the lengths of both
 vectors. `head` on a zero-length vector returns the default value `0` --
 a future version will enforce `n > 0` at the type level via dependent types.
+
+---
+
+## Std.Match
+
+8 functions. Convenience helpers added in v0.18.0; every function is
+implemented with nested destructuring as a smoke test for the new
+pattern engine.
+
+```cure
+fn unpack_pair(t: Tuple) -> Tuple              # %[a, b]
+fn fst(t: Tuple) -> T
+fn snd(t: Tuple) -> T
+fn head_tail(list: List(T), default: T) -> Tuple
+fn uncons(list: List(T)) -> Tuple
+fn first_two(list: List(T), default: T) -> Tuple
+fn unwrap_ok(r: Result(T, E), default: T) -> T
+fn unwrap_some(o: Option(T), default: T) -> T
+```
+
+Representative implementation:
+
+```cure
+fn first_two(list: List(T), default: T) -> Tuple =
+  match list
+    [h1 | t1] ->
+      match t1
+        [h2 | rest] -> %[h1, h2, rest]
+        []          -> %[h1, default, []]
+    []        -> %[default, default, []]
+```
 
 ---
 

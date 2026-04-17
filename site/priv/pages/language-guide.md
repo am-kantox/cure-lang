@@ -245,12 +245,14 @@ Single-quoted:
 []
 ```
 
-Cons syntax for head/tail decomposition:
+Cons syntax for head/tail decomposition (single head only):
 
 ```cure
 [h | t]
-[1, 2 | rest]
 ```
+
+Multi-head cons (`[a, b | rest]`) is not supported; use nested `match`
+or `Std.Match.first_two/2` instead.
 
 ### Tuples
 
@@ -300,7 +302,11 @@ Both branches must be present when the result is used. `elif` chains multiple co
 
 ## Match expressions
 
-Pattern match on values with `match`:
+Pattern match on values with `match`. Since v0.18.0 patterns
+destructure arbitrary nesting across tuples, lists (cons and fixed),
+maps, records, and ADT constructors.
+
+### ADT constructors and cons
 
 ```cure
 fn unwrap(opt: Option(Int)) -> Int =
@@ -319,7 +325,77 @@ fn handle(r: Result(Int, String)) -> Int =
     Error(_) -> -1
 ```
 
-The compiler checks pattern exhaustiveness -- missing cases produce warnings.
+Nullary constructors must use empty parentheses (`None()`); a bare
+`None` would bind a fresh variable.
+
+### Records and field punning
+
+```cure
+match person
+  Person{name, age}                    -> salute(name, age)
+  Person{name, address: Address{city}} -> greet(name, city)
+```
+
+A bare identifier inside a record pattern is shorthand for
+`name: name` (field punning). Record patterns compile to map patterns
+with a `__struct__ := :tag` guard, so they only match values built
+with the same record type.
+
+### Maps
+
+```cure
+match request
+  %{method: "GET", path: p} -> fetch(p)
+  %{method: m, path: _}     -> reject(m)
+```
+
+Map keys in patterns must be literal. Open matching: unmentioned keys
+are ignored.
+
+### Tuples and nested destructuring
+
+Any combination of the above nests:
+
+```cure
+match value
+  %[_, %{list: [head | tail]}, _] -> handle(head, tail)
+  %[Ok(v), Error(_)]              -> v
+  _                               -> default
+```
+
+### The pin operator `^x`
+
+`^x` compares against an already-bound variable rather than binding
+fresh. The compiler lowers it to a synthetic equality guard.
+
+```cure
+let target = get_tag()
+
+match event.tag
+  ^target -> :hit
+  _       -> :miss
+```
+
+### Repeated variables
+
+A name that occurs more than once in the same pattern must match the
+same value at every position:
+
+```cure
+match pair
+  %[x, x] -> :equal
+  _       -> :different
+```
+
+### Exhaustiveness
+
+The compiler checks pattern exhaustiveness. Shallow coverage gaps are
+reported as `E004`; nested gaps in tuple scrutinees (e.g. `%[Ok(_)]`
+but no `%[Error(_)]`) are reported as `E025` with a concrete missing
+witness.
+
+See the dedicated [Patterns reference](https://github.com/Oeditus/cure/blob/main/docs/PATTERNS.md)
+for the full AST-to-Erlang mapping.
 
 ## Pipe operator
 

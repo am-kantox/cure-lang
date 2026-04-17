@@ -378,6 +378,57 @@ prior clause.
 **E010: Missing Effect Annotation** -- A public function performs side effects
 but has no `!` annotation. Emitted only in `--strict-effects` mode.
 
+### Dependent-type and pattern codes (v0.17.0+)
+
+**E011: Missing Implicit Argument** -- first-order unification could not
+solve every implicit parameter at a call site. The unification trace names
+the constraint that failed.
+
+**E012: Sigma Destructuring Failure** -- pattern attempted to destructure a
+sigma value against shapes that disagree with its declared components.
+
+**E013: Totality Failure** -- a `#[total]`-annotated function is not provably
+total.
+
+**E014: Unfilled Hole** -- a `?name` or `??` placeholder remained unfilled.
+Informational unless `cure check --strict` is active.
+
+**E015: Refinement Counterexample** -- a value flowing into a refinement-typed
+parameter might violate the predicate; the Z3 model gives a witness.
+
+**E016: Dependent Type Mismatch** -- a dependent return type does not match
+the expected type at the use site after substitution and reduction.
+
+**E017: Equality Proof Mismatch** -- `refl(x)` was used to inhabit
+`Eq(T, a, b)` where `a` and `b` are not definitionally equal to `x`.
+
+**E018: Path-sensitive Refinement Conflict** -- a path-sensitive refinement
+extracted from a guard contradicts a previously declared refinement.
+
+**E019: Implicit Argument Solved Inconsistently** -- the same implicit was
+solved to two different types from different parts of the call site.
+
+**E020: Doctest Mismatch** -- a `cure>` doctest produced a different value
+from its `=>` expected line.
+
+### Pattern engine codes (v0.18.0)
+
+**E021: Unknown Record Field in Pattern** -- a record pattern references a
+field that is not declared in the record's schema.
+
+**E022: Record Pattern Field Type Mismatch** -- a sub-pattern inside a record
+pattern is incompatible with the declared type of that field.
+
+**E023: Non-Literal Map Pattern Key** -- map keys in pattern position must
+be literal values (atoms, integers, strings, ...).
+
+**E024: Unbound Pin Variable** -- the pin operator `^x` was used on a name
+that is not in scope at the pattern's position.
+
+**E025: Non-Exhaustive Nested Match** -- a `match` with nested patterns does
+not cover every inhabitant of the scrutinee type; the compiler prints a
+concrete missing witness.
+
 ### Error formatting
 
 Errors include source location with caret display:

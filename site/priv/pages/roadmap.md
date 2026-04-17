@@ -307,7 +307,7 @@ ecosystem groundwork.
   extras.
 - `vscode-cure/` -- TypeScript / LSP VS Code extension scaffold with
   TextMate grammar and language configuration.
-- `docs/PACKAGE_REGISTRY.md` -- design document for the v0.18.0+
+- `docs/PACKAGE_REGISTRY.md` -- design document for the v0.19.0+
   package registry.
 - `docs/TUTORIAL.md` -- ten progressive chapters.
 - `docs/DEPENDENT_TYPES.md` -- full guide for the new type-system
@@ -320,6 +320,86 @@ ecosystem groundwork.
 - 2 new stdlib `.cure` modules (`Std.Equal`, `Std.Refine`); 20 total.
 - 7 new examples, one for each major feature.
 - `mix check` runs 20 stdlib + 24 example regressions in CI.
+
+## Implemented: v0.18.0 -- Deep Destructuring
+
+`match` and `let` grow up. Pattern matching now descends through
+arbitrary nesting across tuples, lists (cons and fixed), maps,
+records, and ADT constructors. The previous implementation quietly
+miscompiled map patterns (wrong Erlang abstract form) and never
+recursed into nested shapes; v0.18.0 replaces it wholesale.
+
+### Pattern engine
+
+- **`Cure.Compiler.PatternCompiler`** -- dedicated pattern-to-Erlang
+  translator, separated from expression codegen. Every pattern node
+  is dispatched through a single recursive entry point.
+- Map patterns emit `map_field_exact` (`:=`), not `map_field_assoc`
+  (`=>`). Matching against a map pattern actually matches now.
+- Record patterns lower to map patterns with
+  `__struct__ := :tag` and per-field exact entries; unspecified
+  fields are open-matched.
+- Field punning: `Point{x, y}` is shorthand for `Point{x: x, y: y}`.
+- Pin operator `^x` compares against a previously-bound value; the
+  compiler lowers it to a synthetic `andalso` equality guard.
+- Repeated variable occurrences in the same pattern emit equality
+  guards too: `%[x, x]` matches only when both slots are equal.
+- ADT constructors, cons, and tuple patterns recurse correctly
+  through nested sub-patterns.
+
+### Type checker
+
+- `bind_pattern_vars/3` rewritten with deep recursion. Tuple
+  patterns narrow element-by-element; map and record patterns
+  resolve per-field through the record schema or the map value
+  type.
+- Maranget-style nested-exhaustiveness pass in
+  `Cure.Types.PatternChecker.check_nested/2` reports concrete
+  missing witnesses (for example ``"%[Error(_)]"``) under code
+  `E025`. The flat classifier from v0.11.0 remains as a fast path.
+- New error codes `E021`-`E025` (unknown record field, record-field
+  type mismatch, non-literal map-pattern key, unbound pin, nested
+  non-exhaustive match).
+
+### Parser
+
+- `^` lexed as `:caret`; parser now produces
+  `{:pin, meta, [inner]}` for the pin operator.
+- Field-punning in record patterns and map pairs: a bare identifier
+  followed by `,` or `}` desugars to `name: name`.
+
+### Standard library and examples
+
+- New **`Std.Match`** module -- eight destructuring helpers
+  (`unpack_pair/1`, `fst/1`, `snd/1`, `head_tail/2`, `uncons/1`,
+  `first_two/2`, `unwrap_ok/2`, `unwrap_some/2`).
+- `Std.List.uncons/1`, `Std.List.split_first/2` added using cons
+  destructuring.
+- `examples/destructuring.cure`, `examples/json_tree.cure` --
+  end-to-end showcases. `examples/pattern_guards.cure` extended
+  with record patterns, field-punning, and nested ADT destructuring.
+
+### Documentation
+
+- `docs/PATTERNS.md` -- authoritative pattern matching reference
+  (Cure surface syntax, Erlang abstract-form mapping, binding
+  semantics, exhaustiveness behaviour).
+- `docs/LANGUAGE_SPEC.md` pattern-matching section rewritten from a
+  12-line stub to a full reference.
+- `docs/TUTORIAL.md` -- new Chapter 4 "Destructuring in `match`";
+  later chapters renumbered.
+
+### Numbers
+
+- 1 new Elixir module (`Cure.Compiler.PatternCompiler`, ~480 LOC);
+  rewrites inside `Codegen`, `Checker`, and `PatternChecker`.
+- 1 new stdlib module (`Std.Match`), 1 extended (`Std.List`);
+  21 stdlib modules total.
+- 2 new examples, 1 extended.
+- 923 tests passing (3 doctests, 920 tests) -- 26 new, 0 regressions.
+- `mix credo --strict`: 0 issues across 117 source files.
+- `mix cure.check.stdlib`: 21/21 clean;
+  `mix cure.check.examples`: 26/26 clean.
 
 ## Future
 
