@@ -7,6 +7,10 @@ mod Spline
   # the Thomas algorithm, implemented as two tail-recursive list passes,
   # and precomputes per-segment cubic coefficients so that `evaluate` is
   # a single scan + four multiplications.
+  #
+  # Every consumer of a record (Knot, Row, ReducedRow, Segment) pulls its
+  # fields out via v0.18.0 deep destructuring with field-punning, which
+  # flattens what used to be towers of nested `match` expressions.
 
   # ---------------------------------------------------------------------------
   # Float arithmetic seam
@@ -103,17 +107,22 @@ mod Spline
 
   # ---------------------------------------------------------------------------
   # Validation
+  #
+  # `monotone?` walks the list carrying the previous x in an accumulator
+  # rather than doing a nested look-ahead match. Destructuring the head
+  # with `Knot{x: ...}` makes the x-only dependency obvious at a glance.
   # ---------------------------------------------------------------------------
 
   ## True iff consecutive knot x values are strictly increasing.
   local fn monotone?(ks: List(Knot)) -> Bool =
     match ks
       [] -> true
-      [p | t] ->
-        match t
-          [] -> true
-          [q | _] ->
-            if p.x < q.x then monotone?(t) else false
+      [Knot{x: x0} | rest] -> monotone_from(x0, rest)
+
+  local fn monotone_from(prev_x: Float, rest: List(Knot)) -> Bool =
+    match rest
+      [] -> true
+      [Knot{x: cx} | t] -> if prev_x < cx then monotone_from(cx, t) else false
 
   # ---------------------------------------------------------------------------
   # Tridiagonal system setup
@@ -121,26 +130,24 @@ mod Spline
   # For knots k_0..k_n (n+1 knots) we build n-1 rows describing the
   # unknowns M_1..M_{n-1}. The boundary conditions M_0 = M_n = 0 (natural
   # spline) fall out naturally from seeding the Thomas sweeps with 0.0.
+  #
+  # Each row needs three consecutive knots (a, b, c). A single nested-cons
+  # pattern with Knot field-punning grabs all six coordinates in one go.
   # ---------------------------------------------------------------------------
 
   local fn build_rows(ks: List(Knot)) -> List(Row) =
     match ks
-      [] -> []
-      [_] -> []
-      [_, _] -> []
-      [a | rest] ->
+      [Knot{x: ax, y: ay} | rest] ->
         match rest
-          [] -> []
-          [b | rest2] ->
-            match rest2
-              [] -> []
-              [c | _] ->
-                let h0 = b.x - a.x
-                let h1 = c.x - b.x
-                let dy0 = fdiv(b.y - a.y, h0)
-                let dy1 = fdiv(c.y - b.y, h1)
-                let row = Row{sub: h0, diag: 2.0 * (h0 + h1), sup: h1, rhs: 6.0 * (dy1 - dy0)}
-                [row | build_rows(rest)]
+          [Knot{x: bx, y: by} | [Knot{x: cx, y: cy} | _]] ->
+            let h0 = bx - ax
+            let h1 = cx - bx
+            let dy0 = fdiv(by - ay, h0)
+            let dy1 = fdiv(cy - by, h1)
+            let row = Row{sub: h0, diag: 2.0 * (h0 + h1), sup: h1, rhs: 6.0 * (dy1 - dy0)}
+            [row | build_rows(rest)]
+          _ -> []
+      _ -> []
 
   # ---------------------------------------------------------------------------
   # Thomas algorithm
@@ -160,18 +167,17 @@ mod Spline
   local fn thomas_forward(rows: List(Row), prev_c: Float, prev_d: Float) -> List(ReducedRow) =
     match rows
       [] -> []
-      [r | rest] ->
-        let denom = r.diag - r.sub * prev_c
-        let new_c = fdiv(r.sup, denom)
-        let new_d = fdiv(r.rhs - r.sub * prev_d, denom)
-        let reduced = ReducedRow{c: new_c, d: new_d}
-        [reduced | thomas_forward(rest, new_c, new_d)]
+      [Row{sub, diag, sup, rhs} | rest] ->
+        let denom = diag - sub * prev_c
+        let new_c = fdiv(sup, denom)
+        let new_d = fdiv(rhs - sub * prev_d, denom)
+        [ReducedRow{c: new_c, d: new_d} | thomas_forward(rest, new_c, new_d)]
 
   local fn thomas_back(rev: List(ReducedRow), next_x: Float) -> List(Float) =
     match rev
       [] -> []
-      [r | rest] ->
-        let xi = r.d - r.c * next_x
+      [ReducedRow{c, d} | rest] ->
+        let xi = d - c * next_x
         [xi | thomas_back(rest, xi)]
 
   ## Solve the full system for interior Ms. Returns [M_1, M_2, ..., M_{n-1}].
@@ -189,30 +195,25 @@ mod Spline
   #   c_i = M_i / 2
   #   d_i = (M_{i+1} - M_i) / (6 * h_i)
   #   b_i = (y_{i+1} - y_i)/h_i - h_i * (2 M_i + M_{i+1}) / 6
+  #
+  # The knot and M lists advance in lockstep, so we destructure them as a
+  # pair with a single tuple scrutinee. This collapses four nested matches
+  # (ks length 0/1/>=2, ms length 0/1/>=2) into two that pair up cleanly.
   # ---------------------------------------------------------------------------
 
   local fn build_segments(ks: List(Knot), ms: List(Float)) -> List(Segment) =
-    match ks
-      [] -> []
-      [_] -> []
-      [a | rest_ks] ->
-        match rest_ks
-          [] -> []
-          [b | _] ->
-            match ms
-              [] -> []
-              [_] -> []
-              [m_a | rest_ms] ->
-                match rest_ms
-                  [] -> []
-                  [m_b | _] ->
-                    let h = b.x - a.x
-                    let aa = a.y
-                    let bb = fdiv(b.y - a.y, h) - fdiv(h * (2.0 * m_a + m_b), 6.0)
-                    let cc = fdiv(m_a, 2.0)
-                    let dd = fdiv(m_b - m_a, 6.0 * h)
-                    let seg = Segment{x: a.x, h: h, a: aa, b: bb, c: cc, d: dd}
-                    [seg | build_segments(rest_ks, rest_ms)]
+    match %[ks, ms]
+      %[[Knot{x: ax, y: ay} | rest_ks], [m_a | rest_ms]] ->
+        match %[rest_ks, rest_ms]
+          %[[Knot{x: bx, y: by} | _], [m_b | _]] ->
+            let h = bx - ax
+            let bb = fdiv(by - ay, h) - fdiv(h * (2.0 * m_a + m_b), 6.0)
+            let cc = fdiv(m_a, 2.0)
+            let dd = fdiv(m_b - m_a, 6.0 * h)
+            let seg = Segment{x: ax, h: h, a: ay, b: bb, c: cc, d: dd}
+            [seg | build_segments(rest_ks, rest_ms)]
+          _ -> []
+      _ -> []
 
   # ---------------------------------------------------------------------------
   # Public API
@@ -252,14 +253,14 @@ mod Spline
     match segs
       [] -> Error("spline: no segment contains x")
       [s | rest] ->
-        let right = s.x + s.h
-        if x <= right then Ok(eval_seg(s, x)) else find_and_eval(rest, x)
+        if x <= s.x + s.h then Ok(eval_seg(s, x)) else find_and_eval(rest, x)
 
   local fn eval_seg(s: Segment, x: Float) -> Float =
-    let t = x - s.x
-    let t2 = t * t
-    let t3 = t2 * t
-    s.a + s.b * t + s.c * t2 + s.d * t3
+    match s
+      Segment{x: sx, a, b, c, d} ->
+        let t = x - sx
+        let t2 = t * t
+        a + b * t + c * t2 + d * t2 * t
 
   ## Evaluate the spline at `x`, clamping to the domain. Values below
   ## `x_min` return S(x_min); values above `x_max` return S(x_max).
@@ -288,20 +289,21 @@ mod Spline
     match segs
       [] -> Error("spline: no segment contains x")
       [s | rest] ->
-        let right = s.x + s.h
-        if x <= right then Ok(diff_seg(s, x)) else find_and_diff(rest, x)
+        if x <= s.x + s.h then Ok(diff_seg(s, x)) else find_and_diff(rest, x)
 
   local fn diff_seg(s: Segment, x: Float) -> Float =
-    let t = x - s.x
-    s.b + 2.0 * s.c * t + 3.0 * s.d * t * t
+    match s
+      Segment{x: sx, b, c, d} ->
+        let t = x - sx
+        b + 2.0 * c * t + 3.0 * d * t * t
 
   ## Sample the spline at `n` evenly spaced points between `x_min` and
   ## `x_max`. Returns a list of `{x, y}` tuples suitable for plotting.
   fn sample(spline: Spline, n: Int) -> List(Tuple) =
     match spline.segments
       [] -> []
-      [first_seg | _] ->
-        if n <= 1 then [%[spline.x_min, first_seg.a]] else sample_many(spline, n)
+      [Segment{a: y0} | _] ->
+        if n <= 1 then [%[spline.x_min, y0]] else sample_many(spline, n)
 
   local fn sample_many(spline: Spline, n: Int) -> List(Tuple) =
     let step = fdiv(spline.x_max - spline.x_min, int_to_float(n - 1))
