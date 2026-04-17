@@ -17,7 +17,7 @@ Cure requires:
 Clone the repository and fetch dependencies:
 
 ```bash
-git clone https://github.com/Oeditus/cure.git
+git clone https://github.com/am-kantox/cure-lang.git
 cd cure
 mix deps.get
 mix compile
