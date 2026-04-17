@@ -1,0 +1,5 @@
+%{
+  "ex_panda": {:hex, :ex_panda, "0.2.0", "045a0f6ceb49514ce901b844ff5bc931e416e10fb312cb85723ee7eefd49afe0", [:mix], [], "hexpm", "5be988c2cf3d54a1a90a8636247ac8f3be52e4a96b4263422d3e5df0022d8bc1"},
+  "jason": {:hex, :jason, "1.4.4", "b9226785a9aa77b6857ca22832cffa5d5011a667207eb2a0ad56adb5db443b8a", [:mix], [{:decimal, "~> 1.0 or ~> 2.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm", "c5eb0cab91f094599f94d55bc63409236a8ec69a21a67814529e8d5f6cc90b3b"},
+  "metastatic": {:hex, :metastatic, "0.18.0", "1249695d43b2b837cf1916af039284b616b1e6b658b60974b029679423d124bd", [:mix], [{:ex_panda, "~> 0.2", [hex: :ex_panda, repo: "hexpm", optional: false]}, {:jason, "~> 1.4", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm", "66ede30a94b59688543d5bfa681f79b6394b1c3a8c6166f83a2efe67395bc483"},
+}

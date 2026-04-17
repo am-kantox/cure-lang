@@ -203,6 +203,11 @@ See the `examples/` directory for sample Cure programs:
   functional update with `TypeName{base | field: val}` syntax
 - `cure_turnstile/` -- full example project: callback-mode FSM with
   `on_transition` handler, GenServer wrapper, and tests
+- `cure_spline/` -- full example project: natural cubic spline
+  interpolation library in Cure (Thomas algorithm, per-segment cubic
+  coefficients, evaluation/derivative/sampling), with an Elixir wrapper,
+  a demo that renders an ASCII plot of a fitted sine, and a 25-case
+  test suite
 
 Compile and run:
 
