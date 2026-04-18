@@ -9,7 +9,7 @@ defmodule Cure.Types.Env do
 
   defstruct scopes: [%{}], types: %{}, used: MapSet.new()
 
-  @type t :: %__MODULE__{scopes: [map()], types: map(), used: MapSet.t()}
+  @type t :: %__MODULE__{scopes: [map()], types: map(), used: MapSet.t(String.t())}
 
   # -- Construction ------------------------------------------------------------
 
@@ -63,18 +63,22 @@ defmodule Cure.Types.Env do
 
   @doc "Mark a variable as used."
   @spec mark_used(t(), String.t()) :: t()
-  def mark_used(%__MODULE__{used: used} = env, name) do
-    %{env | used: MapSet.put(used, name)}
+  def mark_used(%__MODULE__{} = env, name) do
+    # Access `env.used` through the accessor rather than destructuring so
+    # dialyzer preserves MapSet's opaqueness through this function.
+    %{env | used: MapSet.put(env.used, name)}
   end
 
   @doc "Get unused variables (those extended but never looked up, excluding _-prefixed)."
   @spec unused_variables(t()) :: [String.t()]
-  def unused_variables(%__MODULE__{scopes: scopes, used: used}) do
+  def unused_variables(%__MODULE__{} = env) do
     all_vars =
-      Enum.flat_map(scopes, fn scope -> Map.keys(scope) end)
+      env.scopes
+      |> Enum.flat_map(fn scope -> Map.keys(scope) end)
       |> MapSet.new()
 
-    MapSet.difference(all_vars, used)
+    all_vars
+    |> MapSet.difference(env.used)
     |> Enum.reject(&String.starts_with?(&1, "_"))
     |> Enum.reject(&(&1 in ["abs", "length", "to_string"]))
     |> Enum.sort()

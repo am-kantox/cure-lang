@@ -326,6 +326,7 @@ defmodule Cure.REPL do
     state
   end
 
+  @spec bye(state()) :: no_return()
   defp bye(state) do
     info("Bye.")
     save_history(state)

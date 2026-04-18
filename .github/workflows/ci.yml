@@ -41,6 +41,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-mix-${{ matrix.elixir }}-${{ matrix.otp }}-
 
+      # Cache the Dialyzer PLT directory separately from `_build`: the PLT is
+      # expensive to rebuild (depends on every transitive app) and changes
+      # only when Elixir/OTP or the dependency graph changes.
+      - name: Cache Dialyzer PLTs
+        uses: actions/cache@v4
+        with:
+          path: .dialyzer
+          key: ${{ runner.os }}-dialyzer-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-dialyzer-${{ matrix.elixir }}-${{ matrix.otp }}-
+
       - name: Install dependencies
         run: mix deps.get
 
@@ -56,8 +67,20 @@ jobs:
       - name: Run tests
         run: mix test
 
+      - name: Build Dialyzer PLTs
+        run: mix dialyzer --plt
+
+      - name: Dialyzer
+        run: mix dialyzer --format github
+
       - name: Compile Cure standard library
         run: mix cure.compile_stdlib
 
-      - name: Cure regression checks (stdlib + examples)
+      - name: Cure stdlib regression check
+        run: mix cure.check.stdlib
+
+      - name: Cure examples regression check
+        run: mix cure.check.examples
+
+      - name: Cure regression checks (umbrella)
         run: mix cure.check

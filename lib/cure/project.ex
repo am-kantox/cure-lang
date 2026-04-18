@@ -333,7 +333,10 @@ defmodule Cure.Project do
       section == :compiler ->
         {key, val} = parse_kv(trimmed)
         atom_key = String.to_atom(key)
-        bool_val = val in ["true", true]
+        # `val` is always a binary (produced by `parse_kv/1` via `String.trim`),
+        # so comparing against the atom `true` here is unreachable; the single
+        # string check is sufficient.
+        bool_val = val == "true"
         parse_sections(rest, section, project, deps, [{atom_key, bool_val} | compiler])
 
       true ->

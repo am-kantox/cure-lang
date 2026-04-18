@@ -54,8 +54,14 @@ defmodule Cure.Compiler.Codegen do
   Expects a `{:container, [container_type: :module, ...], body}` node.
   Returns `{:ok, forms}` where `forms` is a list of Erlang abstract forms
   ready for `:compile.forms/2`.
+
+  Callback-mode FSM containers are an exception: they are compiled and
+  loaded eagerly, and this function returns `{:ok, {:callback_mode, module}}`
+  where `module` is the already-loaded module atom. See
+  `Cure.FSM.Compiler.compile/2` for details.
   """
-  @spec compile_module(tuple(), keyword()) :: {:ok, list()} | {:error, term()}
+  @spec compile_module(tuple(), keyword()) ::
+          {:ok, list()} | {:ok, {:callback_mode, module()}} | {:error, term()}
   def compile_module(ast, opts \\ []) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
@@ -1584,8 +1590,6 @@ defmodule Cure.Compiler.Codegen do
       first -> first == String.upcase(first) and first != String.downcase(first)
     end
   end
-
-  defp constructor?(_), do: false
 
   defp constructor_tag(name) do
     name

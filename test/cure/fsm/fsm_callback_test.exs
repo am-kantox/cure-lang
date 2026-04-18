@@ -99,9 +99,9 @@ defmodule Cure.FSM.FSMCallbackTest do
   describe "callback mode (on_transition)" do
     test "compiles and runs a basic callback-mode FSM" do
       ast = callback_turnstile_ast()
-      {:ok, :callback_mode} = Compiler.compile(ast, emit_events: false)
+      {:ok, {:callback_mode, mod}} = Compiler.compile(ast, emit_events: false)
 
-      mod = :"Cure.FSM.CallbackTurnstile"
+      assert mod == :"Cure.FSM.CallbackTurnstile"
       {:ok, pid} = mod.start_link(0)
 
       # Initial state
@@ -137,8 +137,8 @@ defmodule Cure.FSM.FSMCallbackTest do
 
     test "transitions/0 returns the transition table" do
       ast = callback_turnstile_ast()
-      {:ok, :callback_mode} = Compiler.compile(ast, emit_events: false)
-      mod = :"Cure.FSM.CallbackTurnstile"
+      {:ok, {:callback_mode, mod}} = Compiler.compile(ast, emit_events: false)
+      assert mod == :"Cure.FSM.CallbackTurnstile"
 
       table = mod.transitions()
       assert [_, _, _, _] = table
@@ -149,8 +149,8 @@ defmodule Cure.FSM.FSMCallbackTest do
 
     test "responds?/2 checks event availability" do
       ast = callback_turnstile_ast()
-      {:ok, :callback_mode} = Compiler.compile(ast, emit_events: false)
-      mod = :"Cure.FSM.CallbackTurnstile"
+      {:ok, {:callback_mode, mod}} = Compiler.compile(ast, emit_events: false)
+      assert mod == :"Cure.FSM.CallbackTurnstile"
 
       assert mod.responds?(:locked, :coin) == true
       assert mod.responds?(:locked, :push) == true

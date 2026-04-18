@@ -22,9 +22,17 @@ defmodule Cure.FSM.Compiler do
   @doc """
   Compile an FSM MetaAST node to Erlang abstract forms.
 
-  Returns `{:ok, forms}` where forms are ready for `:compile.forms/2`.
+  For **simple-mode** FSMs returns `{:ok, forms}` where `forms` is a list of
+  Erlang abstract forms ready for `:compile.forms/2`.
+
+  For **callback-mode** FSMs (when the container carries an `:on_transition`
+  metadata key) the module is generated, compiled and loaded eagerly as a
+  side-effect, and the function returns `{:ok, {:callback_mode, module}}`
+  where `module` is the loaded module atom. In that case there are no forms
+  to write to disk -- the caller should not invoke `:compile.forms/2`.
   """
-  @spec compile(tuple(), keyword()) :: {:ok, list()}
+  @spec compile(tuple(), keyword()) ::
+          {:ok, list()} | {:ok, {:callback_mode, module()}}
   def compile(ast, opts \\ []) do
     {:container, meta, _transition_nodes} = ast
 
@@ -148,8 +156,10 @@ defmodule Cure.FSM.Compiler do
       Events.emit(:codegen, :module_assembled, mod_atom, Events.meta(file, line))
     end
 
-    # Return empty forms since the module is already loaded
-    {:ok, :callback_mode}
+    # The module has already been compiled and loaded as a side-effect above;
+    # return a tagged marker carrying the module atom so the caller does not
+    # need to re-derive it from the AST.
+    {:ok, {:callback_mode, mod_atom}}
   end
 
   # -- Transition table helpers ------------------------------------------------
@@ -692,20 +702,16 @@ defmodule Cure.FSM.Compiler do
 
     guard_forms =
       if guard_ast do
-        case Cure.Compiler.Codegen.compile_expr(guard_ast) do
-          {:ok, guard_form} -> [[guard_form]]
-          _ -> []
-        end
+        {:ok, guard_form} = Cure.Compiler.Codegen.compile_expr(guard_ast)
+        [[guard_form]]
       else
         []
       end
 
     data_expr =
       if action_ast do
-        case Cure.Compiler.Codegen.compile_expr(action_ast) do
-          {:ok, action_form} -> action_form
-          _ -> {:var, l, :V_data}
-        end
+        {:ok, action_form} = Cure.Compiler.Codegen.compile_expr(action_ast)
+        action_form
       else
         {:var, l, :V_data}
       end

@@ -500,8 +500,6 @@ defmodule Cure.Compiler.Formatter do
     b in ?a..?z or b in ?A..?Z or b == ?_
   end
 
-  defp ident_char?(_), do: false
-
   defp apply_operator_edits(source, ops) do
     ops
     |> Enum.sort_by(fn {pos, _, _} -> pos end, :desc)
@@ -877,7 +875,6 @@ defmodule Cure.Compiler.Formatter do
       {:ok, ast}
     else
       {:error, _} = err -> err
-      other -> {:error, other}
     end
   end
 

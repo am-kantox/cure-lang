@@ -138,6 +138,7 @@ defmodule Cure.CLI do
 
   # -- run ---------------------------------------------------------------------
 
+  @dialyzer {:nowarn_function, cmd_run: 2}
   defp cmd_run(path, opts) do
     # Type checking runs by default; use `--no-type-check` to opt out.
     check? = Keyword.get(opts, :type_check, true)
@@ -184,6 +185,7 @@ defmodule Cure.CLI do
 
   # -- check -------------------------------------------------------------------
 
+  @dialyzer {:nowarn_function, cmd_check: 2}
   defp cmd_check(path, _opts) do
     source =
       case File.read(path) do

@@ -361,8 +361,6 @@ defmodule Cure.MCP.Server do
     end)
   end
 
-  defp format_errors(other), do: inspect(other)
-
   # -- Syntax Help -------------------------------------------------------------
 
   defp syntax_help("functions") do
