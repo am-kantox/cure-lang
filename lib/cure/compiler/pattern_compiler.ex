@@ -412,6 +412,11 @@ defmodule Cure.Compiler.PatternCompiler do
   end
 
   # -- Binary patterns --------------------------------------------------------
+  #
+  # v0.20.0 Parser wraps every `<<...>>` element in a
+  # `{:bin_segment, meta, [value]}` node. Older AST shapes (bare
+  # literals/variables) still appear in handwritten tests and legacy
+  # stdlib fragments, so this compiler accepts both forms.
 
   defp compile_binary_pattern(meta, parts, state) do
     line = Keyword.get(meta, :line, state.line)
@@ -430,6 +435,23 @@ defmodule Cure.Compiler.PatternCompiler do
         {form, state} = compile_literal(meta, parts, state)
         {form, state}
     end
+  end
+
+  defp compile_binary_element({:bin_segment, seg_meta, [value]}, line, state) do
+    seg_line = Keyword.get(seg_meta, :line, line)
+    {value_form, state} = do_compile(value, state)
+    size_form = bin_segment_size(seg_meta, state)
+    type_spec = bin_segment_typespec(seg_meta)
+
+    value_form =
+      case {value_form, Keyword.get(seg_meta, :type)} do
+        # A literal `{:bin, ...}` inner wraps a single element; unwrap it
+        # so size/type specifiers still apply to the payload.
+        {{:bin, _, [{:bin_element, _, inner, _s, _ts}]}, _} -> inner
+        _ -> value_form
+      end
+
+    {{:bin_element, seg_line, value_form, size_form, type_spec}, state}
   end
 
   defp compile_binary_element({:literal, meta, value}, _line, state) do
@@ -459,6 +481,57 @@ defmodule Cure.Compiler.PatternCompiler do
   defp compile_binary_element(other, line, state) do
     {form, state} = do_compile(other, state)
     {{:bin_element, line, form, :default, :default}, state}
+  end
+
+  # Translate a `size(expr)` specifier into an Erlang abstract-form size.
+  # Missing or non-integer sizes fall back to `:default`.
+  defp bin_segment_size(seg_meta, state) do
+    case Keyword.get(seg_meta, :size) do
+      nil ->
+        :default
+
+      {:literal, lit_meta, value} ->
+        line = Keyword.get(lit_meta, :line, state.line)
+        {:integer, line, value}
+
+      {:variable, var_meta, name} when is_binary(name) ->
+        line = Keyword.get(var_meta, :line, state.line)
+
+        # Reference an already-bound variable.
+        case Map.fetch(state.vars, name) do
+          {:ok, atom} -> {:var, line, atom}
+          :error -> {:var, line, Codegen.mangle_var(name)}
+        end
+
+      _ ->
+        :default
+    end
+  end
+
+  # Build the Erlang type-specifier list from segment meta. Returns
+  # `:default` when no specifiers were supplied so the Erlang defaults
+  # (integer-unsigned-big-unit:1) apply.
+  defp bin_segment_typespec(seg_meta) do
+    type = Keyword.get(seg_meta, :type)
+    sign = Keyword.get(seg_meta, :signedness)
+    endian = Keyword.get(seg_meta, :endianness)
+    unit = Keyword.get(seg_meta, :unit)
+
+    parts =
+      [type, sign, endian]
+      |> Enum.filter(& &1)
+
+    parts =
+      case unit do
+        {:literal, _, n} when is_integer(n) -> parts ++ [{:unit, n}]
+        n when is_integer(n) -> parts ++ [{:unit, n}]
+        _ -> parts
+      end
+
+    case parts do
+      [] -> :default
+      _ -> parts
+    end
   end
 
   # -- Helpers ----------------------------------------------------------------

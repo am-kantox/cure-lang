@@ -58,7 +58,8 @@ defmodule Cure.Compiler.Lexer do
     indent_stack: [0],
     at_line_start: true,
     paren_depth: 0,
-    fsm_transition_depth: 0
+    fsm_transition_depth: 0,
+    preserve_comments: false
   ]
 
   @type t :: %__MODULE__{}
@@ -77,13 +78,18 @@ defmodule Cure.Compiler.Lexer do
 
   - `:file` -- filename for error messages and event metadata (default: `"nofile"`)
   - `:emit_events` -- whether to emit pipeline events (default: `true`)
+  - `:preserve_comments` -- when `true`, emit `:line_comment` tokens for plain
+    `#` comments (v0.20.0+). Default `false` so existing pipelines see no
+    change. Doc comments (`##`, `###`) are always preserved as `:doc_comment`
+    tokens regardless of this flag.
   """
   @spec tokenize(String.t(), keyword()) :: {:ok, [Token.t()]} | {:error, term()}
   def tokenize(source, opts \\ []) do
     file = Keyword.get(opts, :file, "nofile")
     emit? = Keyword.get(opts, :emit_events, true)
+    preserve? = Keyword.get(opts, :preserve_comments, false)
 
-    state = %__MODULE__{source: source, file: file}
+    state = %__MODULE__{source: source, file: file, preserve_comments: preserve?}
 
     case do_tokenize(state) do
       {:ok, state} ->
@@ -231,7 +237,11 @@ defmodule Cure.Compiler.Lexer do
 
           # plain `#` comment
           true ->
-            {_comment, state} = consume_while(state, fn ch -> ch != ?\n end)
+            start_col = state.col
+            state = advance(state, 1)
+            state = if peek(state) == ?\s, do: advance(state, 1), else: state
+            {text, state} = consume_while(state, fn ch -> ch != ?\n end)
+            state = emit_line_comment_if_enabled(state, text, start_col)
             {:ok, %{state | at_line_start: true}}
         end
 
@@ -348,10 +358,26 @@ defmodule Cure.Compiler.Lexer do
 
       # plain `#` comment
       true ->
-        {_comment, state} = consume_while(state, fn c -> c != ?\n end)
+        start_col = state.col
+        state = advance(state, 1)
+        state = if peek(state) == ?\s, do: advance(state, 1), else: state
+        {text, state} = consume_while(state, fn c -> c != ?\n end)
+        state = emit_line_comment_if_enabled(state, text, start_col)
         {:ok, state}
     end
   end
+
+  # Emit a `:line_comment` token for a plain `#` comment when preservation
+  # is enabled. The token carries the trimmed comment body (without the
+  # leading `# `), so consumers can re-render comments without having to
+  # recover the prefix heuristically.
+  defp emit_line_comment_if_enabled(%{preserve_comments: true} = state, text, start_col) do
+    token = Token.new(:line_comment, text, state.line, start_col)
+    maybe_emit_event(state, token)
+    %{state | tokens: [token | state.tokens]}
+  end
+
+  defp emit_line_comment_if_enabled(state, _text, _start_col), do: state
 
   # Consume a `###\n...\n###` block and emit a single `:doc_comment` token.
   #
@@ -847,6 +873,15 @@ defmodule Cure.Compiler.Lexer do
         token = Token.new(:atom, String.to_atom(name), state.line, start_col)
         maybe_emit_event(state, token)
         {:ok, %{state | tokens: [token | state.tokens]}}
+
+      # `::` is the binary-segment specifier operator introduced in
+      # v0.20.0. It is distinct from `:` (type annotations) and from
+      # `:atom` (symbol literals). Inside `<<...>>` it separates a
+      # segment value from its specifier chain.
+      next == ?: ->
+        token = Token.new(:colon_colon, "::", state.line, start_col)
+        maybe_emit_event(state, token)
+        {:ok, %{state | tokens: [token | state.tokens]} |> advance(2)}
 
       true ->
         token = Token.new(:colon, ":", state.line, start_col)

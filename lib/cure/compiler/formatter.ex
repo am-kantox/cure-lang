@@ -107,6 +107,64 @@ defmodule Cure.Compiler.Formatter do
     end
   end
 
+  @doc """
+  Algebra-based formatter (v0.20.0, opt-in behind `cure fmt --algebra`).
+
+  Lexes the source with comment preservation enabled, parses it into a
+  comment-aware AST, renders that AST through `Cure.Compiler.AlgebraFormatter`
+  (which delegates per-node rendering to `Cure.Compiler.Printer`), and
+  verifies round-trip safety by re-parsing the result and comparing
+  ASTs modulo comment placement and position metadata.
+
+  Returns `{:ok, formatted}` when the rewrite is safe; returns
+  `{:ok, source}` unchanged when verification fails, so callers can
+  treat the algebra formatter as non-destructive.
+  """
+  @spec format_algebra(binary(), keyword()) :: {:ok, binary()}
+  def format_algebra(source, opts \\ []) when is_binary(source) do
+    try do
+      with {:ok, tokens} <-
+             Cure.Compiler.Lexer.tokenize(source, emit_events: false, preserve_comments: true),
+           {:ok, ast} <- Cure.Compiler.Parser.parse(tokens, emit_events: false),
+           formatted when is_binary(formatted) <-
+             Cure.Compiler.AlgebraFormatter.format(ast, opts),
+           true <- verify_algebra(source, formatted) do
+        {:ok, formatted}
+      else
+        _ -> {:ok, source}
+      end
+    rescue
+      _ -> {:ok, source}
+    catch
+      _, _ -> {:ok, source}
+    end
+  end
+
+  # Comment-aware equivalence: the algebra formatter may re-flow
+  # comments but must not change the AST's structural content. We
+  # strip comment nodes from both sides before comparing.
+  defp verify_algebra(original, formatted) do
+    with {:ok, a} <- parse(original),
+         {:ok, b} <- parse(formatted) do
+      strip(strip_comments(a)) == strip(strip_comments(b))
+    else
+      _ -> false
+    end
+  end
+
+  defp strip_comments({type, meta, children}) when is_list(meta) and is_list(children) do
+    children =
+      Enum.reject(children, fn
+        {:comment, _, _} -> true
+        _ -> false
+      end)
+
+    {type, meta, Enum.map(children, &strip_comments/1)}
+  end
+
+  defp strip_comments({type, meta, child}) when is_list(meta), do: {type, meta, child}
+  defp strip_comments(other), do: other
+
   # -- Line endings ------------------------------------------------------------
 
   defp normalize_line_endings(source) do

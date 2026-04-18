@@ -710,6 +710,14 @@ defmodule Cure.Compiler.Codegen do
       {:assert_type, _meta, [expr, _type_ast]} ->
         do_compile_expr(expr, state)
 
+      # v0.20.0: plain `#` comment nodes produced when the lexer is run
+      # with `preserve_comments: true`. At codegen time they are trivia
+      # and compile to the unit value `:ok`. They are stripped from
+      # block bodies before this point so the `:ok` is only observed
+      # in the unlikely edge case of a bare top-level comment.
+      {:comment, _meta, _text} ->
+        {{:atom, state.line, :ok}, state}
+
       # Fallback -- emit a warning so unrecognized nodes are visible
       other ->
         line = extract_ast_line(other)
@@ -743,21 +751,37 @@ defmodule Cure.Compiler.Codegen do
     line = Keyword.get(meta, :line, state.line)
     subtype = Keyword.get(meta, :subtype)
 
-    form =
-      case subtype do
-        :integer -> {:integer, line, value}
-        :float -> {:float, line, value}
-        :string -> compile_string_literal(value, line)
-        :boolean -> {:atom, line, value}
-        :null -> {:atom, line, nil}
-        :symbol -> {:atom, line, value}
-        :char -> {:integer, line, value}
-        :regex -> compile_regex_literal(value, line)
-        :bytes -> compile_bytes_literal(value, line)
-        _ -> {:atom, line, value}
-      end
+    case subtype do
+      :integer ->
+        {{:integer, line, value}, state}
 
-    {form, state}
+      :float ->
+        {{:float, line, value}, state}
+
+      :string ->
+        {compile_string_literal(value, line), state}
+
+      :boolean ->
+        {{:atom, line, value}, state}
+
+      :null ->
+        {{:atom, line, nil}, state}
+
+      :symbol ->
+        {{:atom, line, value}, state}
+
+      :char ->
+        {{:integer, line, value}, state}
+
+      :regex ->
+        {compile_regex_literal(value, line), state}
+
+      :bytes ->
+        compile_bytes_literal_with_state(value, line, state)
+
+      _ ->
+        {{:atom, line, value}, state}
+    end
   end
 
   defp compile_string_literal(value, line) when is_binary(value) do
@@ -801,6 +825,89 @@ defmodule Cure.Compiler.Codegen do
   end
 
   defp compile_regex_flags(_, line), do: {nil, line}
+
+  # State-threading entry point for bytes literals. Used by
+  # `compile_literal/3`. Segment ASTs (`{:bin_segment, meta, [value]}`)
+  # are compiled via `do_compile_expr/2`, so the caller must supply
+  # live codegen state.
+  defp compile_bytes_literal_with_state(value, line, state) when is_list(value) do
+    case value do
+      [{:bin_segment, _, _} | _] ->
+        compile_bin_segments(value, line, state)
+
+      _ ->
+        {compile_bytes_literal(value, line), state}
+    end
+  end
+
+  defp compile_bytes_literal_with_state(value, line, state) do
+    {compile_bytes_literal(value, line), state}
+  end
+
+  defp compile_bin_segments(segments, line, state) do
+    {elements, state} =
+      Enum.map_reduce(segments, state, fn segment, st ->
+        compile_bin_segment(segment, line, st)
+      end)
+
+    {{:bin, line, elements}, state}
+  end
+
+  defp compile_bin_segment({:bin_segment, seg_meta, [value]}, line, state) do
+    seg_line = Keyword.get(seg_meta, :line, line)
+    {value_form, state} = do_compile_expr(value, state)
+    size_form = bin_segment_size(seg_meta, state)
+    type_spec = bin_segment_typespec(seg_meta)
+
+    value_form =
+      case value_form do
+        # A nested `{:bin, ...}` wrapper (e.g. from a string literal) is
+        # flattened to its inner element so the outer segment's
+        # specifiers apply to the payload directly.
+        {:bin, _, [{:bin_element, _, inner, _s, _ts}]} -> inner
+        other -> other
+      end
+
+    {{:bin_element, seg_line, value_form, size_form, type_spec}, state}
+  end
+
+  defp bin_segment_size(seg_meta, state) do
+    case Keyword.get(seg_meta, :size) do
+      nil ->
+        :default
+
+      {:literal, lit_meta, v} when is_integer(v) ->
+        line = Keyword.get(lit_meta, :line, state.line)
+        {:integer, line, v}
+
+      ast ->
+        {form, _} = do_compile_expr(ast, state)
+        form
+    end
+  end
+
+  defp bin_segment_typespec(seg_meta) do
+    type = Keyword.get(seg_meta, :type)
+    sign = Keyword.get(seg_meta, :signedness)
+    endian = Keyword.get(seg_meta, :endianness)
+    unit = Keyword.get(seg_meta, :unit)
+
+    parts =
+      [type, sign, endian]
+      |> Enum.filter(& &1)
+
+    parts =
+      case unit do
+        {:literal, _, n} when is_integer(n) -> parts ++ [{:unit, n}]
+        n when is_integer(n) -> parts ++ [{:unit, n}]
+        _ -> parts
+      end
+
+    case parts do
+      [] -> :default
+      _ -> parts
+    end
+  end
 
   defp compile_bytes_literal(value, line) when is_binary(value) do
     # Compile binary byte string as an Erlang binary literal (raw bytes, no utf8 annotation)
@@ -1164,6 +1271,16 @@ defmodule Cure.Compiler.Codegen do
   end
 
   defp compile_body_exprs(exprs, state) do
+    # v0.20.0: strip standalone comment nodes. They are preserved by the
+    # parser (when the lexer is invoked with `preserve_comments: true`)
+    # for the benefit of the algebra formatter; Erlang codegen must not
+    # observe them.
+    exprs =
+      Enum.reject(exprs, fn
+        {:comment, _, _} -> true
+        _ -> false
+      end)
+
     {forms, _st} =
       Enum.map_reduce(exprs, state, fn expr, st ->
         do_compile_expr(expr, st)

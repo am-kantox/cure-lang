@@ -46,6 +46,7 @@ defmodule Cure.CLI do
           debounce: :integer,
           aggressive: :boolean,
           ast: :boolean,
+          algebra: :boolean,
           check: :boolean
         ],
         aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
@@ -468,6 +469,9 @@ defmodule Cure.CLI do
       cure_files == [] ->
         info("No .cure files found")
 
+      Keyword.get(opts, :algebra, false) ->
+        fmt_algebra(cure_files)
+
       Keyword.get(opts, :aggressive, false) or Keyword.get(opts, :ast, false) ->
         fmt_aggressive(cure_files)
 
@@ -477,6 +481,26 @@ defmodule Cure.CLI do
       true ->
         fmt_safe(cure_files)
     end
+  end
+
+  # v0.20.0 algebra formatter (opt-in). The existing safe byte-level
+  # formatter remains the default; `--algebra` renders from the AST
+  # using `Cure.Compiler.Algebra` + `Cure.Compiler.AlgebraFormatter`,
+  # with round-trip verification that falls back to the original
+  # source when the rewrite would change program structure.
+  defp fmt_algebra(files) do
+    Enum.each(files, fn file ->
+      source = File.read!(file)
+
+      case Cure.Compiler.Formatter.format_algebra(source) do
+        {:ok, ^source} ->
+          :ok
+
+        {:ok, formatted} ->
+          File.write!(file, formatted)
+          info("  formatted (algebra) #{file}")
+      end
+    end)
   end
 
   defp fmt_safe(files) do

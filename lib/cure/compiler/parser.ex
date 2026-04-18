@@ -101,6 +101,11 @@ defmodule Cure.Compiler.Parser do
       %Token{type: :dedent} ->
         {Enum.reverse(acc), state}
 
+      %Token{type: :line_comment} ->
+        {node, state} = consume_line_comment(state)
+        state = skip_newlines(state)
+        parse_program(state, [node | acc])
+
       %Token{type: :doc_comment} ->
         # Collect consecutive doc comments, attach to next definition
         {doc_text, state} = collect_doc_comments(state)
@@ -768,7 +773,24 @@ defmodule Cure.Compiler.Parser do
     end
   end
 
-  # Binary literal: <<expr, expr, ...>>
+  # Binary literal / pattern: <<seg1, seg2, ...>>
+  #
+  # Each segment is `value [:: specifier_chain]` where the chain is a
+  # hyphen-joined list of specifiers (mirrors Elixir):
+  #
+  #   integer | float | bits | bitstring | bytes | binary | utf8 | utf16 | utf32
+  #   signed | unsigned
+  #   big | little | native
+  #   size(expr)
+  #   unit(n)
+  #   <integer>           (shorthand for size(<integer>))
+  #
+  # The segment is emitted as
+  #   {:bin_segment, [type:, signedness:, endianness:, size:, unit:, line:, col:], [value]}
+  # with each keyword omitted when the caller did not supply one. The enclosing
+  # literal keeps its historical shape
+  #   {:literal, [subtype: :bytes, line:, col:], [bin_segment, ...]}
+  # so downstream consumers that only care about the outer shape are unaffected.
   defp parse_binary_literal(state) do
     token = peek(state)
     state = advance(state)
@@ -779,12 +801,117 @@ defmodule Cure.Compiler.Parser do
         {{:literal, [subtype: :bytes, line: token.line, col: token.col], []}, advance(state)}
 
       _ ->
-        {first, state} = parse_expr(state, 0)
-        {rest, state} = parse_comma_exprs(state)
+        {segments, state} = parse_bin_segments(state, [])
         state = expect(state, :binary_close)
-        ast = {:literal, [subtype: :bytes, line: token.line, col: token.col], [first | rest]}
+        ast = {:literal, [subtype: :bytes, line: token.line, col: token.col], segments}
         {ast, state}
     end
+  end
+
+  defp parse_bin_segments(state, acc) do
+    {segment, state} = parse_bin_segment(state)
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :comma} ->
+        state = advance(state)
+        state = skip_newlines(state)
+        parse_bin_segments(state, [segment | acc])
+
+      _ ->
+        {Enum.reverse([segment | acc]), state}
+    end
+  end
+
+  defp parse_bin_segment(state) do
+    start_token = peek(state)
+    {value, state} = parse_expr(state, 0)
+
+    {specifier_meta, state} =
+      case peek(state) do
+        %Token{type: :colon_colon} ->
+          state = advance(state)
+          parse_bin_specifier_chain(state, [])
+
+        _ ->
+          {[], state}
+      end
+
+    meta =
+      [line: start_token.line, col: start_token.col] ++ specifier_meta
+
+    {{:bin_segment, meta, [value]}, state}
+  end
+
+  defp parse_bin_specifier_chain(state, acc) do
+    {entry, state} = parse_bin_specifier(state)
+    acc = merge_specifier(acc, entry)
+
+    case peek(state) do
+      %Token{type: :minus} ->
+        state = advance(state)
+        parse_bin_specifier_chain(state, acc)
+
+      _ ->
+        {acc, state}
+    end
+  end
+
+  # A single specifier fragment. Accepts:
+  #   * identifiers (`integer`, `binary`, `utf8`, `size`, `unit`, etc.)
+  #   * `size(expr)` and `unit(n)` call-style forms
+  #   * bare integer literals as shorthand for `size(n)`
+  # Returns `{:type | :signedness | :endianness | :size | :unit, value}`.
+  defp parse_bin_specifier(state) do
+    token = peek(state)
+
+    case token.type do
+      :integer ->
+        state = advance(state)
+        {{:size, {:literal, [subtype: :integer, line: token.line, col: token.col], token.value}}, state}
+
+      :identifier ->
+        name = to_string(token.value)
+        state = advance(state)
+
+        case peek(state) do
+          %Token{type: :lparen} when name in ["size", "unit"] ->
+            state = advance(state)
+            state = skip_newlines(state)
+            {arg, state} = parse_expr(state, 0)
+            state = skip_newlines(state)
+            state = expect(state, :rparen)
+            {{String.to_atom(name), arg}, state}
+
+          _ ->
+            {classify_bin_specifier_name(name), state}
+        end
+
+      _ ->
+        # Unknown specifier token -- consume and ignore so we don't deadlock.
+        state = advance(state)
+        {{:type, :any}, state}
+    end
+  end
+
+  defp classify_bin_specifier_name(name) do
+    type_names = ~w(integer float bits bitstring bytes binary utf8 utf16 utf32)
+    sign_names = ~w(signed unsigned)
+    endian_names = ~w(big little native)
+
+    cond do
+      name in type_names -> {:type, String.to_atom(name)}
+      name in sign_names -> {:signedness, String.to_atom(name)}
+      name in endian_names -> {:endianness, String.to_atom(name)}
+      true -> {:type, String.to_atom(name)}
+    end
+  end
+
+  # Merge a single specifier entry into the meta-accumulator. Later
+  # entries override earlier entries for the same axis, matching
+  # Elixir's "last wins" behaviour for duplicate specifiers.
+  defp merge_specifier(acc, {key, value}) do
+    Keyword.put(acc, key, value)
   end
 
   # -- Comprehensions --------------------------------------------------------
@@ -2439,13 +2566,20 @@ defmodule Cure.Compiler.Parser do
   # inside the block (if any).
   defp parse_definition_block(state) do
     {leading_doc, state} = collect_leading_docs(state)
+    {leading_comments, state} = collect_leading_line_comments(state)
 
     case peek(state) do
       %Token{type: :indent} ->
         state = advance(state)
         {stmts, state} = parse_block_body(state)
         state = expect_dedent(state)
-        {attach_leading_doc(stmts, leading_doc), state}
+
+        stmts =
+          stmts
+          |> prepend_line_comments(leading_comments)
+          |> attach_leading_doc(leading_doc)
+
+        {stmts, state}
 
       _ ->
         {[], state}
@@ -2468,6 +2602,31 @@ defmodule Cure.Compiler.Parser do
         {"", state}
     end
   end
+
+  # Collect `:line_comment` tokens that appear on indented comment-only
+  # lines before the block's `:indent` token. The lexer emits them at
+  # their measured column but *ahead* of the indent push (to avoid
+  # treating a comment-only line as starting the block), so we route
+  # them back inside the block body here.
+  defp collect_leading_line_comments(state) do
+    state = skip_newlines(state)
+    collect_leading_line_comments(state, [])
+  end
+
+  defp collect_leading_line_comments(state, acc) do
+    case peek(state) do
+      %Token{type: :line_comment} ->
+        {node, state} = consume_line_comment(state)
+        state = skip_newlines(state)
+        collect_leading_line_comments(state, [node | acc])
+
+      _ ->
+        {Enum.reverse(acc), state}
+    end
+  end
+
+  defp prepend_line_comments(stmts, []), do: stmts
+  defp prepend_line_comments(stmts, comments), do: comments ++ stmts
 
   defp attach_leading_doc([first | rest], doc) when doc != "" do
     [attach_doc(first, doc) | rest]
@@ -2746,6 +2905,11 @@ defmodule Cure.Compiler.Parser do
       %Token{type: type} when type in [:dedent, :eof] ->
         {Enum.reverse(acc), state}
 
+      %Token{type: :line_comment} ->
+        {node, state} = consume_line_comment(state)
+        state = skip_newlines(state)
+        parse_block_body(state, [node | acc])
+
       %Token{type: :doc_comment} ->
         {doc_text, state} = collect_doc_comments(state)
         state = skip_newlines(state)
@@ -2809,6 +2973,12 @@ defmodule Cure.Compiler.Parser do
 
   defp advance(state), do: %{state | pos: state.pos + 1}
 
+  # `:line_comment` tokens are emitted by the lexer only when
+  # `preserve_comments: true` is set. In that mode `parse_program/2`
+  # and `parse_block_body/2` peek for them explicitly *before* calling
+  # `skip_newlines/1` and turn them into `{:comment, meta, text}` AST
+  # nodes. Inside expressions they are absent from the stream because
+  # the lexer places them at line boundaries.
   defp skip_newlines(state) do
     case peek(state) do
       %Token{type: :newline} -> skip_newlines(advance(state))
@@ -2866,4 +3036,18 @@ defmodule Cure.Compiler.Parser do
   end
 
   defp attach_doc(ast, _doc), do: ast
+
+  # -- Line Comment Helper ----------------------------------------------------
+
+  # Consume a `:line_comment` token and return an AST node.
+  # Emits `{:comment, [line: n, col: c], text}` so downstream consumers
+  # (the algebra formatter, documentation tools) can reproduce the
+  # comment in source order. Plain `#` comments preserved this way are
+  # never attached as `:doc` metadata; they remain free-standing nodes.
+  defp consume_line_comment(state) do
+    token = peek(state)
+    meta = [line: token.line, col: token.col]
+    node = {:comment, meta, token.value}
+    {node, advance(state)}
+  end
 end

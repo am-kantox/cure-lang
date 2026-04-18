@@ -416,6 +416,30 @@ defmodule Cure.Compiler.Printer do
     "@#{name}"
   end
 
+  # -- Line comment ----------------------------------------------------------
+
+  defp to_string({:comment, _meta, text}, _depth, _indent) when is_binary(text) do
+    # v0.20.0: free-standing `#` comment nodes round-trip as `# <text>`.
+    "# " <> text
+  end
+
+  # -- Binary segment --------------------------------------------------------
+  #
+  # Round-trips the v0.20.0 segment AST back into surface syntax.
+  # A segment with no specifiers renders as the plain value; otherwise
+  # the specifier chain is emitted as `::type-signedness-endianness-size-unit`.
+
+  defp to_string({:bin_segment, meta, [value]}, depth, indent) do
+    value_str = to_string(value, depth, indent)
+    spec_str = bin_segment_specifier_string(meta, depth, indent)
+
+    if spec_str == "" do
+      value_str
+    else
+      "#{value_str}::#{spec_str}"
+    end
+  end
+
   # -- Fallback --------------------------------------------------------------
 
   defp to_string(other, _depth, _indent) when is_binary(other), do: other
@@ -883,14 +907,49 @@ defmodule Cure.Compiler.Printer do
     end
   end
 
+  defp bytes_to_string(_meta, []), do: "<<>>"
+
+  defp bytes_to_string(_meta, [{:bin_segment, _, _} | _] = segments) do
+    # v0.20.0: bytes literal carries a list of `{:bin_segment, ...}` children.
+    inner = Enum.map_join(segments, ", ", &to_string(&1, 0, @default_indent))
+    "<<#{inner}>>"
+  end
+
   defp bytes_to_string(_meta, elements) when is_list(elements) do
-    if elements == [] do
-      "<<>>"
-    else
-      inner = Enum.map_join(elements, ", ", &to_string(&1, 0, @default_indent))
-      "<<#{inner}>>"
-    end
+    inner = Enum.map_join(elements, ", ", &to_string(&1, 0, @default_indent))
+    "<<#{inner}>>"
   end
 
   defp bytes_to_string(_meta, _value), do: "<<>>"
+
+  # Build the specifier chain for a bin_segment. Returns an empty
+  # string if no specifiers are present; otherwise a hyphen-joined
+  # list such as `utf8`, `binary-size(n)`, or `signed-big-32`.
+  defp bin_segment_specifier_string(meta, depth, indent) do
+    parts = []
+    parts = maybe_append(parts, Keyword.get(meta, :type))
+    parts = maybe_append(parts, Keyword.get(meta, :signedness))
+    parts = maybe_append(parts, Keyword.get(meta, :endianness))
+
+    parts =
+      case Keyword.get(meta, :size) do
+        nil -> parts
+        {:literal, _, n} when is_integer(n) -> parts ++ [Integer.to_string(n)]
+        ast -> parts ++ ["size(" <> to_string(ast, depth, indent) <> ")"]
+      end
+
+    parts =
+      case Keyword.get(meta, :unit) do
+        nil -> parts
+        n when is_integer(n) -> parts ++ ["unit(" <> Integer.to_string(n) <> ")"]
+        {:literal, _, n} when is_integer(n) -> parts ++ ["unit(" <> Integer.to_string(n) <> ")"]
+        _ -> parts
+      end
+
+    Enum.join(parts, "-")
+  end
+
+  defp maybe_append(parts, nil), do: parts
+  defp maybe_append(parts, atom) when is_atom(atom), do: parts ++ [Atom.to_string(atom)]
+  defp maybe_append(parts, _), do: parts
 end

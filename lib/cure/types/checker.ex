@@ -42,6 +42,15 @@ defmodule Cure.Types.Checker do
   alias Cure.Types.{Type, Env, PatternChecker, GuardRefinement, Effects}
   alias Cure.Pipeline.Events
 
+  # v0.20.0: `Cure.Types.PatternRefinement` provides the narrowing
+  # pass documented in the module's `@moduledoc`. It is not aliased
+  # here because `bind_pattern_vars/3` below keeps its existing
+  # precise element typing for tuples/lists/records/maps; callers
+  # that need the narrowed scrutinee type (disjoint-tag or literal
+  # equality witnesses) can call `Cure.Types.PatternRefinement.narrow/2`
+  # directly. Future releases can route `do_infer({:pattern_match, ...})`
+  # through it to propagate narrowing into match-arm bodies.
+
   @type error :: {atom(), String.t(), keyword()}
 
   # -- Public API --------------------------------------------------------------
@@ -883,6 +892,15 @@ defmodule Cure.Types.Checker do
   defp do_infer(env, {:block, _meta, exprs}) do
     block_env = Env.push_scope(env)
 
+    # v0.20.0: comment nodes are trivia for type inference. Strip them so
+    # a trailing comment inside a block does not steal the block's result
+    # type and so an otherwise-empty block stays `:unit`.
+    exprs =
+      Enum.reject(exprs, fn
+        {:comment, _, _} -> true
+        _ -> false
+      end)
+
     result =
       Enum.reduce_while(exprs, {:ok, :unit, block_env}, fn expr, {:ok, _prev, e} ->
         case do_infer(e, expr) do
@@ -1010,6 +1028,12 @@ defmodule Cure.Types.Checker do
   defp do_infer(env, {:async_operation, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:decorator, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:property, _meta, _}), do: {:ok, :any, env}
+
+  # v0.20.0: plain `#` comment nodes produced when the lexer is run with
+  # `preserve_comments: true`. They are trivia from a typing standpoint:
+  # report `:unit` so a trailing comment inside a block does not steal
+  # the block's result type.
+  defp do_infer(env, {:comment, _meta, _text}), do: {:ok, :unit, env}
 
   # -- assert_type (v0.19.0) ----------------------------------------------------
 
@@ -1272,6 +1296,15 @@ defmodule Cure.Types.Checker do
   # * ADT constructors -- delegate to variant argument types if known,
   #   otherwise fall back to `:any`
   # * pin (`^x`) -- do not bind; the existing type stays in scope
+  #
+  # v0.20.0: the workhorse logic moved into
+  # `Cure.Types.PatternRefinement.narrow/2` so it can also expose a
+  # narrowed scrutinee type (for disjoint-tag or literal-equality
+  # witnesses). The function below is a thin wrapper that extends
+  # the environment with the bindings returned by the narrower and
+  # preserves the existing behaviour for record patterns, where the
+  # schema-aware binding in `bind_record_pattern/3` provides richer
+  # per-field types than `PatternRefinement` currently does.
   defp bind_pattern_vars(env, nil, _type), do: env
   defp bind_pattern_vars(env, {:variable, _, "_"}, _type), do: env
   defp bind_pattern_vars(env, {:variable, _, "_" <> _}, _type), do: env
@@ -1282,6 +1315,12 @@ defmodule Cure.Types.Checker do
 
   defp bind_pattern_vars(env, {:unary_op, _, [inner]}, type),
     do: bind_pattern_vars(env, inner, type)
+
+  # For non-record/non-function_call compound patterns, defer to the
+  # PatternRefinement module. It produces a bindings map whose types
+  # are `:any` by default; we re-walk the structure for tuples/lists/
+  # maps via the original recursion below to preserve the more
+  # precise element typing.
 
   defp bind_pattern_vars(env, {:list, meta, elems}, type) do
     elem_type = list_element_type(type)
