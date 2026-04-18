@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash}>
+<Layouts.app flash={@flash} current_path={@conn.request_path}>
   <%!-- Hero --%>
   <div class="text-center py-8">
     <img
@@ -18,8 +18,7 @@
       -- <em>The Shape of Things</em>. Plain <code>#</code>
       comments as first-class AST nodes, full Elixir-style bitstring
       segments (<code>&lt;&lt;x::utf8, rest::binary&gt;&gt;</code>), a
-      Wadler-style algebra pretty-printer behind
-      <code>cure fmt --algebra</code>, and structural refinement narrowing
+      Wadler-style algebra pretty-printer behind <code>cure fmt --algebra</code>, and structural refinement narrowing
       via <code>Cure.Types.PatternRefinement</code>.
     </p>
   </div>
@@ -111,14 +110,13 @@
       <p class="mt-1 text-sm text-base-content/60">18 self-hosted modules, ~200 functions.</p>
     </a>
     <a
-      href={~p"/type-system" <> "#dependent-types"}
+      href={~p"/match"}
       class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
     >
-      <h3 class="font-semibold text-primary group-hover:text-accent">
-        Dependent Types <span class="badge badge-xs badge-accent align-middle">new</span>
-      </h3>
+      <h3 class="font-semibold text-primary group-hover:text-accent">Pattern Matching</h3>
       <p class="mt-1 text-sm text-base-content/60">
-        Sigma, Pi, equality types; implicit arguments, holes, totality.
+        Every pattern shape: literals, lists, tuples, maps, records, ADTs,
+        bitstrings, pins, guards, and nested destructuring.
       </p>
     </a>
     <a

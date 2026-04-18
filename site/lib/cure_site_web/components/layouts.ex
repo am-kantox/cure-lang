@@ -31,6 +31,10 @@ defmodule CureSiteWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :current_path, :string,
+    default: "",
+    doc: "the current request path, used to highlight the active navbar entry"
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -48,21 +52,32 @@ defmodule CureSiteWeb.Layouts do
         </a>
 
         <div class="hidden items-center gap-0.5 md:flex">
-          <a href={~p"/getting-started"} class="btn btn-ghost btn-sm">Start</a>
-          <a href={~p"/language-guide"} class="btn btn-ghost btn-sm">Language</a>
-          <a href={~p"/type-system"} class="btn btn-ghost btn-sm">Types</a>
-          <a
-            href={~p"/type-system" <> "#dependent-types"}
-            class="btn btn-ghost btn-sm gap-1"
-            title="Sigma, Pi and equality types, implicit arguments, holes, totality"
-          >
-            Dependent <span class="badge badge-xs badge-accent">new</span>
+          <a href={~p"/getting-started"} class={nav_class(@current_path, ~p"/getting-started")}>
+            Start
           </a>
-          <a href={~p"/finite-state-machines"} class="btn btn-ghost btn-sm">FSMs</a>
-          <a href={~p"/protocols"} class="btn btn-ghost btn-sm">Protocols</a>
-          <a href={~p"/standard-library"} class="btn btn-ghost btn-sm">Stdlib</a>
-          <a href={~p"/tooling"} class="btn btn-ghost btn-sm">Tooling</a>
-          <a href={~p"/blog"} class="btn btn-ghost btn-sm">Blog</a>
+          <a href={~p"/language-guide"} class={nav_class(@current_path, ~p"/language-guide")}>
+            Language
+          </a>
+          <a href={~p"/match"} class={nav_class(@current_path, ~p"/match")}>Match</a>
+          <a
+            href={~p"/type-system"}
+            class={nav_class(@current_path, ~p"/type-system")}
+            title="Bidirectional checking, refinement types, dependent types (Sigma, Pi, equality), implicit arguments, holes, totality"
+          >
+            Types
+          </a>
+          <a
+            href={~p"/finite-state-machines"}
+            class={nav_class(@current_path, ~p"/finite-state-machines")}
+          >
+            FSMs
+          </a>
+          <a href={~p"/protocols"} class={nav_class(@current_path, ~p"/protocols")}>Protocols</a>
+          <a href={~p"/standard-library"} class={nav_class(@current_path, ~p"/standard-library")}>
+            Stdlib
+          </a>
+          <a href={~p"/tooling"} class={nav_class(@current_path, ~p"/tooling")}>Tooling</a>
+          <a href={~p"/blog"} class={nav_class(@current_path, ~p"/blog")}>Blog</a>
           <.theme_toggle />
         </div>
 
@@ -80,18 +95,36 @@ defmodule CureSiteWeb.Layouts do
 
       <%!-- Mobile navigation --%>
       <div id="mobile-menu" class="hidden border-t border-base-300 px-4 py-2 md:hidden">
-        <a href={~p"/getting-started"} class="block py-2 text-sm">Getting Started</a>
-        <a href={~p"/language-guide"} class="block py-2 text-sm">Language Guide</a>
-        <a href={~p"/type-system"} class="block py-2 text-sm">Type System</a>
-        <a href={~p"/type-system" <> "#dependent-types"} class="block py-2 text-sm">
-          Dependent Types <span class="badge badge-xs badge-accent align-middle">new</span>
+        <a href={~p"/getting-started"} class={mobile_nav_class(@current_path, ~p"/getting-started")}>
+          Getting Started
         </a>
-        <a href={~p"/finite-state-machines"} class="block py-2 text-sm">Finite State Machines</a>
-        <a href={~p"/protocols"} class="block py-2 text-sm">Protocols</a>
-        <a href={~p"/standard-library"} class="block py-2 text-sm">Standard Library</a>
-        <a href={~p"/tooling"} class="block py-2 text-sm">Tooling</a>
-        <a href={~p"/roadmap"} class="block py-2 text-sm">Roadmap</a>
-        <a href={~p"/blog"} class="block py-2 text-sm">Blog</a>
+        <a href={~p"/language-guide"} class={mobile_nav_class(@current_path, ~p"/language-guide")}>
+          Language Guide
+        </a>
+        <a href={~p"/match"} class={mobile_nav_class(@current_path, ~p"/match")}>
+          Pattern Matching
+        </a>
+        <a href={~p"/type-system"} class={mobile_nav_class(@current_path, ~p"/type-system")}>
+          Type System
+        </a>
+        <a
+          href={~p"/finite-state-machines"}
+          class={mobile_nav_class(@current_path, ~p"/finite-state-machines")}
+        >
+          Finite State Machines
+        </a>
+        <a href={~p"/protocols"} class={mobile_nav_class(@current_path, ~p"/protocols")}>
+          Protocols
+        </a>
+        <a
+          href={~p"/standard-library"}
+          class={mobile_nav_class(@current_path, ~p"/standard-library")}
+        >
+          Standard Library
+        </a>
+        <a href={~p"/tooling"} class={mobile_nav_class(@current_path, ~p"/tooling")}>Tooling</a>
+        <a href={~p"/roadmap"} class={mobile_nav_class(@current_path, ~p"/roadmap")}>Roadmap</a>
+        <a href={~p"/blog"} class={mobile_nav_class(@current_path, ~p"/blog")}>Blog</a>
       </div>
     </header>
 
@@ -103,7 +136,9 @@ defmodule CureSiteWeb.Layouts do
       <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div class="flex items-center gap-4 text-sm text-base-content/60">
-            <a href="https://github.com/am-kantox/cure-lang" class="hover:text-base-content">GitHub</a>
+            <a href="https://github.com/am-kantox/cure-lang" class="hover:text-base-content">
+              GitHub
+            </a>
             <a href={~p"/getting-started"} class="hover:text-base-content">Getting Started</a>
             <a href={~p"/roadmap"} class="hover:text-base-content">Roadmap</a>
           </div>
@@ -168,4 +203,33 @@ defmodule CureSiteWeb.Layouts do
     </div>
     """
   end
+
+  # ------------------------------------------------------------
+  # Navigation highlighting helpers
+  # ------------------------------------------------------------
+
+  @desktop_base "btn btn-ghost btn-sm"
+  @desktop_active "btn btn-sm btn-active bg-base-200 text-primary font-semibold"
+  @mobile_base "block py-2 text-sm"
+  @mobile_active "block py-2 text-sm text-primary font-semibold"
+
+  @doc false
+  def nav_class(current_path, target) do
+    if active_link?(current_path, target), do: @desktop_active, else: @desktop_base
+  end
+
+  @doc false
+  def mobile_nav_class(current_path, target) do
+    if active_link?(current_path, target), do: @mobile_active, else: @mobile_base
+  end
+
+  # A link is active when the current path matches the target exactly or,
+  # for non-root targets, the current path sits under the target segment
+  # (so /blog/some-post keeps the "Blog" entry highlighted).
+  defp active_link?(current, target) when is_binary(current) and is_binary(target) do
+    current == target or
+      (target != "/" and String.starts_with?(current, target <> "/"))
+  end
+
+  defp active_link?(_current, _target), do: false
 end

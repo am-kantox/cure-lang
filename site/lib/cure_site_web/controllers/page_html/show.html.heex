@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash}>
+<Layouts.app flash={@flash} current_path={@conn.request_path}>
   <article>
     <h1 class="text-3xl font-bold mb-6">{@page.title}</h1>
     <div class="prose-cure text-base-content/90">

@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash}>
+<Layouts.app flash={@flash} current_path={@conn.request_path}>
   <a href={~p"/blog"} class="text-sm text-primary hover:text-accent">&larr; All posts</a>
 
   <article class="mt-6">
