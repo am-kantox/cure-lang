@@ -25,7 +25,8 @@ defmodule Cure.MixProject do
         plt_add_deps: :app_tree,
         plt_add_apps: [:mix, :ex_unit],
         plt_core_path: ".dialyzer",
-        list_unused_filters: true,
+        # 1.18 and 1.20 → until map type check is fully landed
+        list_unused_filters: false,
         ignore_warnings: ".dialyzer/ignore.exs"
       ],
       name: "Cure",
