@@ -17,6 +17,14 @@ v0.19.0 additions: `Std.Proof` (propositional laws), `Std.Gen` (generators
 for property-based testing), `Std.Iter` (lazy iterator protocol). `Std.Test`
 gains `forall/3` and `forall_default/2`.
 
+v0.20.0 does not add new stdlib modules -- the whole release is compiler
+scaffolding -- but stdlib sources benefit from every v0.20.0 polish:
+plain `#` comments now survive `cure fmt --algebra` round-trips, the
+new Wadler-style algebra formatter preserves layout choices where the
+byte-level safe formatter would have given up, and the full Elixir-style
+bitstring segment grammar is available anywhere stdlib code uses
+`<<...>>` (either in construction or in patterns).
+
 All modules are documented with `##` doc comments. Run `cure doc lib/std/`
 to generate browsable HTML documentation.
 

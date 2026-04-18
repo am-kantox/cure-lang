@@ -245,14 +245,22 @@ Single-quoted:
 []
 ```
 
-Cons syntax for head/tail decomposition (single head only):
+Cons syntax for head/tail decomposition:
 
 ```cure
 [h | t]
 ```
 
-Multi-head cons (`[a, b | rest]`) is not supported; use nested `match`
-or `Std.Match.first_two/2` instead.
+Since v0.19.0, multi-head cons patterns desugar to right-associated
+cons cells and work in both pattern and construction position:
+
+```cure
+match xs
+  [a, b, c | rest] -> a + b + c
+  _                -> 0
+```
+
+is equivalent to `[a | [b | [c | rest]]]`.
 
 ### Tuples
 
@@ -271,6 +279,33 @@ Prefixed with `%`:
 %{name: "Alice", age: 30}
 %{key: value}
 ```
+
+### Binary literals and bitstring segments
+
+Since v0.20.0, binary literals use the full Elixir-style segment
+grammar. Each element inside `<<...>>` may carry type, size,
+endianness, signedness, and unit specifiers, chained with `-`:
+
+```cure
+<<tag::utf8, size::16, payload::binary-size(size), rest::binary>>
+```
+
+`::` introduces the specifier chain; type atoms are `integer`,
+`float`, `bits`, `bitstring`, `bytes`, `binary`, `utf8`, `utf16`,
+`utf32`; `big` / `little` / `native` select the endianness;
+`signed` / `unsigned` the signedness; `size(n)` and `unit(u)` the
+width. A bare integer is shorthand for `size(n)`:
+
+```cure
+<<x::8>>             # same as <<x::size(8)>>
+<<x::32-signed>>     # 32-bit signed big-endian integer
+<<x::float-little>>  # 64-bit little-endian float
+```
+
+Defaults mirror Erlang:
+`integer-unsigned-big-size(8)-unit(1)`, with `utf8` / `utf16` /
+`utf32` providing their own implicit size. The same segment
+grammar works in pattern position.
 
 ## Let bindings
 

@@ -395,6 +395,39 @@ Warning: match expression has nested non-exhaustive cases (E025)
 The original flat classifier is kept as a fast-path for simple,
 single-level matches.
 
+### Structural refinement narrowing (v0.20.0)
+
+v0.20.0 exposes a dedicated module -- `Cure.Types.PatternRefinement` --
+whose `narrow/2` function takes a pattern AST and a scrutinee type and
+returns `{bindings, narrowed_scrutinee}`. Two kinds of information come
+back:
+
+**Literal-equality witnesses.** A sub-pattern that is a literal means
+the matched value *is* that literal along the arm. Matching `0` against
+`:int` narrows the scrutinee to `{x: Int | x == 0}`; inside a tuple
+pattern with a literal slot, the corresponding element of the narrowed
+scrutinee picks up the refinement while variables in other slots keep
+their original element type.
+
+**Disjoint-tag witnesses.** A constructor pattern (`Ok(v)`,
+`Error(e)`) or a map pattern with a literal `:kind` tag narrows the
+scrutinee to a tagged variant:
+
+```elixir
+narrow({:function_call, [name: "Ok"], [{:variable, [], "v"}]}, :any)
+# => {%{"v" => :any}, {:variant, :ok, []}}
+```
+
+`PatternRefinement` integrates with the existing `Cure.Types.Refinement`
+representation so every narrowed type is something the SMT translator
+already understands. `bind_pattern_vars/3` in the type checker keeps its
+existing precise element typing for tuples / lists / records / maps --
+`PatternRefinement` is exposed as a separate module for callers that want
+the narrowed scrutinee. v0.21.0 will route `do_infer({:pattern_match, ...})`
+through it so match-arm bodies take advantage of the narrowing, and the
+path-sensitive refinement pass can propagate disjoint-tag witnesses across
+subsequent expressions in the same branch.
+
 ## Guard-based flow typing
 
 When a function has a `when` guard, parameter types are refined within the guarded body. The type checker narrows the type to include the guard constraint:

@@ -401,105 +401,6 @@ recursed into nested shapes; v0.18.0 replaces it wholesale.
 - `mix cure.check.stdlib`: 21/21 clean;
   `mix cure.check.examples`: 26/26 clean.
 
-## Implemented: v0.20.0 -- The Shape of Things
-
-AST polish across four coupled compiler features. Plain `#`
-comments are first-class nodes in the tree, binary literals and
-patterns gain the full Elixir-style segment grammar
-(`<<x::utf8, rest::binary>>`), a Wadler/`Inspect.Algebra`-style
-pretty-printer lands behind `cure fmt --algebra`, and pattern
-narrowing can expose disjoint-tag and literal-equality witnesses
-via `Cure.Types.PatternRefinement`.
-
-### Plain comment AST nodes
-
-- `Cure.Compiler.Lexer.tokenize/2` gains a
-  `preserve_comments: true` option. Plain `#` comments are emitted
-  as `:line_comment` tokens; doc comments (`##`, `###`) continue
-  to be preserved regardless.
-- `Cure.Compiler.Parser` threads those tokens into the AST as
-  `{:comment, [line:, col:], text}` nodes in top-level programs,
-  container bodies, and block bodies. Indented comment-only lines
-  preceding a block's `:indent` are routed inside the block.
-- `Cure.Compiler.Codegen` and `Cure.Types.Checker` skip comment
-  nodes silently so comment preservation has no runtime or
-  type-checking cost.
-
-### Full bitstring segments
-
-- `:colon_colon` lexer token for `::`, distinct from `:colon`
-  (type annotations) and `:atom` (symbol literals).
-- `Cure.Compiler.Parser.parse_binary_literal/1` now wraps every
-  element of `<<...>>` in a `{:bin_segment, meta, [value]}` node.
-  Meta keys: `:type` (`:integer`, `:float`, `:bits`, `:bitstring`,
-  `:bytes`, `:binary`, `:utf8`, `:utf16`, `:utf32`),
-  `:signedness`, `:endianness`, `:size` (an AST node), `:unit`
-  (integer). Specifiers chain with `-`
-  (`::binary-size(n)`); a bare integer is shorthand for
-  `size(n)`.
-- `Cure.Compiler.Codegen` and `Cure.Compiler.PatternCompiler`
-  translate the segment AST into full Erlang `:bin_element` forms
-  in both construction and pattern positions.
-- `Cure.Compiler.Printer` round-trips segments back into surface
-  syntax.
-
-### Algebra-based formatter
-
-- `Cure.Compiler.Algebra` -- a new `Inspect.Algebra`-style document
-  module with `empty`, `concat`, `nest`, `break`, `line`, `group`,
-  `string`, `space`, `fold`, and a best-fit `format/2`.
-- `Cure.Compiler.AlgebraFormatter` -- AST-to-document renderer
-  that walks top-level programs, containers, and blocks, and
-  delegates per-node rendering to the existing `Printer`.
-  Standalone `{:comment, ...}` nodes round-trip as `# <text>`
-  lines; sequences are separated by blank lines.
-- `Cure.Compiler.Formatter.format_algebra/2` runs the new
-  formatter with comment-aware round-trip verification: the
-  formatted buffer must re-parse to an AST structurally equal to
-  the input (modulo comment placement and position metadata),
-  otherwise the original source is returned unchanged.
-- CLI: `cure fmt --algebra` opts in. The existing byte-level safe
-  formatter stays the default for v0.20.0 and will be promoted to
-  `--algebra` as the default in v0.21.0.
-
-### Structural refinement narrowing
-
-- `Cure.Types.PatternRefinement.narrow/2` returns
-  `{bindings, narrowed_scrutinee}` for any pattern against any
-  scrutinee type. Literal sub-patterns yield equality refinements
-  (`{x: Int | x == 0}` for `0`); constructor patterns (`Ok(v)`,
-  `Error(e)`) and map patterns with a literal `:kind` tag yield
-  `{:variant, tag, args}` witnesses. Integrates with the existing
-  `Cure.Types.Refinement` SMT representation.
-
-### Numbers
-
-- 3 new Elixir modules (`Cure.Compiler.Algebra`,
-  `Cure.Compiler.AlgebraFormatter`,
-  `Cure.Types.PatternRefinement`); major extensions to
-  `Cure.Compiler.Lexer`, `Cure.Compiler.Parser`,
-  `Cure.Compiler.Codegen`, `Cure.Compiler.PatternCompiler`,
-  `Cure.Compiler.Printer`, `Cure.Compiler.Formatter`,
-  `Cure.Types.Checker`, and the CLI.
-- 1016 tests pass (up from 970); `mix credo --strict`: 0 issues
-  across 136 files; `mix cure.check.stdlib`: 24/24;
-  `mix cure.check.examples`: 30/30.
-
-### Deferred to v0.21.0
-
-Remote package-registry index service, publication signing, and
-Hex.pm cross-publishing. Type-checker refinement narrowing
-*through* binary patterns (propagating `size(n)` into refinements
-on `rest`). Exhaustiveness analysis for binary patterns
-(`Cure.Types.PatternChecker`). Promotion of `cure fmt --algebra`
-to the default formatter. Type-directed `@derive` extensions
-(Functor, Monoid, JSON). Full Erlang-style destructuring of
-binaries in `match` expressions, function heads, `let` bindings,
-and comprehension generators -- the segment AST from v0.20.0 is
-the groundwork; v0.21.0 adds type-checker narrowing across
-binary segments and the exhaustiveness analysis that goes with
-it.
-
 ## Implemented: v0.19.0 -- Bring the Furniture
 
 Ergonomics, proofs, and the first half of a registry.
@@ -557,6 +458,128 @@ Five new codes `E026`-`E030`.
 - 4 new examples, 1 new doc (`PROOFS.md`).
 - ~970 tests (up from 923); `mix credo --strict`: 0 issues;
   `mix cure.check.stdlib`: 24/24; `mix cure.check.examples`: 30/30.
+
+## Implemented: v0.20.0 -- The Shape of Things
+
+AST polish across four coupled compiler features. Plain `#`
+comments are first-class nodes in the tree, binary literals and
+patterns gain the full Elixir-style segment grammar
+(`<<x::utf8, rest::binary>>`), a Wadler/`Inspect.Algebra`-style
+pretty-printer lands behind `cure fmt --algebra`, and pattern
+narrowing can expose disjoint-tag and literal-equality witnesses
+via `Cure.Types.PatternRefinement`. None of the four tracks are
+new surface-language features on their own -- they are the
+scaffolding the next generation of features (binary destructuring,
+width-aware layout, path-sensitive dependent narrowing) will build
+on.
+
+### Plain comment AST nodes
+
+- `Cure.Compiler.Lexer.tokenize/2` gains a
+  `preserve_comments: true` option. Plain `#` comments are emitted
+  as `:line_comment` tokens; doc comments (`##`, `###`) continue
+  to be preserved regardless.
+- `Cure.Compiler.Parser` threads those tokens into the AST as
+  `{:comment, [line:, col:], text}` nodes in top-level programs,
+  container bodies, and block bodies. Indented comment-only lines
+  preceding a block's `:indent` are routed inside the block so the
+  comment ends up a sibling of the definition it documents.
+- `Cure.Compiler.Codegen` and `Cure.Types.Checker` skip comment
+  nodes silently so comment preservation has no runtime or
+  type-checking cost.
+
+### Full bitstring segments
+
+- `:colon_colon` lexer token for `::`, distinct from `:colon`
+  (type annotations) and `:atom` (symbol literals).
+- `Cure.Compiler.Parser.parse_binary_literal/1` now wraps every
+  element of `<<...>>` in a `{:bin_segment, meta, [value]}` node.
+  Meta keys: `:type` (`:integer`, `:float`, `:bits`, `:bitstring`,
+  `:bytes`, `:binary`, `:utf8`, `:utf16`, `:utf32`),
+  `:signedness`, `:endianness`, `:size` (an AST node), `:unit`
+  (integer). Specifiers chain with `-`
+  (`::binary-size(n)`); a bare integer is shorthand for
+  `size(n)`. Defaults mirror Erlang:
+  `integer-unsigned-big-size(8)-unit(1)`, with `utf8` / `utf16` /
+  `utf32` providing their own implicit size.
+- `Cure.Compiler.Codegen` and `Cure.Compiler.PatternCompiler`
+  translate the segment AST into full Erlang `:bin_element` forms
+  in both construction and pattern positions.
+- `Cure.Compiler.Printer` round-trips segments back into surface
+  syntax.
+
+This is the groundwork for the v0.21.0 headline feature: full
+Erlang-style destructuring of binaries in `match`, function heads,
+`let`, and comprehension generators.
+
+### Algebra-based formatter
+
+- `Cure.Compiler.Algebra` -- a new `Inspect.Algebra`-style document
+  module with `empty`, `concat`, `nest`, `break`, `line`, `group`,
+  `string`, `space`, `fold`, and a best-fit `format/2`. A `group`
+  fits flat when its content stays within the remaining width;
+  otherwise every soft break inside renders as a newline at the
+  current indent.
+- `Cure.Compiler.AlgebraFormatter` -- AST-to-document renderer
+  that walks top-level programs, containers, and blocks, and
+  delegates per-node rendering to the existing `Printer`.
+  Standalone `{:comment, ...}` nodes round-trip as `# <text>`
+  lines; sequences are separated by blank lines.
+- `Cure.Compiler.Formatter.format_algebra/2` runs the new
+  formatter with comment-aware round-trip verification: the
+  formatted buffer must re-parse to an AST structurally equal to
+  the input (modulo comment placement and position metadata),
+  otherwise the original source is returned unchanged.
+- CLI: `cure fmt --algebra` opts in. The existing byte-level safe
+  formatter stays the default for v0.20.0 and will be promoted to
+  `--algebra` as the default in v0.21.0.
+
+### Structural refinement narrowing
+
+- `Cure.Types.PatternRefinement.narrow/2` returns
+  `{bindings, narrowed_scrutinee}` for any pattern against any
+  scrutinee type. Literal sub-patterns yield equality refinements
+  (`{x: Int | x == 0}` for `0`); constructor patterns (`Ok(v)`,
+  `Error(e)`) and map patterns with a literal `:kind` tag yield
+  `{:variant, tag, args}` witnesses. Integrates with the existing
+  `Cure.Types.Refinement` SMT representation, so every narrowed
+  type is something the SMT translator already understands.
+- `bind_pattern_vars/3` in `Cure.Types.Checker` keeps its existing
+  precise element typing for tuples / lists / records / maps;
+  `PatternRefinement` is exposed as a separate module for callers
+  that want the narrowed scrutinee. v0.21.0 will route
+  `do_infer({:pattern_match, ...})` through it so match-arm bodies
+  take advantage of the narrowing, and the path-sensitive
+  refinement pass can propagate disjoint-tag witnesses across
+  subsequent expressions in the same branch.
+
+### Numbers
+
+- 3 new Elixir modules (`Cure.Compiler.Algebra`,
+  `Cure.Compiler.AlgebraFormatter`,
+  `Cure.Types.PatternRefinement`); major extensions to
+  `Cure.Compiler.Lexer`, `Cure.Compiler.Parser`,
+  `Cure.Compiler.Codegen`, `Cure.Compiler.PatternCompiler`,
+  `Cure.Compiler.Printer`, `Cure.Compiler.Formatter`,
+  `Cure.Types.Checker`, and the CLI.
+- 1016 tests pass (up from 970); `mix credo --strict`: 0 issues
+  across 136 files; `mix cure.check.stdlib`: 24/24;
+  `mix cure.check.examples`: 30/30.
+
+### Deferred to v0.21.0
+
+Remote package-registry index service, publication signing, and
+Hex.pm cross-publishing. Type-checker refinement narrowing
+*through* binary patterns (propagating `size(n)` into refinements
+on `rest`). Exhaustiveness analysis for binary patterns
+(`Cure.Types.PatternChecker`). Promotion of `cure fmt --algebra`
+to the default formatter. Type-directed `@derive` extensions
+(Functor, Monoid, JSON). Full Erlang-style destructuring of
+binaries in `match` expressions, function heads, `let` bindings,
+and comprehension generators -- the segment AST from v0.20.0 is
+the groundwork; v0.21.0 adds type-checker narrowing across
+binary segments and the exhaustiveness analysis that goes with
+it.
 
 ## Future
 
