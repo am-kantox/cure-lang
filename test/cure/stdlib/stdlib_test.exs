@@ -587,4 +587,257 @@ defmodule Cure.StdlibTest do
       assert count > 0
     end
   end
+
+  # ============================================================================
+  # Std.Access
+  # ============================================================================
+
+  describe "Std.Access -- factories" do
+    setup do
+      Cure.Stdlib.Preload.preload(examples: false)
+      m = compile_stdlib("access")
+      on_exit(fn -> purge(m) end)
+      %{m: m}
+    end
+
+    test "key/1 returns AccKey ADT", %{m: m} do
+      assert m.key(:name) == {:acc_key, :name}
+    end
+
+    test "key_default/2 returns AccKeyDefault ADT", %{m: m} do
+      assert m.key_default(:name, "anon") == {:acc_key_default, :name, "anon"}
+    end
+
+    test "key_bang/1 returns AccKeyReq ADT", %{m: m} do
+      assert m.key_bang(:name) == {:acc_key_req, :name}
+    end
+
+    test "elem_at/1 returns AccTupleElem ADT", %{m: m} do
+      assert m.elem_at(2) == {:acc_tuple_elem, 2}
+    end
+
+    test "at/1 returns AccListAt ADT", %{m: m} do
+      assert m.at(3) == {:acc_list_at, 3}
+    end
+
+    test "all/0 returns nullary AccListAll ADT", %{m: m} do
+      assert m.all() == {:acc_list_all}
+    end
+
+    test "filter/1 returns AccListFilter ADT carrying the predicate", %{m: m} do
+      pred = fn x -> x > 0 end
+      assert {:acc_list_filter, ^pred} = m.filter(pred)
+    end
+  end
+
+  describe "Std.Access -- Map impl (fetch/get/get_and_update/pop)" do
+    setup do
+      Cure.Stdlib.Preload.preload(examples: false)
+      m = compile_stdlib("access")
+      on_exit(fn -> purge(m) end)
+      %{m: m}
+    end
+
+    test "fetch/2 returns Some(value) on hit and None() on miss", %{m: m} do
+      assert m.fetch(%{a: 1, b: 2}, :a) == {:some, 1}
+      assert m.fetch(%{a: 1}, :missing) == {:none}
+    end
+
+    test "fetch_bang/2 returns the value on hit", %{m: m} do
+      assert m.fetch_bang(%{a: 1}, :a) == 1
+    end
+
+    test "fetch_bang/2 raises on miss", %{m: m} do
+      assert_raise ErlangError, fn -> m.fetch_bang(%{a: 1}, :missing) end
+    end
+
+    test "get/3 returns the value or default", %{m: m} do
+      assert m.get(%{a: 1}, :a, 0) == 1
+      assert m.get(%{a: 1}, :missing, 0) == 0
+    end
+
+    test "get_and_update/3 updates an existing key", %{m: m} do
+      result = m.get_and_update(%{a: 1}, :a, fn _opt -> {1, 42} end)
+      assert result == {1, %{a: 42}}
+    end
+
+    test "get_and_update/3 inserts when the key is missing", %{m: m} do
+      result = m.get_and_update(%{}, :new, fn _opt -> {nil, 99} end)
+      assert result == {nil, %{new: 99}}
+    end
+
+    test "get_and_update/3 :pop removes the key", %{m: m} do
+      result = m.get_and_update(%{a: 1, b: 2}, :a, fn _opt -> :pop end)
+      assert result == {1, %{b: 2}}
+    end
+
+    test "get_and_update/3 :pop on missing key leaves the map untouched", %{m: m} do
+      result = m.get_and_update(%{b: 2}, :a, fn _opt -> :pop end)
+      assert result == {nil, %{b: 2}}
+    end
+
+    test "pop/2 returns {value, without_key}", %{m: m} do
+      assert m.pop(%{a: 1, b: 2}, :a) == {1, %{b: 2}}
+      assert m.pop(%{b: 2}, :missing) == {nil, %{b: 2}}
+    end
+
+    test "pop/2 on a struct-like map (with :__struct__) raises", %{m: m} do
+      struct_like = %{__struct__: :person, name: "Alice"}
+      assert_raise ErlangError, fn -> m.pop(struct_like, :name) end
+    end
+  end
+
+  describe "Std.Access -- List (keyword) impl" do
+    setup do
+      Cure.Stdlib.Preload.preload(examples: false)
+      m = compile_stdlib("access")
+      on_exit(fn -> purge(m) end)
+      %{m: m}
+    end
+
+    test "fetch/2 walks a keyword-shaped list", %{m: m} do
+      kw = [{:a, 1}, {:b, 2}]
+      assert m.fetch(kw, :a) == {:some, 1}
+      assert m.fetch(kw, :b) == {:some, 2}
+      assert m.fetch(kw, :missing) == {:none}
+    end
+
+    test "get_and_update/3 replaces the first matching pair", %{m: m} do
+      result = m.get_and_update([{:a, 1}, {:b, 2}], :a, fn _opt -> {1, 10} end)
+      assert result == {1, [{:a, 10}, {:b, 2}]}
+    end
+
+    test "get_and_update/3 appends when the key is missing", %{m: m} do
+      result = m.get_and_update([{:a, 1}], :b, fn _opt -> {nil, 2} end)
+      assert result == {nil, [{:a, 1}, {:b, 2}]}
+    end
+
+    test "get_and_update/3 :pop removes the pair", %{m: m} do
+      result = m.get_and_update([{:a, 1}, {:b, 2}], :a, fn _opt -> :pop end)
+      assert result == {1, [{:b, 2}]}
+    end
+
+    test "pop/2 returns the popped value and the rest", %{m: m} do
+      assert m.pop([{:a, 1}, {:b, 2}], :b) == {2, [{:a, 1}]}
+      assert m.pop([{:a, 1}], :missing) == {nil, [{:a, 1}]}
+    end
+  end
+
+  describe "Std.Access -- nested helpers on maps" do
+    setup do
+      Cure.Stdlib.Preload.preload(examples: false)
+      m = compile_stdlib("access")
+      on_exit(fn -> purge(m) end)
+      %{m: m}
+    end
+
+    test "fetch_in/2 through nested maps", %{m: m} do
+      data = %{user: %{name: "Alice", age: 30}}
+      assert m.fetch_in(data, [m.key(:user), m.key(:name)]) == {:some, "Alice"}
+      assert m.fetch_in(data, [m.key(:user), m.key(:missing)]) == {:none}
+    end
+
+    test "get_in/2 returns nil for missing intermediate keys", %{m: m} do
+      data = %{user: %{name: "Alice"}}
+      assert m.get_in(data, [m.key(:user), m.key(:name)]) == "Alice"
+      assert m.get_in(data, [m.key(:user), m.key(:age)]) == nil
+      assert m.get_in(data, [m.key(:missing), m.key(:age)]) == nil
+    end
+
+    test "put_in/3 rebuilds nested maps", %{m: m} do
+      data = %{user: %{name: "Alice", age: 30}}
+      updated = m.put_in(data, [m.key(:user), m.key(:age)], 31)
+      assert updated == %{user: %{name: "Alice", age: 31}}
+    end
+
+    test "update_in/3 applies a function at the leaf", %{m: m} do
+      data = %{user: %{age: 30}}
+      updated = m.update_in(data, [m.key(:user), m.key(:age)], fn age -> age + 1 end)
+      assert updated == %{user: %{age: 31}}
+    end
+
+    test "pop_in/2 removes a nested key", %{m: m} do
+      data = %{user: %{name: "Alice", age: 30}}
+      {popped, rebuilt} = m.pop_in(data, [m.key(:user), m.key(:age)])
+      assert popped == 30
+      assert rebuilt == %{user: %{name: "Alice"}}
+    end
+
+    test "get_and_update_in/3 can both read and write", %{m: m} do
+      data = %{user: %{age: 30}}
+
+      {old, new_data} =
+        m.get_and_update_in(data, [m.key(:user), m.key(:age)], fn age ->
+          {age, age * 2}
+        end)
+
+      assert old == 30
+      assert new_data == %{user: %{age: 60}}
+    end
+  end
+
+  describe "Std.Access -- lens-style accessors (all/filter/at/elem_at)" do
+    setup do
+      Cure.Stdlib.Preload.preload(examples: false)
+      m = compile_stdlib("access")
+      on_exit(fn -> purge(m) end)
+      %{m: m}
+    end
+
+    test "all/0 traverses every element of a list", %{m: m} do
+      data = %{
+        langs: [
+          %{name: "elixir"},
+          %{name: "cure"}
+        ]
+      }
+
+      names = m.get_in(data, [m.key(:langs), m.all(), m.key(:name)])
+      assert names == ["elixir", "cure"]
+    end
+
+    test "update_in with all/0 upcases every nested name", %{m: m} do
+      data = %{
+        langs: [
+          %{name: "elixir"},
+          %{name: "cure"}
+        ]
+      }
+
+      updated =
+        m.update_in(data, [m.key(:langs), m.all(), m.key(:name)], fn name ->
+          String.upcase(name)
+        end)
+
+      assert updated == %{langs: [%{name: "ELIXIR"}, %{name: "CURE"}]}
+    end
+
+    test "filter/1 only touches elements satisfying the predicate", %{m: m} do
+      data = [%{n: 1}, %{n: 2}, %{n: 3}]
+      pick_even = m.filter(fn item -> rem(Map.get(item, :n), 2) == 0 end)
+
+      updated = m.update_in(data, [pick_even, m.key(:n)], fn n -> n * 10 end)
+      assert updated == [%{n: 1}, %{n: 20}, %{n: 3}]
+    end
+
+    test "at/1 updates a specific list index", %{m: m} do
+      data = [10, 20, 30]
+      updated = m.update_in(data, [m.at(1)], fn x -> x * 2 end)
+      assert updated == [10, 40, 30]
+    end
+
+    test "elem_at/1 reads and updates a tuple element (0-based)", %{m: m} do
+      data = {:a, :b, :c}
+      assert m.get_in(data, [m.elem_at(1)]) == :b
+      assert m.update_in(data, [m.elem_at(1)], fn _ -> :x end) == {:a, :x, :c}
+    end
+
+    test "key_bang/1 raises on a missing intermediate key", %{m: m} do
+      data = %{user: %{name: "Alice"}}
+
+      assert_raise ErlangError, fn ->
+        m.get_in(data, [m.key(:user), m.key_bang(:missing)])
+      end
+    end
+  end
 end

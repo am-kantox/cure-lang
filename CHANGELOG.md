@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added -- Std.Access
+
+- New `Std.Access` stdlib module implementing an Elixir-style `Access`
+  behaviour for Cure. Self-hosted under `lib/std/access.cure` and
+  dispatched through the existing `proto`/`impl` machinery.
+- Core protocol `proto Access(C)` with callbacks `fetch/2`,
+  `get_and_update/3`, and `pop/2`. Implementations are provided for
+  `Map` (which also covers records, since records compile to maps with
+  a `__struct__` discriminator) and for `List` interpreted as a
+  keyword-style list of `%[key, value]` pairs. Popping from a map that
+  carries a `:__struct__` key raises `:struct_pop_not_allowed`, matching
+  Elixir's struct semantics.
+- Direct helpers: `fetch/2`, `fetch_bang/2` (raises `:key_error`),
+  `get/3` (with default), `get_and_update/3`, `pop/2`.
+- Composable lens ADT `Accessor` with factories `key/1`,
+  `key_default/2`, `key_bang/1`, `elem_at/1`, `at/1`, `all/0`,
+  `filter/1` -- analogues of Elixir's `Access.key/2`, `Access.at/1`,
+  `Access.all/0`, and `Access.filter/1`.
+- Nested traversal helpers: `fetch_in/2`, `get_in/2`, `put_in/3`,
+  `update_in/3`, `get_and_update_in/3`, `pop_in/2`, accepting a
+  `List(Accessor)` path.
+- `Cure.Stdlib.Preload` updated to load `Cure.Std.Access` alongside the
+  rest of the stdlib beams.
+
 ---
 
 ## [0.20.0] -- The Shape of Things

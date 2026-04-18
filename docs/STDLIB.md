@@ -58,6 +58,62 @@ Pure: `max(a, b)`, `min(a, b)`, `clamp(v, lo, hi)`, `sign(x)`, `negate(x)`, `is_
 
 `element(idx, tuple)`, `first(pair)`, `second(pair)`, `swap(pair)`, `map_first(pair, f)`, `map_second(pair, f)`, `map_both(pair, f, g)`, `to_list(pair)`, `from_list(list)`
 
+## Std.Access (protocol + lenses)
+
+Key-based access to data structures, modelled on Elixir's
+[`Access`](https://hexdocs.pm/elixir/Access.html) behaviour. Implements the
+protocol for plain maps (records compile to maps, so records are covered
+automatically) and for keyword-style lists of `%[key, value]` pairs.
+
+Protocol:
+
+- `fetch(container, key) -> Option(Any)`
+- `get_and_update(container, key, f) -> Tuple` where `f` receives
+  `Some(value)` or `None()` and returns either `%[got, new_value]` or the
+  atom `:pop`.
+- `pop(container, key) -> Tuple` returns `%[popped_or_nil, new_container]`.
+  On a map that carries a `:__struct__` discriminator (i.e. a record) this
+  raises `:struct_pop_not_allowed`, matching Elixir's struct semantics.
+
+Direct helpers:
+
+- `fetch(c, k)`, `fetch_bang(c, k)` (raises `:key_error` on miss),
+  `get(c, k, default)`, `get_and_update(c, k, f)`, `pop(c, k)`.
+
+Accessor (lens) ADT and factories for use with `get_in`/`put_in`/...:
+
+- `key(k)` -- plain key; missing keys collapse to `nil` in `get_in`.
+- `key_default(k, default)` -- key with a fallback substituted on miss.
+- `key_bang(k)` -- required key; raises `:key_error` on miss.
+- `elem_at(i)` -- 0-based tuple element accessor.
+- `at(i)` -- 0-based list index accessor.
+- `all()` -- traverse every element of a list.
+- `filter(pred)` -- traverse every element of a list satisfying `pred`.
+
+Nested traversal (all accept a `List(Accessor)`):
+
+- `fetch_in(c, keys)` -- `Option(Any)`; `None()` on any missing step.
+- `get_in(c, keys)` -- returns `nil` on any missing step.
+- `put_in(c, keys, value)` -- replace the leaf value.
+- `update_in(c, keys, f)` -- apply `f` to the leaf.
+- `get_and_update_in(c, keys, f)` -- the full workhorse; `f` returns
+  `%[got, new_leaf]` or `:pop`.
+- `pop_in(c, keys)` -- remove the leaf, returning `%[popped, rebuilt]`.
+
+Example -- upcase every language name in a nested structure:
+
+```cure
+let data = %{
+  langs: [
+    %{name: "elixir"},
+    %{name: "cure"}
+  ]
+}
+
+update_in(data, [key(:langs), all(), key(:name)], fn(n) -> Std.String.upcase(n))
+## => %{langs: [%{name: "ELIXIR"}, %{name: "CURE"}]}
+```
+
 ## Std.Io (8 functions)
 
 `put_chars(text)`, `println(text)`, `print(text)`, `int_to_string(n)`, `float_to_string(f)`, `atom_to_string(a)`, `print_int(n)`, `print_float(f)`

@@ -178,6 +178,14 @@ Compile it with `mix cure.compile_stdlib`.
   repeat, reverse
 - **`Std.Pair`** (9 functions) -- element, first, second, swap, map_first,
   map_second, map_both, to_list, from_list
+- **`Std.Access`** (protocol + 6 lenses + 6 nested helpers) -- Elixir-style
+  `Access` behaviour for Cure. Protocol callbacks `fetch/2`,
+  `get_and_update/3`, `pop/2` with implementations for maps (records
+  included) and keyword-style lists; direct helpers `fetch_bang`, `get`,
+  `get_and_update`, `pop`; composable lenses `key`, `key_default`,
+  `key_bang`, `elem_at`, `at`, `all`, `filter`; and nested traversal
+  helpers `fetch_in`, `get_in`, `put_in`, `update_in`,
+  `get_and_update_in`, `pop_in`
 - **`Std.Show`** (6 functions) -- Show protocol with `show/1` dispatch for
   Int, Float, String, Bool, Atom; `show_line/1` convenience
 - **`Std.Io`** (8 functions) -- put_chars, println, print, int_to_string,
