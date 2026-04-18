@@ -111,17 +111,28 @@ left untouched.
 cure fmt                         # formats all .cure files in lib/ and test/
 cure fmt lib/std/core.cure       # format a specific file
 cure fmt --check                 # CI mode: exits 1 if any file would change
-cure fmt --aggressive            # opt-in AST rewrite; strips comments
+cure fmt --algebra               # v0.20.0 AST-driven pretty printer
+cure fmt --aggressive            # legacy AST rewrite; strips comments
 ```
 
 Options:
 
 - `--check` -- report files that would be reformatted and exit
   non-zero; leaves files on disk untouched.
-- `--aggressive` / `--ast` -- use the AST pretty printer
-  (`Cure.Compiler.Printer`) instead of the safe formatter. Strips
-  plain `#` comments and any non-canonical whitespace. Prints a
-  warning before touching files.
+- `--algebra` -- v0.20.0 opt-in AST formatter built on a new
+  `Inspect.Algebra`-style document module
+  (`Cure.Compiler.Algebra` + `Cure.Compiler.AlgebraFormatter`).
+  Uses a best-fit line-wrapping algorithm, separates top-level
+  definitions with blank lines, and round-trips plain `#` comments
+  (lexed under the new `preserve_comments: true` flag) as real
+  `# ...` lines in source order. Every rewrite is
+  round-trip-validated against the original AST modulo comment
+  placement; if verification fails, the file is left untouched.
+  Will be promoted to the default formatter in v0.21.0.
+- `--aggressive` / `--ast` -- legacy AST pretty printer
+  (`Cure.Compiler.Printer`). Strips plain `#` comments and any
+  non-canonical whitespace. Prints a warning before touching
+  files.
 
 **`cure repl`** -- Start a minimal interactive Cure session. Each expression
 is compiled via `compile_and_load` and its result printed.
