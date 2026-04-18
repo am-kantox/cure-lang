@@ -2,7 +2,7 @@ defmodule Cure.MixProject do
   use Mix.Project
 
   @app :cure
-  @version "0.19.1"
+  @version "0.19.2"
   @source_url "https://github.com/Oeditus/cure"
 
   def project do

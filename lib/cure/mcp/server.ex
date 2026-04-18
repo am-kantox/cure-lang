@@ -104,7 +104,7 @@ defmodule Cure.MCP.Server do
 
   Used for testing without the stdio loop.
   """
-  @spec handle_request(map()) :: map()
+  @spec handle_request(map()) :: map() | nil
   def handle_request(%{"method" => method, "id" => id} = req) do
     params = Map.get(req, "params", %{})
     result = dispatch(method, params)
@@ -128,18 +128,10 @@ defmodule Cure.MCP.Server do
         :ok
 
       line when is_binary(line) ->
-        line = String.trim(line)
-
-        if line != "" do
-          case safe_decode(line) do
-            {:ok, request} ->
-              response = handle_request(request)
-              if response, do: send_response(response)
-
-            :error ->
-              :ok
-          end
-        end
+        with <<_::utf8, _::binary>> = line <- String.trim(line),
+             {:ok, request} <- safe_decode(line),
+             %{} = response <- handle_request(request),
+             do: send_response(response)
 
         loop()
     end
