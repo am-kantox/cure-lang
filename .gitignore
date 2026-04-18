@@ -23,7 +23,7 @@ erl_crash.dump
 cure-*.tar
 
 # Dialyzer PLT cache
-/.dialyzer/
+/.dialyzer/*plt*
 
 /.elixir-tools/
 /.erl.history/
