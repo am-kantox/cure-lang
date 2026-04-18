@@ -74,6 +74,28 @@ defmodule Cure.Compiler.Errors do
     format_diagnostic("error", "codegen error", file, 0, inspect(reason))
   end
 
+  def format_error({:beam_lint_error, errors}, file) do
+    # erl_lint errors come as `[{file_info, [{line, module, payload}, ...]}]`.
+    lines =
+      errors
+      |> Enum.flat_map(fn
+        {_file_info, entries} when is_list(entries) -> entries
+        other -> [other]
+      end)
+      |> Enum.map(fn
+        {line, :erl_lint, {:undefined_function, {fn_name, arity}}} ->
+          "line #{line}: undefined function #{fn_name}/#{arity}"
+
+        {line, module, payload} ->
+          "line #{line}: #{module}: #{inspect(payload)}"
+
+        other ->
+          inspect(other)
+      end)
+
+    format_diagnostic("error", "BEAM lint error", file, 0, Enum.join(lines, "\n      | "))
+  end
+
   def format_error({:expected_module, _ast}, file) do
     format_diagnostic("error", "codegen error", file, 0, "expected a module definition")
   end

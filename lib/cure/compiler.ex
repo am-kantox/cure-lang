@@ -85,11 +85,27 @@ defmodule Cure.Compiler do
           {:ok, mod_atom, []}
 
         forms when is_list(forms) ->
-          with {:ok, module, binary, warnings} <- BeamWriter.compile_forms(forms),
-               :ok <- BeamWriter.write_beam(module, binary, output_dir, emit_events: emit?, file: file) do
-            {:ok, module, warnings}
-          end
+          write_beam_forms(forms, output_dir, emit?, file)
       end
+    end
+  end
+
+  # `BeamWriter.compile_forms/2` returns `{:error, errors, warnings}` (3-tuple)
+  # on lint/compile failures, but the public `compile_string/2`,
+  # `compile_file/2`, and `compile_and_load/2` contracts are `{:ok, ...}` or
+  # `{:error, reason}` (2-tuple). Normalize the BEAM-writer failure here so
+  # downstream consumers (CLI, `cure check`, `mix cure.check.examples`, test
+  # suites) can rely on the 2-tuple shape without `CaseClauseError` crashes.
+  defp write_beam_forms(forms, output_dir, emit?, file) do
+    case BeamWriter.compile_forms(forms) do
+      {:ok, module, binary, warnings} ->
+        case BeamWriter.write_beam(module, binary, output_dir, emit_events: emit?, file: file) do
+          :ok -> {:ok, module, warnings}
+          {:error, _} = err -> err
+        end
+
+      {:error, errors, _warnings} ->
+        {:error, {:beam_lint_error, errors}}
     end
   end
 

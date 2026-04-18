@@ -91,6 +91,13 @@ defmodule Cure.CLI do
     optimize? = Keyword.get(opts, :optimize, false)
     verbose? = Keyword.get(opts, :verbose, false)
 
+    # Preload the stdlib so sources that `use Std.Iter`, `use Std.Gen`,
+    # etc. can resolve their imports at compile time. Without this, a
+    # fresh VM hitting a bulk `cure compile examples/` run would see
+    # `undefined_function` lint errors for any module referencing a
+    # stdlib function whose beam has not yet been loaded.
+    preload_stdlib()
+
     compile_opts = [
       output_dir: output_dir,
       check_types: check?,
