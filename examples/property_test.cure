@@ -1,0 +1,33 @@
+mod PropertyTest
+  ## Property-based testing with `Std.Gen` + `Std.Test.forall` (v0.19.0).
+  ##
+  ## `Std.Gen` ships tiny stateless generators. A generator is a plain
+  ## one-argument function that returns a fresh sample on every call.
+  ## `Std.Test.forall(gen, property, runs)` threads `runs` samples
+  ## through `property` and returns `:ok` when every sample satisfies
+  ## it; it raises `:property_failed` on the first counterexample.
+
+  use Std.Gen
+  use Std.Test
+
+  ## Property: `n + 0 == n` holds for every integer.
+  ## Trivially true; used here to drive the generator loop.
+  fn check_plus_zero() -> Atom =
+    forall(
+      fn(_) -> int_in(-100, 100),
+      fn(n)  -> n + 0 == n,
+      25
+    )
+
+  ## Property: adding a positive number grows the result.
+  fn check_monotone() -> Atom =
+    forall(
+      fn(_) -> int_in(1, 50),
+      fn(n)  -> n + 1 > n,
+      25
+    )
+
+  ## Run both checks and return `:ok` if neither raised.
+  fn main() -> Atom =
+    let _ = check_plus_zero()
+    check_monotone()

@@ -1,0 +1,31 @@
+mod MultiHeadCons
+  ## Multi-head cons patterns (v0.19.0).
+  ##
+  ## The parser desugars `[a, b, c | rest]` into right-associated cons
+  ## cells: `[a | [b | [c | rest]]]`. Works in both pattern and
+  ## construction position, with an arbitrary number of leading heads.
+
+  ## Pattern position: peel the first three elements, leave the rest.
+  fn sum_first_three(xs: List(Int)) -> Int =
+    match xs
+      [a, b, c | _rest] -> a + b + c
+      [a, b | _rest]    -> a + b
+      [a | _rest]       -> a
+      []                -> 0
+
+  ## A second illustration: classify a list by its length prefix.
+  fn classify(xs: List(Int)) -> String =
+    match xs
+      []                      -> "empty"
+      [_]                     -> "singleton"
+      [_, _]                  -> "pair"
+      [_, _, _ | _]           -> "three-or-more"
+
+  ## Construction position: build a list by consing three explicit
+  ## heads onto a tail.
+  fn prepend_three(a: Int, b: Int, c: Int, tail: List(Int)) -> List(Int) =
+    [a, b, c | tail]
+
+  ## Drive: sum_first_three([1, 2, 3, 4, 5]) = 1 + 2 + 3 = 6.
+  fn main() -> Int =
+    sum_first_three([1, 2, 3, 4, 5])

@@ -1,0 +1,36 @@
+mod MutualRecursion
+  ## Mutual-recursion totality (v0.19.0).
+  ##
+  ## `Cure.Types.Totality.check_mutual/1` runs Tarjan's SCC algorithm
+  ## over the module's call graph. Non-trivial strongly-connected
+  ## components are classified `:ok` when at least one function along
+  ## the cycle has a structural base case (a literal or a list
+  ## pattern that cannot recurse), or `:suspect` under error code
+  ## `E029` when the checker cannot prove any path terminates.
+  ##
+  ## `is_even` and `is_odd` below form a two-node cycle. Each has a
+  ## base clause (`0 -> ...`) that short-circuits the recursion, so
+  ## the classifier reports `:ok`.
+
+  fn is_even(n: Int) -> Bool
+    | 0 -> true
+    | n -> is_odd(n - 1)
+
+  fn is_odd(n: Int) -> Bool
+    | 0 -> false
+    | n -> is_even(n - 1)
+
+  ## A pair of Stern-Brocot-style mutual walkers: each call shrinks the
+  ## argument, so the SCC again classifies `:ok`.
+
+  fn a(n: Int) -> Int
+    | 0 -> 0
+    | n -> b(n - 1) + 1
+
+  fn b(n: Int) -> Int
+    | 0 -> 0
+    | n -> a(n - 1) + 1
+
+  ## `is_even(10)` is `true`, so the entry returns 1.
+  fn main() -> Int =
+    if is_even(10) then 1 else 0

@@ -1,0 +1,27 @@
+mod AssertTypeDemo
+  ## `assert_type expr : T` -- compile-time type assertion (v0.19.0).
+  ##
+  ## The type checker verifies that `expr` has type `T`. The codegen
+  ## strips the wrapper, so `assert_type` has zero runtime cost: the
+  ## expression below is emitted as if the wrapper were not there.
+  ##
+  ## Mismatches surface as error code `E027`; see `cure explain E027`.
+
+  ## An explicit assertion on a literal: the checker verifies that
+  ## 42 is an Int. Compiles to the literal 42.
+  fn answer() -> Int = assert_type 42 : Int
+
+  ## A useful pattern: assert the result of an arithmetic expression
+  ## stays in the declared return type.
+  fn doubled(n: Int) -> Int = assert_type n * 2 : Int
+
+  ## Assert through a refinement. `NonNegative` refines Int to x >= 0.
+  fn absolute(n: Int) -> Int =
+    if n >= 0 then assert_type n : Int else assert_type 0 - n : Int
+
+  ## Composing assertions: nothing changes at runtime, only the checker
+  ## gets extra scaffolding.
+  fn main() -> Int =
+    let a = answer()
+    let b = doubled(0)
+    a + b
