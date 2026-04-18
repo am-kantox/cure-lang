@@ -166,6 +166,7 @@ defmodule Cure.Compiler.Algebra do
   # short-circuits with `true` because it implies the rest of the line
   # is untouched by the group currently being measured.
 
+  @dialyzer {:nowarn_function, fits?: 2}
   @spec fits?(integer(), [{non_neg_integer(), mode(), t()}]) :: boolean()
   defp fits?(remaining, _frames) when remaining < 0, do: false
   defp fits?(_remaining, []), do: true
