@@ -41,7 +41,7 @@ defmodule Cure.Compiler.Lexer do
     spawn send receive after
     when where and or not
     true false nil
-    extern
+    extern proof
   )a
 
   @keyword_strings Enum.map(@keywords, &Atom.to_string/1)

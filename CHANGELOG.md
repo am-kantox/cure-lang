@@ -8,6 +8,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.19.0] -- Bring the Furniture
+
+The v0.18.0 release deliberately stayed laser-focused on deep
+destructuring. v0.19.0 brings the previously-deferred "furniture"
+home: proof containers, `assert_type`, record field defaults,
+`@derive(Show, Eq, Ord)` wiring, property-based testing, a lazy
+iterator protocol, the first half of the package registry, mutual
+recursion totality, and multi-head cons patterns.
+
+### Added -- Language
+- `proof` containers (new keyword) -- `proof Name.Path` compiles to a
+  regular BEAM module but the type checker requires every binding to
+  return `Eq(T, a, b)` or a refinement witness. Error code `E026`.
+- `assert_type expr : T` -- compile-time type assertion that vanishes
+  at runtime; errors surface as `E027`.
+- Record field defaults: `rec Person\n  name: String = ""\n  age: Int = 0`.
+  Construction merges declared defaults with user-supplied fields.
+  Default type mismatches emit `E028`.
+- `@derive(Show, Eq, Ord)` on `rec` -- wires `Cure.Types.Derive` end
+  to end; synthesised functions are plain exports usable from any
+  caller.
+- Multi-head cons patterns: `[a, b | rest]` and deeper now parse,
+  desugaring to right-associated cons cells.
+
+### Added -- Standard library
+- **`Std.Proof`** -- reflexivity-based laws (`plus_zero`, `zero_plus`,
+  `plus_comm`, `append_nil`, `map_id`).
+- **`Std.Gen`** -- tiny stateless generator API (`int_in/2`, `bool/0`,
+  `one_of/2`, `list_of_int/3`, `list_int/3`).
+- **`Std.Iter`** -- lazy iterator protocol; constructors `empty/0`,
+  `from_list/1`, `range/2`; consumers `fold/3`, `take/2`, `to_list/1`.
+- **`Std.Test.forall/3`** and **`Std.Test.forall_default/2`** --
+  property-based runner backed by `Std.Gen`.
+
+### Added -- Totality
+- `Cure.Types.Totality.check_mutual/1` -- Tarjan SCC over a module's
+  call graph. Non-trivial cycles are reported as `:ok` (structural
+  decrease proved) or `:suspect` (`E029` for `#[total]` callers).
+
+### Added -- Packaging
+- `Cure.Project.Version` -- SemVer + constraint parser (`~>`, `>=`,
+  `<=`, `<`, `>`, `==`), compound constraints joined by `and`.
+  MAJOR.MINOR is accepted as shorthand for MAJOR.MINOR.0.
+- `Cure.Project.Resolver` -- deterministic backtracking resolver over
+  a local registry. Conflicts surface as `E030`.
+
+### Added -- Error catalog
+- `E026` Proof Shape Mismatch.
+- `E027` `assert_type` Failed.
+- `E028` Record Default Type Mismatch.
+- `E029` Mutual Recursion Not Structural.
+- `E030` Package Version Conflict.
+
+### Added -- Examples and docs
+- `examples/defaults.cure`, `examples/derived_show.cure`,
+  `examples/proof_laws.cure`, `examples/lazy_iter.cure`.
+- `docs/PROOFS.md` -- proof containers + `assert_type` reference.
+
+### Changed
+- `Cure.Types.Type.subtype?` accepts `:atom` as an inhabitant of any
+  `Eq(...)` type (proof atoms are erased at runtime as `:cure_refl`).
+- `Cure.Compiler.Codegen` gains a per-module `records` registry plus
+  a `@derive` expansion pass that runs before signature collection.
+- Parser: `proof` added to the keyword list; `@derive(...)` decorators
+  now attach to record containers; multi-head cons desugars in
+  `parse_list_or_comprehension/1`.
+- `Cure.Stdlib.Preload` preloads `Std.Match`, `Std.Proof`, `Std.Gen`,
+  `Std.Iter`.
+
+---
+
 ## [0.18.0] -- Deep Destructuring
 
 `match` and `let` grow up. Patterns can now destructure arbitrary

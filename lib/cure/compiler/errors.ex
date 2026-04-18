@@ -397,6 +397,80 @@ defmodule Cure.Compiler.Errors do
       # Warning: missing pattern `%[Error(_)]`
 
     Fix: add the missing clause or a wildcard.
+    """,
+    "E026" => """
+    E026: Proof Shape Mismatch
+
+    A binding inside a `proof` container does not elaborate to an
+    `Eq(T, a, b)` proof or a refinement-subtype proof. Proof
+    containers are intended exclusively for propositional laws.
+
+    Example:
+      proof Arithmetic
+        fn meaning() -> Int = 42   # Error: not a proof shape
+
+    Fix: move ordinary code into a `mod` container; keep `proof`
+    containers for functions returning `Eq(...)` or for refinement
+    witnesses.
+    """,
+    "E027" => """
+    E027: assert_type Assertion Failed
+
+    The `assert_type expr : T` builtin was used but the type
+    inferred for `expr` is not compatible with `T`.
+
+    Example:
+      fn f() -> Int = assert_type 42 : String
+      # Error: assert_type expected String, got Int
+
+    Fix: either change the asserted type or the expression. The
+    wrapper disappears at runtime, so nothing breaks at runtime when
+    it succeeds.
+    """,
+    "E028" => """
+    E028: Record Default Type Mismatch
+
+    A record field declared with a default value has a default whose
+    inferred type does not match the declared field type.
+
+    Example:
+      rec Person
+        name: String = 0       # Error: name is String, default is Int
+
+    Fix: change the default or the declared field type.
+    """,
+    "E029" => """
+    E029: Mutual Recursion Not Structural
+
+    Two or more functions annotated with `#[total]` call each other
+    in a cycle in which no argument shrinks structurally on every
+    path through the cycle. The compiler cannot prove termination.
+
+    Example:
+      #[total]
+      fn a(x: Nat) -> Nat = b(x)
+
+      #[total]
+      fn b(x: Nat) -> Nat = a(x)
+      # Error: neither clause decreases
+
+    Fix: restructure the cycle so some structural argument shrinks
+    on every path, or drop `#[total]` if partiality is acceptable.
+    """,
+    "E030" => """
+    E030: Package Version Conflict
+
+    The dependency resolver could not find a set of versions that
+    satisfies every constraint in `Cure.toml` and the transitive
+    dependency graph.
+
+    Example:
+      # Cure.toml declares http ~> 1.0
+      # but dep Foo requires http ~> 2.0
+      # Error: no version of http satisfies both ~> 1.0 and ~> 2.0
+
+    Fix: relax one of the constraints, or pin to a compatible
+    version.
     """
   }
 

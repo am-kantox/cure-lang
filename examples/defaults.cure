@@ -1,0 +1,19 @@
+mod Defaults
+  ## Records with default field values (v0.19.0).
+  ##
+  ## Any field that is omitted at construction time picks up its declared
+  ## default. A caller-provided value always takes precedence.
+
+  rec Person
+    name: String = "Anonymous"
+    age: Int = 0
+    active: Bool = true
+
+  fn blank() -> Person = Person{}
+  fn born(name: String) -> Person = Person{name: name}
+  fn retired(p: Person) -> Person = Person{p | active: false}
+
+  fn main() -> Int =
+    let p = born("Ada")
+    # All omitted fields still present.
+    if p.active then 1 else 0

@@ -1,0 +1,55 @@
+mod Std.Iter
+  ## Minimal lazy-iterator helpers (v0.19.0).
+  ##
+  ## Cure comprehensions today are always eager (they lower to
+  ## `:lists.map`). `Std.Iter` ships a tiny iterator shape and two of
+  ## the most important consumers -- `fold` and `take` -- so that
+  ## programs can express lazy sequences explicitly and consumers can
+  ## stop early without materialising the tail.
+  ##
+  ## An iterator is a zero-argument lambda returning either
+  ## `Some(%[element, next_iter])` or `None()`. That shape is close to
+  ## Elixir's `Stream` and lets the caller resume after every step.
+  # -- Constructors -----------------------------------------------------------
+
+  ## An empty iterator.
+  fn empty() -> Atom -> Any =
+    fn(_) -> None()
+
+  ## An iterator over a list (walks left to right).
+  fn from_list(list: List(T)) -> Atom -> Any =
+    fn(_) ->
+      match list
+        []      -> None()
+        [h | t] -> Some(%[h, from_list(t)])
+
+  ## A bounded integer range iterator (inclusive).
+  fn range(lo: Int, hi: Int) -> Atom -> Any =
+    fn(_) -> range_step(lo, hi)
+
+  local fn range_step(lo: Int, hi: Int) -> Any =
+    if lo > hi then None() else Some(%[lo, range(lo + 1, hi)])
+
+  # -- Consumers --------------------------------------------------------------
+
+  ## Left fold. `f` is a curried function `elem -> acc -> acc`.
+  fn fold(it: Atom -> Any, acc: T, f: Any -> T -> T) -> T =
+    match it(:step)
+      None()          -> acc
+      Some(%[x, rest]) -> fold(rest, f(x)(acc), f)
+
+  ## Take at most `n` values from the iterator as a plain list.
+  fn take(it: Atom -> Any, n: Int) -> List(Any) =
+    match n
+      0 -> []
+      _ ->
+        match it(:step)
+          None()          -> []
+          Some(%[x, rest]) -> [x | take(rest, n - 1)]
+
+  ## Materialise an iterator as a list. Non-terminating iterators never
+  ## return; guard with `take/2` when unsure.
+  fn to_list(it: Atom -> Any) -> List(Any) =
+    match it(:step)
+      None()          -> []
+      Some(%[x, rest]) -> [x | to_list(rest)]

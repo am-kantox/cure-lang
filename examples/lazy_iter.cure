@@ -1,0 +1,17 @@
+mod LazyIter
+  ## `Std.Iter` lazy-iterator usage (v0.19.0).
+
+  use Std.Iter
+
+  fn sum_range(n: Int) -> Int =
+    let it = range(1, n)
+    let add = fn(x) -> fn(acc) -> acc + x
+    fold(it, 0, add)
+
+  fn first_three(n: Int) -> List(Any) =
+    let it = range(1, n)
+    take(it, 3)
+
+  fn main() -> Int =
+    # 1 + 2 + ... + 10 = 55
+    sum_range(10)

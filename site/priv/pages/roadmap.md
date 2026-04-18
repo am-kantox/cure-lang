@@ -401,6 +401,64 @@ recursed into nested shapes; v0.18.0 replaces it wholesale.
 - `mix cure.check.stdlib`: 21/21 clean;
   `mix cure.check.examples`: 26/26 clean.
 
+## Implemented: v0.19.0 -- Bring the Furniture
+
+Ergonomics, proofs, and the first half of a registry.
+
+### Language additions
+
+- **`proof` containers** -- new `proof Name.Path` keyword; every
+  binding inside must return `Eq(T, a, b)` or a refinement witness.
+  Enforced as `E026`.
+- **`assert_type expr : T`** -- compile-time type assertion that is
+  stripped at codegen. Mismatches surface as `E027`.
+- **Record field defaults** -- `rec Person\n  name: String = ""` --
+  construction merges declared defaults with user-supplied fields;
+  default/declared mismatches emit `E028`.
+- **`@derive(Show, Eq, Ord)`** wired end-to-end on `rec` through
+  `Cure.Types.Derive` plus the codegen's expansion pass.
+- **Multi-head cons patterns** `[a, b, c | rest]` desugar to
+  right-associated cons cells.
+
+### Standard library additions
+
+- **`Std.Proof`** -- reflexivity laws (`plus_zero`, `zero_plus`,
+  `plus_comm`, `append_nil`, `map_id`).
+- **`Std.Gen`** -- tiny stateless generator API (`int_in`, `bool`,
+  `one_of`, `list_int`, `list_of_int`) backed by `:rand`.
+- **`Std.Iter`** -- lazy iterator protocol; constructors `empty`,
+  `from_list`, `range`; consumers `fold`, `take`, `to_list`.
+- **`Std.Test.forall/3`** -- property-based runner.
+
+### Totality
+
+- `Cure.Types.Totality.check_mutual/1` -- Tarjan SCC analysis; cycles
+  without a structural-decrease proof raise `E029`.
+
+### Packaging
+
+- `Cure.Project.Version` -- SemVer + constraint parser (`~>`, `>=`,
+  `<=`, `<`, `>`, `==`, compound `and`); MAJOR.MINOR is shorthand for
+  MAJOR.MINOR.0.
+- `Cure.Project.Resolver` -- deterministic backtracking resolver
+  over a local workspace; conflicts surface as `E030`. Remote index
+  service deferred to v0.20.0.
+
+### Error catalog
+
+Five new codes `E026`-`E030`.
+
+### Numbers
+
+- 2 new Elixir modules (`Cure.Project.Version`, `Cure.Project.Resolver`);
+  major extensions to `Totality`, `Derive`, `Codegen`, `Parser`,
+  `Checker`, and `Type`.
+- 3 new stdlib modules (`Std.Proof`, `Std.Gen`, `Std.Iter`); 24
+  total.
+- 4 new examples, 1 new doc (`PROOFS.md`).
+- ~970 tests (up from 923); `mix credo --strict`: 0 issues;
+  `mix cure.check.stdlib`: 24/24; `mix cure.check.examples`: 30/30.
+
 ## Future
 
 These are not scheduled but are on the long-term radar.

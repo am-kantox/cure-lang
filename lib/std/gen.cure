@@ -1,0 +1,42 @@
+mod Std.Gen
+  ## Tiny stateless generator API for property-based testing (v0.19.0).
+  ## Generators are plain zero-argument lambdas returning a fresh value on
+  ## every call. Randomness is delegated to Erlang's `:rand` module.
+  # -- Primitive randomness ---------------------------------------------------
+
+  @extern(:rand, :uniform, 1)
+  local fn rand_uniform(n: Int) -> Int
+
+  @extern(:rand, :seed, 2)
+  fn seed(_alg: Atom, _seed: Tuple) -> Tuple
+
+  # -- Scalar generators ------------------------------------------------------
+
+  ## Uniformly choose an integer in the inclusive range [lo, hi].
+  fn int_in(lo: Int, hi: Int) -> Int =
+    if hi <= lo then lo else rand_uniform(hi - lo + 1) + lo - 1
+
+  ## A fair Bool.
+  fn bool() -> Bool =
+    rand_uniform(2) == 1
+
+  ## A constant generator that always returns the given value.
+  fn constant(v: T) -> T = v
+
+  # -- Combinators ------------------------------------------------------------
+
+  ## Pick an element from a non-empty list.
+  fn one_of(list: List(Int), default: Int) -> Int =
+    match list
+      []     -> default
+      [h | _] -> Std.List.nth(list, rand_uniform(Std.List.length(list)) - 1, h)
+
+  ## Generate a list of `n` integers in [lo, hi].
+  fn list_of_int(n: Int, lo: Int, hi: Int) -> List(Int) =
+    if n <= 0 then [] else [int_in(lo, hi) | list_of_int(n - 1, lo, hi)]
+
+  ## Generate a list of length up to `max_len` (inclusive), filled with
+  ## integers in [lo, hi]. Good default shrink is "shorter list".
+  fn list_int(max_len: Int, lo: Int, hi: Int) -> List(Int) =
+    let len = int_in(0, max_len)
+    list_of_int(len, lo, hi)

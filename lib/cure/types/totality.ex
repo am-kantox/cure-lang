@@ -20,9 +20,18 @@ defmodule Cure.Types.Totality do
 
   ## What we do *not* check
 
-  - Mutual recursion. Deferred to v0.18.0.
   - Higher-order recursion (e.g. via `foldl`).
   - Calls that go through indirect dispatch (protocols).
+
+  ## Mutual recursion (v0.19.0)
+
+  `check_mutual/1` runs a strongly-connected-components analysis over a
+  module's call graph, then inspects every non-trivial SCC. A cycle is
+  total only when at least one function in the cycle can shrink a
+  structural argument on every path through the cycle. The check is
+  intentionally conservative: it emits a warning (code `E029`) rather
+  than blocking compilation, and a `#[total]` function caught in a
+  non-decreasing cycle is reported as a type error upstream.
 
   Functions failing the structural check are classified as
   `:partial` rather than `:non_terminating`; the message is
@@ -76,6 +85,44 @@ defmodule Cure.Types.Totality do
   @spec report(String.t(), classification(), String.t(), pos_integer()) :: :ok
   def report(name, classification, file, line) do
     Events.emit(:type_checker, :totality, {name, classification}, Events.meta(file, line))
+  end
+
+  @doc """
+  Perform a mutual-recursion SCC analysis on a module body.
+
+  Returns a list of `{cycle_names, :suspect | :ok}` pairs for every
+  non-trivial strongly-connected component. `:suspect` means the
+  compiler could not prove structural decrease on every path through
+  the cycle; `:ok` means at least one function in the cycle shrinks
+  a structural argument on every recursive call.
+  """
+  @spec check_mutual([tuple()]) :: [{[String.t()], :ok | :suspect}]
+  def check_mutual(stmts) when is_list(stmts) do
+    fn_defs =
+      Enum.flat_map(stmts, fn
+        {:function_def, meta, _body} = node -> [{Keyword.get(meta, :name, "_"), node}]
+        _ -> []
+      end)
+
+    names = MapSet.new(fn_defs, fn {n, _} -> n end)
+    graph = build_call_graph(fn_defs, names)
+    sccs = tarjan_scc(graph)
+
+    Enum.flat_map(sccs, fn component ->
+      component_list = Enum.sort(component)
+
+      cond do
+        length(component_list) < 2 ->
+          # Trivial SCC (single function, no self-loop) -- skip.
+          []
+
+        mutual_decreasing?(component_list, fn_defs) ->
+          [{component_list, :ok}]
+
+        true ->
+          [{component_list, :suspect}]
+      end
+    end)
   end
 
   @doc """
@@ -161,6 +208,133 @@ defmodule Cure.Types.Totality do
   defp do_collect_calls(_other, _name, acc), do: acc
 
   defp no_unguarded_recursion?(name, body), do: recursive_calls(name, body) == []
+
+  # -- Mutual-recursion helpers (v0.19.0) --------------------------------------
+
+  defp build_call_graph(fn_defs, all_names) do
+    Enum.reduce(fn_defs, %{}, fn {name, node}, acc ->
+      callees =
+        collect_all_calls(node, [])
+        |> MapSet.new()
+        |> MapSet.intersection(all_names)
+        |> MapSet.to_list()
+
+      Map.put(acc, name, callees)
+    end)
+  end
+
+  defp collect_all_calls({:function_call, meta, args}, acc) do
+    callee = Keyword.get(meta, :name)
+    new_acc = if is_binary(callee), do: [callee | acc], else: acc
+    Enum.reduce(args, new_acc, &collect_all_calls/2)
+  end
+
+  defp collect_all_calls({_tag, _meta, children}, acc) when is_list(children) do
+    Enum.reduce(children, acc, &collect_all_calls/2)
+  end
+
+  defp collect_all_calls(_other, acc), do: acc
+
+  # Tarjan's SCC algorithm. Returns a list of MapSets, one per SCC.
+  defp tarjan_scc(graph) do
+    nodes = Map.keys(graph)
+
+    state = %{
+      index: 0,
+      stack: [],
+      on_stack: MapSet.new(),
+      indices: %{},
+      lowlinks: %{},
+      sccs: []
+    }
+
+    final =
+      Enum.reduce(nodes, state, fn v, st ->
+        if Map.has_key?(st.indices, v), do: st, else: strong_connect(v, st, graph)
+      end)
+
+    final.sccs
+  end
+
+  defp strong_connect(v, state, graph) do
+    state = %{
+      state
+      | index: state.index + 1,
+        indices: Map.put(state.indices, v, state.index),
+        lowlinks: Map.put(state.lowlinks, v, state.index),
+        stack: [v | state.stack],
+        on_stack: MapSet.put(state.on_stack, v)
+    }
+
+    state =
+      Enum.reduce(Map.get(graph, v, []), state, fn w, st ->
+        cond do
+          not Map.has_key?(st.indices, w) ->
+            st = strong_connect(w, st, graph)
+            update_lowlink(st, v, Map.get(st.lowlinks, w))
+
+          MapSet.member?(st.on_stack, w) ->
+            update_lowlink(st, v, Map.get(st.indices, w))
+
+          true ->
+            st
+        end
+      end)
+
+    if Map.get(state.lowlinks, v) == Map.get(state.indices, v) do
+      {scc, rest, on_stack} = pop_until(state.stack, state.on_stack, v, [])
+      %{state | stack: rest, on_stack: on_stack, sccs: [MapSet.new(scc) | state.sccs]}
+    else
+      state
+    end
+  end
+
+  defp update_lowlink(state, v, candidate) do
+    current = Map.get(state.lowlinks, v)
+    %{state | lowlinks: Map.put(state.lowlinks, v, min(current, candidate))}
+  end
+
+  defp pop_until([top | rest], on_stack, target, acc) do
+    on_stack = MapSet.delete(on_stack, top)
+    new_acc = [top | acc]
+
+    if top == target do
+      {new_acc, rest, on_stack}
+    else
+      pop_until(rest, on_stack, target, new_acc)
+    end
+  end
+
+  # A cycle is decreasing if at least one function in it shrinks a
+  # structural argument on every path -- otherwise we cannot guarantee
+  # termination. Conservative: require the presence of any multi-clause
+  # function with at least one non-trivial pattern in the cycle.
+  defp mutual_decreasing?(cycle_names, fn_defs) do
+    Enum.any?(cycle_names, fn name ->
+      case Enum.find(fn_defs, fn {n, _} -> n == name end) do
+        {_, {:function_def, meta, _body}} ->
+          case Keyword.get(meta, :clauses) do
+            nil -> false
+            clauses -> Enum.any?(clauses, &has_structural_pattern?/1)
+          end
+
+        _ ->
+          false
+      end
+    end)
+  end
+
+  defp has_structural_pattern?(%{params: patterns}) do
+    Enum.any?(patterns, fn
+      {:list, _, _} -> true
+      {:tuple, _, _} -> true
+      {:function_call, _, _} -> true
+      {:literal, _, _} -> true
+      _ -> false
+    end)
+  end
+
+  defp has_structural_pattern?(_), do: false
 
   # Collect "structural sub-terms" from a list of patterns: cons-tails,
   # tuple/list elements, ADT constructor children, and any pattern variable

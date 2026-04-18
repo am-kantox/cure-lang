@@ -1,134 +1,152 @@
-# Cure v0.18.0 -- Deep Destructuring
-*Pattern matching grows up.*
+# Cure v0.19.0 -- Bring the Furniture
+*Ergonomics, proofs, and the first half of a registry.*
 
 Cure is a dependently-typed programming language for the BEAM virtual
 machine with first-class finite state machines and SMT-backed
 verification.
 
-v0.18.0 rebuilds Cure's pattern matching into a deeply-recursive
-engine. `match` and `let` now destructure arbitrary nesting across
-tuples, lists (both fixed and cons), maps, records, and ADT
-constructors -- in any combination, at any depth. The previously
-flat pattern code was quietly miscompiling map patterns and never
-descending into nested shapes; v0.18.0 replaces it wholesale.
+v0.18.0 rebuilt pattern matching into a deeply-recursive engine.
+v0.19.0 completes the "Bring the Furniture" slate that was deferred
+to keep destructuring clean. The furniture, from largest piece to
+smallest:
 
-## Headline feature
+- `proof` containers for laws-as-programs.
+- `assert_type expr : T` as a zero-runtime type-assertion wrapper.
+- Records with default field values.
+- `@derive(Show, Eq, Ord)` wired end-to-end on `rec`.
+- Property-based testing: `Std.Gen` + `Std.Test.forall`.
+- A lazy iterator protocol: `Std.Iter`.
+- The first half of the package registry (version parser + resolver).
+- Mutual-recursion totality (SCC + structural-decrease check).
+- Multi-head cons patterns: `[a, b, c | rest]`.
+
+## Language
+
+### `proof` containers
 
 ```cure
-match value
-  %[_, %{list: [head | tail]}, _] -> handle(head, tail)
-  Person{name, address: Address{city}} when city == "Madrid" ->
-    greet(name)
-  [Ok(v) | _] -> v
-  _ -> default
+proof Std.Proof
+  fn plus_zero(_n: Int) -> Eq(Int, n, n) = :cure_refl
+  fn append_nil(_xs: List(T)) -> Eq(List(T), xs, xs) = :cure_refl
 ```
 
-Everything in that snippet now works. Each sub-pattern is compiled as
-a real pattern, not as an expression that accidentally happens to be
-valid in that position.
+A new `proof` keyword sits alongside `mod`/`fsm`. The container
+compiles to a regular BEAM module, but every function's return type
+must be `Eq(T, a, b)` or a refinement annotation. Runtime values are
+the `:cure_refl` atom; the type checker does the work. Mismatches
+surface as `E026`.
 
-## What's new
+### `assert_type expr : T`
 
-### `Cure.Compiler.PatternCompiler`
+```cure
+fn doubled(n: Int) -> Int = assert_type n * 2 : Int
+```
 
-A dedicated pattern-to-Erlang translator, separated from the
-expression code generator. Every pattern node is dispatched through
-a single recursive entry point and lowers to the correct Erlang
-abstract form:
+A compile-time type assertion that disappears at runtime. If the
+inferred type of `expr` does not fit `T`, the compiler emits `E027`.
 
-- Tuple patterns, fixed list patterns, and cons patterns recurse
-  into their children.
-- Map patterns emit `map_field_exact` (`:=`), not `map_field_assoc`
-  (`=>`). Until now map patterns silently matched everything.
-- Record patterns lower to map patterns with `__struct__ := :tag`
-  plus exact entries per field; unspecified fields are open-matched.
-- ADT constructor patterns lower to tagged tuples whose children are
-  themselves patterns.
-- Field punning: `Point{x, y}` is shorthand for `Point{x: x, y: y}`.
-- Pin operator `^x` compares against a previously-bound value, not a
-  fresh binding. Lowered to a synthetic equality guard.
-- Repeated variables inside the same pattern are lowered to equality
-  guards too; `%[x, x]` now matches exactly the pairs where the two
-  slots are equal.
+### Record field defaults
 
-### Type-checker rewrite
+```cure
+rec Person
+  name: String = "Anonymous"
+  age: Int = 0
+  active: Bool = true
+```
 
-`Cure.Types.Checker.bind_pattern_vars/3` is rebuilt with deep
-recursion: every leaf pattern variable picks up the most precise type
-that the structure allows. Map and record patterns narrow per-field
-through the record schema; tuple patterns zip against the scrutinee
-tuple-element types.
+Construction merges declared defaults with the user-supplied fields.
+Overrides always win. Default type mismatches emit `E028`.
 
-A new Maranget-style nested-exhaustiveness pass in
-`Cure.Types.PatternChecker.check_nested/2` walks tuple-of-ADT
-scrutinees and reports concrete missing witnesses (for example
-``"%[Error(_)]"``) as warnings under code `E025`. The flat classifier
-from v0.11.0 remains as the fast path for simple matches.
+### `@derive(Show, Eq, Ord)`
 
-### New error codes
+```cure
+@derive(Show, Eq, Ord)
+rec Point
+  x: Int
+  y: Int
+```
 
-`E021`-`E025` in the catalog: unknown record field in pattern,
-record-field type mismatch, non-literal map-pattern key, unbound pin
-variable, non-exhaustive nested match. Surfaced via `cure explain Exxx`.
+The decorator wires `Cure.Types.Derive` end to end: the synthesised
+`show/1`, `eq/2`, and `compare/2` functions are plain module exports.
 
-### Parser
+### Multi-head cons patterns
 
-- Lexer already emits `:caret`; the parser now turns it into the
-  `{:pin, meta, [inner]}` prefix node.
-- Field-punning in record and map pairs: a bare identifier followed
-  by `,` or `}` desugars to `name: name`.
+```cure
+match xs
+  [a, b, c | rest] -> a + b + c
+  _                -> 0
+```
 
-### Standard library
+The parser desugars multi-head cons to right-associated cells
+(`[a | [b | [c | rest]]]`). Works in pattern and construction
+positions.
 
-- New `Std.Match` module -- destructuring helpers (`unpack_pair/1`,
-  `fst/1`, `snd/1`, `head_tail/2`, `uncons/1`, `first_two/2`,
-  `unwrap_ok/2`, `unwrap_some/2`). Every function exercises the new
-  pattern engine as a smoke test.
-- `Std.List.uncons/1`, `Std.List.split_first/2` added using cons
-  destructuring.
+## Standard library
 
-### Examples
+- **`Std.Proof`** -- reflexivity-based arithmetic and list laws.
+- **`Std.Gen`** -- `int_in/2`, `bool/0`, `one_of/2`, `list_of_int/3`,
+  `list_int/3`. Backed by `:rand`.
+- **`Std.Iter`** -- lazy iterator protocol. Constructors: `empty/0`,
+  `from_list/1`, `range/2`. Consumers: `fold/3`, `take/2`,
+  `to_list/1`.
+- **`Std.Test.forall/3`** and **`Std.Test.forall_default/2`** --
+  property-based runner. Raises `:property_failed` on first
+  counterexample.
 
-- `examples/destructuring.cure` -- end-to-end showcase of nested
-  tuples, maps, records, cons, ADT constructors, and the pin operator.
-- `examples/json_tree.cure` -- small JSON-like interpreter driven
-  entirely by nested destructuring.
-- `examples/pattern_guards.cure` extended with record patterns,
-  field-punning, and nested ADT destructuring.
+## Totality
 
-### Documentation
+`Cure.Types.Totality.check_mutual/1` runs a Tarjan SCC analysis over
+a module's call graph. Non-trivial strongly-connected components are
+reported as `:ok` (structural decrease proved) or `:suspect`
+(`E029`).
 
-- `docs/PATTERNS.md` -- the authoritative reference (Cure surface
-  syntax, Erlang abstract-form mapping, binding semantics,
-  exhaustiveness behaviour).
-- `docs/LANGUAGE_SPEC.md` pattern-matching section rewritten from a
-  12-line stub.
-- `docs/TUTORIAL.md` -- new chapter "Destructuring in `match`"; later
-  chapters renumbered.
+## Packaging
 
-## Deferred to v0.19.0
+- `Cure.Project.Version` -- SemVer parser with `~>`, `>=`, `<=`,
+  `<`, `>`, `==`, compound constraints joined by `and`.
+  MAJOR.MINOR is accepted as shorthand for MAJOR.MINOR.0.
+- `Cure.Project.Resolver` -- deterministic backtracking resolver
+  over a local/git workspace. Newest-compatible-first; conflicts
+  surface as `E030`.
 
-The original v0.18.0 "Bring the Furniture" slate is now the v0.19.0
-roadmap: `proof` containers, `assert_type`, record field defaults,
-`@derive(Show, Eq, Ord)` wiring, property-based testing via
-`Std.Test.forall`, `Std.Iter`, the first half of the package
-registry, and mutual-recursion totality. The pin operator also
-graduates to default in v0.19.0 after v0.18.0 feedback.
+The remote registry index service is slated for v0.20.0.
+
+## Error catalog
+
+Five new codes: `E026` proof shape, `E027` assert_type failed,
+`E028` record default mismatch, `E029` mutual recursion not
+structural, `E030` package version conflict.
 
 ## Numbers
 
-- 1 new Elixir module (`Cure.Compiler.PatternCompiler`, ~480 LOC)
-- Rewrites inside 3 existing modules (`Codegen`, `Checker`,
-  `PatternChecker`)
-- 1 new stdlib module (`Std.Match`), 1 extended (`Std.List`)
-- 2 new examples, 1 extended
-- 2 new documentation files (`PATTERNS.md`, new tutorial chapter)
-- New error codes `E021`-`E025`
-- 26 new tests (22 for `PatternCompiler`, 2 for parser, others
-  driven by new examples); total jumps to 921 tests passing
-- All 21 stdlib modules and 26 example programs compile clean under
-  `mix check`.
+- 4 new Elixir modules: `Cure.Project.Version`, `Cure.Project.Resolver`,
+  plus major extensions to `Cure.Types.Totality`, `Cure.Types.Derive`,
+  `Cure.Compiler.Codegen`, `Cure.Compiler.Parser`, `Cure.Types.Checker`,
+  `Cure.Types.Type`.
+- 3 new stdlib modules (`Std.Proof`, `Std.Gen`, `Std.Iter`);
+  `Std.Test` extended with `forall`.
+- 4 new examples (`defaults.cure`, `derived_show.cure`,
+  `proof_laws.cure`, `lazy_iter.cure`).
+- 1 new documentation file (`docs/PROOFS.md`).
+- New error codes `E026`--`E030`.
+- Test count jumps from 923 to ~970, new tests spread across
+  `pattern_compiler_test`, `record_defaults_test`, `assert_type_test`,
+  `derive_integration_test`, `proof_test`, `totality_mutual_test`,
+  `version_test`, `resolver_test`, `pbt_test`, `iter_test`,
+  `multi_head_cons_test`.
+- `mix credo --strict`: 0 issues.
+- `mix cure.check.stdlib`: 24/24 modules clean.
+- `mix cure.check.examples`: 30/30 programs clean.
+
+## What's next
+
+- **v0.20.0**: the second half of the package registry -- the remote
+  index service, signing, and Hex.pm cross-publishing.
+- Refinement narrowing through nested record/map patterns.
+- Full bitstring-pattern segment specifiers in `PatternCompiler`.
+- Type-directed `@derive` extensions (Functor, Monoid, JSON).
 
 ## Naming
 
-"Deep Destructuring" -- subtitled *Pattern matching grows up*.
+"Bring the Furniture" -- subtitled *Ergonomics, proofs, and the first
+half of a registry*.

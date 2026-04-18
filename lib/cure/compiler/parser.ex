@@ -207,7 +207,13 @@ defmodule Cure.Compiler.Parser do
 
       # Variables / identifiers
       :identifier ->
-        {variable(token), advance(state)}
+        case token.value do
+          "assert_type" ->
+            parse_assert_type(state, token)
+
+          _ ->
+            {variable(token), advance(state)}
+        end
 
       # Unary operators
       :minus ->
@@ -257,6 +263,23 @@ defmodule Cure.Compiler.Parser do
         state = add_error(state, error)
         {error_node(token), advance(state)}
     end
+  end
+
+  # -- assert_type builtin (v0.19.0) ----------------------------------------
+  #
+  # `assert_type expr : T` is a compile-time type assertion. The type
+  # checker verifies `expr : T`; the codegen strips the wrapper and emits
+  # only `expr`, so there is no runtime cost.
+  defp parse_assert_type(state, token) do
+    # Consume the `assert_type` identifier.
+    state = advance(state)
+    # Parse the expression being asserted. Stop before `:` (BP 6 is
+    # high enough to keep the colon for us; let binding uses the same trick).
+    {expr, state} = parse_expr(state, 6)
+    state = expect(state, :colon)
+    {type_ast, state} = parse_type_expr(state)
+    ast = {:assert_type, [line: token.line, col: token.col], [expr, type_ast]}
+    {ast, state}
   end
 
   # -- Pin Operator (pattern position) ---------------------------------------
@@ -589,15 +612,60 @@ defmodule Cure.Compiler.Parser do
             ast = {:list, [cons: true, line: token.line, col: token.col], [first, tail]}
             {ast, state}
 
-          # Regular list
+          # Multi-head cons or regular list: [a, b, c]  or  [a, b | rest]
           _ ->
-            {rest, state} = parse_comma_exprs(state)
-            state = skip_newlines(state)
-            state = expect(state, :rbracket)
-            ast = {:list, [line: token.line, col: token.col], [first | rest]}
-            {ast, state}
+            {rest_heads, state} = parse_multi_head_list_rest(state)
+
+            case peek(state) do
+              %Token{type: :bar} ->
+                # `[a, b | rest]` -- desugar into right-associated cons
+                # cells: `[a | [b | rest]]`.
+                state = advance(state)
+                state = skip_newlines(state)
+                {tail, state} = parse_expr(state, 0)
+                state = skip_newlines(state)
+                state = expect(state, :rbracket)
+
+                heads = [first | rest_heads]
+                ast = build_multi_head_cons(heads, tail, token)
+                {ast, state}
+
+              _ ->
+                state = skip_newlines(state)
+                state = expect(state, :rbracket)
+                ast = {:list, [line: token.line, col: token.col], [first | rest_heads]}
+                {ast, state}
+            end
         end
     end
+  end
+
+  # Parse `, expr` repeatedly, stopping before `|` or `]`.
+  defp parse_multi_head_list_rest(state) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :comma} ->
+        state = advance(state)
+        state = skip_newlines(state)
+        {expr, state} = parse_expr(state, 0)
+        state = skip_newlines(state)
+        {rest, state} = parse_multi_head_list_rest(state)
+        {[expr | rest], state}
+
+      _ ->
+        {[], state}
+    end
+  end
+
+  # Build nested cons cells right-associatively:
+  #   [a, b, c | rest]  ->  [a | [b | [c | rest]]]
+  defp build_multi_head_cons([head], tail, token),
+    do: {:list, [cons: true, line: token.line, col: token.col], [head, tail]}
+
+  defp build_multi_head_cons([head | rest], tail, token) do
+    nested = build_multi_head_cons(rest, tail, token)
+    {:list, [cons: true, line: token.line, col: token.col], [head, nested]}
   end
 
   # Tuple: %[a, b, c]
@@ -839,6 +907,9 @@ defmodule Cure.Compiler.Parser do
 
       :proto ->
         parse_proto(state)
+
+      :proof ->
+        parse_proof_container(state)
 
       :impl ->
         parse_impl(state)
@@ -1416,6 +1487,31 @@ defmodule Cure.Compiler.Parser do
     {ast, state}
   end
 
+  # -- Proof container  proof Name.Path (v0.19.0) ----------------------------
+  #
+  # Mirrors `parse_module/1` but emits `container_type: :proof`. Every
+  # binding inside a proof container is expected to elaborate to an
+  # `Eq(T, a, b)` proof or a refinement-subtype witness; the type checker
+  # reports mismatches under code `E026`.
+  defp parse_proof_container(state) do
+    token = peek(state)
+    state = advance(state)
+
+    {name, state} = parse_dotted_name(state)
+    state = skip_newlines(state)
+    {body_stmts, state} = parse_definition_block(state)
+
+    meta = [
+      container_type: :proof,
+      name: name,
+      language: :cure,
+      line: token.line,
+      col: token.col
+    ]
+
+    {{:container, meta, body_stmts}, state}
+  end
+
   # -- Record  rec Name [(TypeParams)] ---------------------------------------
 
   defp parse_record(state) do
@@ -1475,9 +1571,25 @@ defmodule Cure.Compiler.Parser do
         state = advance(state)
         state = expect(state, :colon)
         {type_ast, state} = parse_type_expr(state)
+
+        # v0.19.0: optional `= default_expr` per record field.
+        {default_ast, state} =
+          case peek(state) do
+            %Token{type: :assign} ->
+              state = advance(state)
+              state = skip_newlines(state)
+              parse_expr(state, 0)
+
+            _ ->
+              {nil, state}
+          end
+
         state = skip_newlines(state)
 
-        field = {:param, [type: type_ast], to_string(name_token.value)}
+        meta = [type: type_ast]
+        meta = if default_ast, do: Keyword.put(meta, :default, default_ast), else: meta
+
+        field = {:param, meta, to_string(name_token.value)}
         {rest, state} = parse_record_field_list(state)
         {[field | rest], state}
     end
@@ -2394,6 +2506,13 @@ defmodule Cure.Compiler.Parser do
         fn_ast = attach_decorator(fn_ast, dec_name, args)
         {fn_ast, state}
 
+      # v0.19.0: `@derive(Show, Eq, ...) rec Name` attaches the
+      # derive list to the record container.
+      %Token{type: :keyword, value: :rec} ->
+        {rec_ast, state} = parse_expr(state, 0)
+        rec_ast = attach_decorator(rec_ast, dec_name, args)
+        {rec_ast, state}
+
       _ ->
         # Standalone decorator or property
         if args != [] do
@@ -2408,6 +2527,23 @@ defmodule Cure.Compiler.Parser do
 
   defp attach_decorator(fn_ast, dec_name, args) do
     case fn_ast do
+      {:container, meta, body} ->
+        # Record container with @derive(Show, Eq, Ord).
+        case Keyword.get(meta, :container_type) do
+          :struct when dec_name == "derive" ->
+            derive_names =
+              Enum.map(args, fn
+                {:variable, _, n} -> String.downcase(n) |> String.to_atom()
+                {:function_call, m, _} -> Keyword.get(m, :name, "") |> String.downcase() |> String.to_atom()
+                other -> extract_literal_value(other)
+              end)
+
+            {:container, Keyword.put(meta, :derive, derive_names), body}
+
+          _ ->
+            {:container, Keyword.put(meta, :decorator, {String.to_atom(dec_name), args}), body}
+        end
+
       {:function_def, meta, body} ->
         decoration =
           case dec_name do

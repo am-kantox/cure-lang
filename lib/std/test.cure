@@ -17,3 +17,23 @@ mod Std.Test
 
   fn assert_lt(a: T, b: T) -> Atom =
     if a < b then :ok else raise_error(:not_less)
+
+  # -- Property-based testing (v0.19.0) --------------------------------------
+
+  ## Run `property` against `runs` random samples drawn from `gen`. Returns
+  ## `:ok` when every sample satisfies the property, or raises
+  ## `:property_failed` on the first counterexample.
+  ##
+  ## `gen` is a zero-argument function (e.g. `fn(_) -> Std.Gen.int_in(0, 100)`)
+  ## that returns a fresh value on every call.
+  fn forall(gen: Atom -> T, property: T -> Bool, runs: Int) -> Atom =
+    match runs
+      0 -> :ok
+      _ ->
+        match property(gen(:draw))
+          true  -> forall(gen, property, runs - 1)
+          false -> raise_error(:property_failed)
+
+  ## Convenience wrapper that uses 100 runs by default.
+  fn forall_default(gen: Atom -> T, property: T -> Bool) -> Atom =
+    forall(gen, property, 100)

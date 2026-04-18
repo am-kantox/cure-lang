@@ -1,0 +1,19 @@
+mod DerivedShow
+  ## @derive(Show, Eq, Ord) on records (v0.19.0).
+  ##
+  ## The decorator synthesises a `show/1`, `eq/2`, and `compare/2`
+  ## function per record, exported as regular module functions and
+  ## plugged into the protocol registry.
+
+  @derive(Show, Eq, Ord)
+  rec Point
+    x: Int
+    y: Int
+
+  fn origin() -> Point = Point{x: 0, y: 0}
+
+  fn main() -> Int =
+    let p = Point{x: 1, y: 2}
+    let q = Point{x: 1, y: 2}
+    # `eq` is the synthesised Eq method.
+    if eq(p, q) then 1 else 0

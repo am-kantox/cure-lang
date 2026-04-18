@@ -63,6 +63,12 @@ defmodule Cure.Types.Checker do
           :module ->
             check_module_body(body, env, emit?, file)
 
+          :proof ->
+            # v0.19.0: proof containers use the same two-pass check
+            # as modules, plus a shape gate that requires every
+            # binding to return Eq(...) or a refinement.
+            check_proof_body(body, env, emit?, file)
+
           _ ->
             {:ok, ast}
         end
@@ -75,6 +81,7 @@ defmodule Cure.Types.Checker do
           {:container, meta, body} ->
             case Keyword.get(meta, :container_type) do
               :module -> check_module_body(body, env, emit?, file)
+              :proof -> check_proof_body(body, env, emit?, file)
               _ -> {:ok, ast}
             end
 
@@ -86,6 +93,64 @@ defmodule Cure.Types.Checker do
         {:ok, ast}
     end
   end
+
+  # -- Proof Body (v0.19.0) ----------------------------------------------------
+  #
+  # Every top-level function in a proof container must return an `Eq(...)`
+  # type or a refinement. Other bindings are rejected with `E026`.
+  defp check_proof_body(stmts, env, emit?, file) do
+    base_result = check_module_body(stmts, env, emit?, file)
+
+    shape_errors =
+      Enum.flat_map(stmts, fn
+        {:function_def, meta, _body} ->
+          ret_ast = Keyword.get(meta, :return_type)
+
+          if proof_shape?(ret_ast) do
+            []
+          else
+            name = Keyword.get(meta, :name, "unknown")
+            line = Keyword.get(meta, :line, 0)
+
+            [
+              {:proof_shape_mismatch,
+               "function '#{name}' inside a proof container must return Eq(...) or a refinement type (E026)",
+               line: line}
+            ]
+          end
+
+        _ ->
+          []
+      end)
+
+    case {base_result, shape_errors} do
+      {{:ok, _}, []} ->
+        {:ok, :proof_ok}
+
+      {{:ok, _}, errs} ->
+        {:error, errs}
+
+      {{:error, base_errs}, extra} ->
+        {:error, base_errs ++ extra}
+    end
+  end
+
+  # A return-type AST is proof-shaped when it mentions `Eq(...)` or is a
+  # refinement annotation. We stay permissive to avoid false positives on
+  # newer dependent-type surface syntax.
+  defp proof_shape?({:function_call, meta, _}) do
+    Keyword.get(meta, :name, "") == "Eq"
+  end
+
+  defp proof_shape?({:type_annotation, meta, _}) do
+    Keyword.get(meta, :refinement, false)
+  end
+
+  defp proof_shape?({:variable, _, name}) when is_binary(name) do
+    name in ["Eq", "Refl", "Proof"]
+  end
+
+  defp proof_shape?(_), do: false
 
   @doc """
   Infer the type of a single expression AST node in an empty environment.
@@ -149,6 +214,7 @@ defmodule Cure.Types.Checker do
         case Keyword.get(meta, :container_type) do
           :struct ->
             name = Keyword.get(meta, :name)
+            line = Keyword.get(meta, :line, 0)
 
             field_map =
               Enum.reduce(body, %{}, fn
@@ -159,6 +225,23 @@ defmodule Cure.Types.Checker do
                 _, acc ->
                   acc
               end)
+
+            # v0.19.0: verify each field default's inferred type against
+            # the declared field type (E028).
+            Enum.each(body, fn
+              {:param, pmeta, field_name} ->
+                case Keyword.get(pmeta, :default) do
+                  nil ->
+                    :ok
+
+                  default_ast ->
+                    declared = Map.get(field_map, field_name, :any)
+                    verify_record_default(name, field_name, default_ast, declared, env, line)
+                end
+
+              _ ->
+                :ok
+            end)
 
             Env.extend_type(env, name, {:record, String.to_atom(String.downcase(name)), field_map})
 
@@ -928,6 +1011,27 @@ defmodule Cure.Types.Checker do
   defp do_infer(env, {:decorator, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:property, _meta, _}), do: {:ok, :any, env}
 
+  # -- assert_type (v0.19.0) ----------------------------------------------------
+
+  defp do_infer(env, {:assert_type, meta, [expr, type_ast]}) do
+    line = Keyword.get(meta, :line, 1)
+    expected = Type.resolve(type_ast)
+
+    case do_infer(env, expr) do
+      {:ok, actual, env} ->
+        if expected == :any or Type.subtype?(actual, expected) do
+          {:ok, expected, env}
+        else
+          {:error,
+           {:type_mismatch, "assert_type expected #{Type.display(expected)}, got #{Type.display(actual)} (E027)",
+            line: line}}
+        end
+
+      err ->
+        err
+    end
+  end
+
   # -- Record Update -----------------------------------------------------------
 
   defp do_infer(env, {:record_update, meta, [base | fields]}) do
@@ -1026,6 +1130,29 @@ defmodule Cure.Types.Checker do
   end
 
   defp resolve_record_field(_env, _type, _field_name), do: :any
+
+  # v0.19.0: check that a record default's inferred type fits the declared
+  # field type. Emits `E028` when it doesn't.
+  defp verify_record_default(rec_name, field_name, default_ast, declared, env, line) do
+    case do_infer(env, default_ast) do
+      {:ok, inferred, _} ->
+        if declared == :any or Type.subtype?(inferred, declared) do
+          :ok
+        else
+          Events.emit(
+            :type_checker,
+            :type_warning,
+            {:record_default_mismatch,
+             "record '#{rec_name}' field '#{field_name}' default has type " <>
+               "#{Type.display(inferred)} but the field is declared #{Type.display(declared)} (E028)", line: line},
+            Events.meta("nofile", line)
+          )
+        end
+
+      _ ->
+        :ok
+    end
+  end
 
   # -- Path-Sensitive Refinement ------------------------------------------------
 

@@ -108,7 +108,7 @@ Or via the Mix task:
 mix cure.compile_stdlib
 ```
 
-This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 21 modules (~230 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, the dependent-type helpers `Std.Equal` and `Std.Refine`, and the v0.18.0 destructuring helpers in `Std.Match`.
+This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 24 modules (~260 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, the dependent-type helpers `Std.Equal` and `Std.Refine`, the v0.18.0 destructuring helpers in `Std.Match`, and the v0.19.0 additions `Std.Proof`, `Std.Gen`, and `Std.Iter`.
 
 ## Other CLI commands
 

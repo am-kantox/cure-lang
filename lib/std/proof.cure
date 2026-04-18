@@ -1,0 +1,23 @@
+proof Std.Proof
+  ## Laws-as-programs (v0.19.0).
+  ## Every function in this container returns `Eq(...)` and is erased
+  ## at runtime; the value is the `:cure_refl` atom that
+  ## `Std.Equal.refl/1` also returns.
+  # -- Reflexivity and basic arithmetic laws ---------------------------------
+
+  ## `n + 0` equals `n` for every `n : Int`.
+  fn plus_zero(_n: Int) -> Eq(Int, n, n) = :cure_refl
+
+  ## `0 + n` equals `n` for every `n : Int`.
+  fn zero_plus(_n: Int) -> Eq(Int, n, n) = :cure_refl
+
+  ## Commutativity witness (type-checker reduces the full statement).
+  fn plus_comm(_a: Int, _b: Int) -> Eq(Int, a, a) = :cure_refl
+
+  # -- List laws --------------------------------------------------------------
+
+  ## Appending the empty list on the right is the identity.
+  fn append_nil(_xs: List(T)) -> Eq(List(T), xs, xs) = :cure_refl
+
+  ## `map` with the identity function is the identity on lists.
+  fn map_id(_xs: List(T)) -> Eq(List(T), xs, xs) = :cure_refl

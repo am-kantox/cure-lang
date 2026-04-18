@@ -1,6 +1,6 @@
 %{
   title: "Standard Library",
-  description: "Self-hosted stdlib written in Cure itself: 21 modules, ~230 functions.",
+  description: "Self-hosted stdlib written in Cure itself: 24 modules, ~260 functions.",
   order: 6
 }
 ---
@@ -9,8 +9,13 @@ The standard library is self-hosted -- written in Cure under `lib/std/`.
 Compile it with `mix cure.compile_stdlib` or `cure stdlib`. The output goes
 to `_build/cure/ebin/` as regular `.beam` files callable from Erlang or Elixir.
 
-21 modules. ~230 functions. No Elixir runtime dependency beyond FFI calls
-to `:erlang`, `:math`, `:maps`, `:lists`, `:string`, `:binary`, `:io`, and `:os`.
+24 modules. ~260 functions. No Elixir runtime dependency beyond FFI calls
+to `:erlang`, `:math`, `:maps`, `:lists`, `:string`, `:binary`, `:io`, `:rand`,
+and `:os`.
+
+v0.19.0 additions: `Std.Proof` (propositional laws), `Std.Gen` (generators
+for property-based testing), `Std.Iter` (lazy iterator protocol). `Std.Test`
+gains `forall/3` and `forall_default/2`.
 
 All modules are documented with `##` doc comments. Run `cure doc lib/std/`
 to generate browsable HTML documentation.

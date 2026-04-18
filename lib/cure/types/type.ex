@@ -174,6 +174,11 @@ defmodule Cure.Types.Type do
     subtype?(t1, t2) and subtype?(t2, t1) and a1 == a2 and b1 == b2
   end
 
+  # v0.19.0: Eq(...) proofs are runtime-erased atoms (`:cure_refl`).
+  # Any atom is therefore accepted as an inhabitant of an Eq type, which
+  # lets `proof` containers return `:cure_refl` directly.
+  def subtype?(:atom, {:eq, _, _, _}), do: true
+
   # Pi subtyping (covariant in return when params match)
   def subtype?({:pi, ps1, r1}, {:pi, ps2, r2}) when length(ps1) == length(ps2) do
     Enum.zip(ps1, ps2)

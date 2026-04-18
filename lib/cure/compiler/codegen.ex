@@ -38,7 +38,10 @@ defmodule Cure.Compiler.Codegen do
     # Extra guard conjuncts emitted by `Cure.Compiler.PatternCompiler`
     # (for the pin operator `^x` and repeated variable occurrences).
     pattern_guards: [],
-    pattern_dup_counter: 0
+    pattern_dup_counter: 0,
+    # Per-module record registry (v0.19.0):
+    # `%{"RecordName" => %{fields: ["x", ...], defaults: %{"x" => ast}}}`
+    records: %{}
   ]
 
   @type t :: %__MODULE__{}
@@ -98,6 +101,12 @@ defmodule Cure.Compiler.Codegen do
       :module ->
         compile_module_container(meta, body, emit?, file)
 
+      # v0.19.0: proof containers compile exactly like regular modules.
+      # Their extra proof-shape discipline is enforced upstream, in the
+      # type checker.
+      :proof ->
+        compile_module_container(meta, body, emit?, file)
+
       :fsm ->
         ast = {:container, meta, body}
         # Run verification first
@@ -142,6 +151,11 @@ defmodule Cure.Compiler.Codegen do
   end
 
   defp compile_module_body(stmts, state) do
+    # v0.19.0: expand @derive(...) on records into synthetic function
+    # defs. This runs before any other analysis so the derived functions
+    # participate in signature collection, protocol dispatch, etc.
+    stmts = expand_derived_records(stmts)
+
     # Phase 0a: pre-collect all local function names for import priority
     local_fns = collect_local_fn_names(stmts)
 
@@ -149,6 +163,9 @@ defmodule Cure.Compiler.Codegen do
     state = collect_imports(stmts, state)
     # Store local_fns so import resolver can check them
     state = Map.put(state, :local_fns, local_fns)
+
+    # Phase 0c (v0.19.0): collect record definitions (with field defaults).
+    state = collect_records(stmts, state)
 
     # Phase 1: collect protocol and impl definitions
     proto_ctx = collect_protocol_context(stmts)
@@ -235,6 +252,93 @@ defmodule Cure.Compiler.Codegen do
 
       _ ->
         []
+    end)
+  end
+
+  # -- @derive expansion (v0.19.0) --------------------------------------------
+  #
+  # For each record container carrying a `:derive` meta list, synthesise
+  # the corresponding protocol-method function definitions and append them
+  # to the module body. The synthesised functions are regular
+  # `function_def` nodes; they participate in signature collection and
+  # the protocol registry like any other.
+
+  defp expand_derived_records(stmts) do
+    Enum.flat_map(stmts, fn
+      {:container, meta, body} = rec when is_list(meta) ->
+        case {Keyword.get(meta, :container_type), Keyword.get(meta, :derive)} do
+          {:struct, derive_list} when is_list(derive_list) and derive_list != [] ->
+            rec_name = Keyword.get(meta, :name, "Unnamed")
+
+            field_names =
+              Enum.flat_map(body, fn
+                {:param, _, n} -> [String.to_atom(n)]
+                _ -> []
+              end)
+
+            derived =
+              Enum.flat_map(derive_list, fn typeclass ->
+                if Cure.Types.Derive.can_derive?(typeclass) do
+                  Cure.Types.Derive.derive(typeclass, rec_name, field_names)
+                else
+                  []
+                end
+              end)
+
+            [rec | derived]
+
+          _ ->
+            [rec]
+        end
+
+      other ->
+        [other]
+    end)
+  end
+
+  # -- Record Collection (v0.19.0) --------------------------------------------
+  #
+  # Walk the module body looking for `:struct` containers and build a tiny
+  # registry used by `compile_function_call/3` when constructing a record.
+  # We capture the field list (for deterministic ordering) and any `:default`
+  # ASTs so they can be merged with the caller's field list.
+
+  defp collect_records(stmts, state) do
+    records =
+      Enum.reduce(stmts, %{}, fn
+        {:container, meta, body}, acc when is_list(meta) ->
+          case Keyword.get(meta, :container_type) do
+            :struct ->
+              name = Keyword.get(meta, :name, "Unnamed")
+              {fields, defaults} = record_field_info(body)
+              Map.put(acc, name, %{fields: fields, defaults: defaults})
+
+            _ ->
+              acc
+          end
+
+        _, acc ->
+          acc
+      end)
+
+    %{state | records: records}
+  end
+
+  defp record_field_info(body) do
+    Enum.reduce(body, {[], %{}}, fn
+      {:param, pmeta, field_name}, {fields, defaults} ->
+        fields = fields ++ [field_name]
+
+        defaults =
+          case Keyword.get(pmeta, :default) do
+            nil -> defaults
+            ast -> Map.put(defaults, field_name, ast)
+          end
+
+        {fields, defaults}
+
+      _, acc ->
+        acc
     end)
   end
 
@@ -596,6 +700,10 @@ defmodule Cure.Compiler.Codegen do
         # Handled by compile_pattern
         {{:atom, 1, :ok}, state}
 
+      # assert_type expr : T (v0.19.0) -- type-only wrapper; strip at codegen.
+      {:assert_type, _meta, [expr, _type_ast]} ->
+        do_compile_expr(expr, state)
+
       # Fallback -- emit a warning so unrecognized nodes are visible
       other ->
         line = extract_ast_line(other)
@@ -764,7 +872,7 @@ defmodule Cure.Compiler.Codegen do
     # plain expressions.  The {:pair, ...} MetaAST node has no handler in
     # do_compile_expr and would fall through to the :undefined fallback.
     if is_record do
-      {field_forms, state} =
+      {user_field_forms, state} =
         Enum.map_reduce(args, state, fn pair, st ->
           case pair do
             {:pair, _, [key, value]} ->
@@ -777,6 +885,10 @@ defmodule Cure.Compiler.Codegen do
               {form, st}
           end
         end)
+
+      # v0.19.0: merge declared defaults for any fields the caller omitted.
+      {field_forms, state} =
+        apply_record_defaults(name, user_field_forms, line, state)
 
       form = compile_record_construction(name, field_forms, line)
       {form, state}
@@ -876,6 +988,52 @@ defmodule Cure.Compiler.Codegen do
     # {:map, Line, BaseExpr, [ExactPairs]} is Erlang abstract-format for Map#{...}
     form = {:map, line, base_form, exact_forms}
     {form, state}
+  end
+
+  # Compile each declared default AST that was *not* already provided by
+  # the caller, and prepend those forms to the user-supplied ones. The
+  # resulting map picks up every declared default with last-writer-wins
+  # semantics, preserving the caller's override.
+  defp apply_record_defaults(name, user_field_forms, line, state) do
+    records = Map.get(state, :records, %{})
+
+    case Map.get(records, name) do
+      nil ->
+        {user_field_forms, state}
+
+      %{defaults: defaults} when map_size(defaults) == 0 ->
+        {user_field_forms, state}
+
+      %{defaults: defaults} ->
+        provided_keys = user_provided_field_keys(user_field_forms)
+
+        missing_defaults =
+          defaults
+          |> Enum.reject(fn {field_name, _ast} ->
+            MapSet.member?(provided_keys, field_name)
+          end)
+
+        {default_forms, state} =
+          Enum.map_reduce(missing_defaults, state, fn {field_name, ast}, st ->
+            {val_form, st} = do_compile_expr(ast, st)
+            key_form = {:atom, line, String.to_atom(field_name)}
+            {{:map_field_assoc, line, key_form, val_form}, st}
+          end)
+
+        {default_forms ++ user_field_forms, state}
+    end
+  end
+
+  defp user_provided_field_keys(forms) do
+    forms
+    |> Enum.flat_map(fn
+      {:map_field_assoc, _, {:atom, _, key}, _} when is_atom(key) ->
+        [Atom.to_string(key)]
+
+      _ ->
+        []
+    end)
+    |> MapSet.new()
   end
 
   defp compile_record_construction(name, pair_forms, line) do

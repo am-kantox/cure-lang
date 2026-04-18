@@ -429,6 +429,23 @@ that is not in scope at the pattern's position.
 not cover every inhabitant of the scrutinee type; the compiler prints a
 concrete missing witness.
 
+### v0.19.0 codes
+
+**E026: Proof Shape Mismatch** -- a binding inside a `proof` container does
+not elaborate to an `Eq(...)` or refinement proof.
+
+**E027: `assert_type` Assertion Failed** -- the expression in
+`assert_type expr : T` does not match `T`.
+
+**E028: Record Default Type Mismatch** -- a record field's default value
+does not match the declared field type.
+
+**E029: Mutual Recursion Not Structural** -- a `#[total]` function takes
+part in a cycle in which no argument shrinks on every path.
+
+**E030: Package Version Conflict** -- the dependency resolver could not find
+a set of versions satisfying every active constraint.
+
 ### Error formatting
 
 Errors include source location with caret display:
