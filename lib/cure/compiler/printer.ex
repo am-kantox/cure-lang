@@ -281,29 +281,6 @@ defmodule Cure.Compiler.Printer do
     "fn(#{params_str}) -> #{body_str}"
   end
 
-  # v0.22.0: multi-statement bodies carry a `block_shape` in meta. Round-trip
-  # the author's chosen shape -- brace (`{...}`) or end-terminated
-  # (`stmt1; stmt2; end`). Indented bodies without an explicit shape fall
-  # through to the generic `to_string/3` path.
-  defp lambda_body_to_string({:block, meta, exprs} = block, depth, indent) do
-    case Keyword.get(meta, :block_shape) do
-      :brace ->
-        body = Enum.map_join(exprs, "; ", &to_string(&1, depth, indent))
-        "{ #{body} }"
-
-      :end ->
-        body = Enum.map_join(exprs, "; ", &to_string(&1, depth, indent))
-        "#{body}; end"
-
-      _ ->
-        to_string(block, depth, indent)
-    end
-  end
-
-  defp lambda_body_to_string(other, depth, indent) do
-    to_string(other, depth, indent)
-  end
-
   # -- Function Definition ---------------------------------------------------
 
   defp to_string({:function_def, meta, body}, depth, indent) do
@@ -473,6 +450,29 @@ defmodule Cure.Compiler.Printer do
   end
 
   # ── Helpers ──────────────────────────────────────────────────────────────
+
+  # v0.22.0: multi-statement bodies carry a `block_shape` in meta. Round-trip
+  # the author's chosen shape -- brace (`{...}`) or end-terminated
+  # (`stmt1; stmt2; end`). Indented bodies without an explicit shape fall
+  # through to the generic `to_string/3` path.
+  defp lambda_body_to_string({:block, meta, exprs} = block, depth, indent) do
+    case Keyword.get(meta, :block_shape) do
+      :brace ->
+        body = Enum.map_join(exprs, "; ", &to_string(&1, depth, indent))
+        "{ #{body} }"
+
+      :end ->
+        body = Enum.map_join(exprs, "; ", &to_string(&1, depth, indent))
+        "#{body}; end"
+
+      _ ->
+        to_string(block, depth, indent)
+    end
+  end
+
+  defp lambda_body_to_string(other, depth, indent) do
+    to_string(other, depth, indent)
+  end
 
   defp operator_to_string(:+), do: "+"
   defp operator_to_string(:-), do: "-"

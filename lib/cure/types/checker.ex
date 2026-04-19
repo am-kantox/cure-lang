@@ -1064,25 +1064,6 @@ defmodule Cure.Types.Checker do
     end
   end
 
-  defp bind_qualifier_vars(env, {:generator, _, [pattern, collection]}) do
-    elem_type =
-      case do_infer(env, collection) do
-        {:ok, {:list, t}, _} -> t
-        _ -> :any
-      end
-
-    bind_pattern_vars(env, pattern, elem_type)
-  end
-
-  defp bind_qualifier_vars(env, {:binary_generator, _, [pattern, _source]}) do
-    # Binary generator patterns carry their own segment types via
-    # `:bin_segment` meta; `bind_pattern_vars/3` already narrows each
-    # segment variable from the specifier's `:type` entry.
-    bind_pattern_vars(env, pattern, :bitstring)
-  end
-
-  defp bind_qualifier_vars(env, _), do: env
-
   # -- Containers (nested modules, etc.) -- skip in expression position --------
 
   defp do_infer(env, {:container, _meta, _body}), do: {:ok, :any, env}
@@ -1209,6 +1190,25 @@ defmodule Cure.Types.Checker do
 
     {:ok, :any, env}
   end
+
+  defp bind_qualifier_vars(env, {:generator, _, [pattern, collection]}) do
+    elem_type =
+      case do_infer(env, collection) do
+        {:ok, {:list, t}, _} -> t
+        _ -> :any
+      end
+
+    bind_pattern_vars(env, pattern, elem_type)
+  end
+
+  defp bind_qualifier_vars(env, {:binary_generator, _, [pattern, _source]}) do
+    # Binary generator patterns carry their own segment types via
+    # `:bin_segment` meta; `bind_pattern_vars/3` already narrows each
+    # segment variable from the specifier's `:type` entry.
+    bind_pattern_vars(env, pattern, :bitstring)
+  end
+
+  defp bind_qualifier_vars(env, _), do: env
 
   defp resolve_record_field(env, {:named, rec_name}, field_name) do
     case Env.lookup_type(env, rec_name) do
