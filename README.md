@@ -216,6 +216,13 @@ See the `examples/` directory for sample Cure programs:
   coefficients, evaluation/derivative/sampling), with an Elixir wrapper,
   a demo that renders an ASCII plot of a fitted sine, and a 25-case
   test suite
+- `cure_moneta/` -- full example project: money and ledger library;
+  multi-line ADT (`Currency`), refinement types (`PositiveAmount`, `Rate`),
+  `Money{amount, currency, fractional_units}` record (EUR/JPY/OMR-aware
+  display), `Show` and `Eq` protocols, FX conversion via `@extern` FFI,
+  ledger mutations with `Result`-chaining, and a payment transaction FSM
+  with hard (`dispatch!`), soft (`retry?`, `cancel?`), wildcard, `on_timer`,
+  `on_enter`, and `on_failure` callbacks
 
 Compile and run:
 

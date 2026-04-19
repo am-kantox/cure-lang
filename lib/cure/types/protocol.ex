@@ -145,15 +145,21 @@ defmodule Cure.Types.Protocol do
         {:call, line, {:atom, line, :is_reference}, [var_form]}
 
       _ ->
-        # User-defined type: generate is_map(V) andalso maps:get(__struct__, V, nil) == type_atom
+        # User-defined record type.
+        # Guard: is_map(V) andalso map_get('__struct__', V) == type_atom
+        #
+        # `map_get/2` (the local BIF form, not `maps:get/2`) is explicitly listed
+        # as a guard BIF since OTP 21. In guard context a missing key causes the
+        # BIF to raise, which erl_lint silently treats as false -- the correct
+        # behaviour for non-record values.
         type_atom = type_name |> Macro.underscore() |> String.to_atom()
 
         is_map_guard = {:call, line, {:atom, line, :is_map}, [var_form]}
 
         struct_check =
           {:op, line, :==,
-           {:call, line, {:remote, line, {:atom, line, :maps}, {:atom, line, :get}},
-            [{:atom, line, :__struct__}, var_form, {:atom, line, nil}]}, {:atom, line, type_atom}}
+           {:call, line, {:atom, line, :map_get},
+            [{:atom, line, :__struct__}, var_form]}, {:atom, line, type_atom}}
 
         {:op, line, :andalso, is_map_guard, struct_check}
     end
