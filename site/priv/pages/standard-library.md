@@ -1,6 +1,6 @@
 %{
   title: "Standard Library",
-  description: "Self-hosted stdlib written in Cure itself: 24 modules, ~260 functions.",
+  description: "Self-hosted stdlib written in Cure itself: 27 modules, ~290 functions.",
   order: 6
 }
 ---
@@ -9,9 +9,9 @@ The standard library is self-hosted -- written in Cure under `lib/std/`.
 Compile it with `mix cure.compile_stdlib` or `cure stdlib`. The output goes
 to `_build/cure/ebin/` as regular `.beam` files callable from Erlang or Elixir.
 
-24 modules. ~260 functions. No Elixir runtime dependency beyond FFI calls
+27 modules. ~290 functions. No Elixir runtime dependency beyond FFI calls
 to `:erlang`, `:math`, `:maps`, `:lists`, `:string`, `:binary`, `:io`, `:rand`,
-and `:os`.
+`:os`, `:httpc`, `:crypto`, and a handful of `:cure_std_*` runtime helpers.
 
 v0.19.0 additions: `Std.Proof` (propositional laws), `Std.Gen` (generators
 for property-based testing), `Std.Iter` (lazy iterator protocol). `Std.Test`
@@ -24,6 +24,22 @@ new Wadler-style algebra formatter preserves layout choices where the
 byte-level safe formatter would have given up, and the full Elixir-style
 bitstring segment grammar is available anywhere stdlib code uses
 `<<...>>` (either in construction or in patterns).
+
+v0.21.0 adds `Std.Access` (Elixir-style `Access` behaviour with composable
+`Accessor` lenses and nested `get_in` / `put_in` / `update_in` helpers).
+
+v0.23.0 adds two runtime modules and shrinking primitives:
+
+- **`Std.Json`** -- JSON encoder + decoder driven by a `Value` ADT
+  (`Null | Bool | Num | Str | Arr | Obj`). Runtime companion to the
+  v0.21.0 `@derive(JSON)` target; backed by `:cure_std_json`.
+- **`Std.Http`** -- thin wrapper over `:httpc`. `get/1`, `get/2` (with
+  headers), `post/3`, `head/1` returning `Result(Response, HttpError)`.
+  `Cure.Project.Registry` dogfoods the same runtime module.
+- **`Std.Gen.shrink_int/1`**, **`shrink_list/1`**, **`shrink/1`** plus
+  `Std.Test.forall_shrunk/3` and `forall_shrunk_default/2`: when a
+  property fails, the runner walks the shrinker until no smaller value
+  also fails and raises `{:property_failed_with_shrunk, minimal_value}`.
 
 All modules are documented with `##` doc comments. Run `cure doc lib/std/`
 to generate browsable HTML documentation.

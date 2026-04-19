@@ -151,6 +151,63 @@ cure explain E010
 
 **`cure help`** -- Show usage information.
 
+## v0.23.0 additions
+
+### Package registry
+
+**`cure publish`** -- Build the package tarball, sign it with the
+maintainer's Ed25519 key, upload via `POST /packages`. Reads the
+maintainer handle and upload token from `--handle` / `--token`, or
+from the `CURE_HANDLE` / `CURE_TOKEN` environment variables.
+
+```bash
+cure publish --handle alice --token $CURE_TOKEN
+cure publish --dry-run          # build + verify locally, no upload
+cure publish --hex              # emit a Hex-compatible tarball under
+                                # _build/cure/publish/hex.tar
+```
+
+**`cure search <query>`** -- Substring search against the registry
+index.
+
+**`cure info <name>[:version]`** -- Print the version list for a
+package, or the full manifest JSON when a version is given.
+
+**`cure keys generate <handle>`** -- Generate an Ed25519 keypair under
+`~/.cure/keys/` and add the public key to `trusted.toml`.
+
+**`cure keys list`** -- List every handle currently on the trust list.
+
+### Health and hygiene
+
+**`cure doctor`** -- Structured environment + project + source health
+report. Exits non-zero when any finding has severity `:warning` or
+`:error`, so it is ready to drop into CI. Checks include Elixir / OTP
+/ Z3 presence, `:telemetry` availability, registry URL, `Cure.toml`
+sanity, lockfile freshness, open type holes, and undocumented public
+functions.
+
+**`cure fix [--dry-run]`** -- Project-wide safe rewrites over
+`lib/**/*.cure` and `test/**/*.cure`. Five conservative transforms:
+`normalize_line_endings`, `strip_trailing_whitespace`,
+`strip_mixed_tabs` (leading tabs -> two spaces), `collapse_blank_lines`,
+and `ensure_trailing_newline`. Silently no-ops on already-clean files.
+
+### Coverage
+
+**`cure test --cover`** -- Instrument every compiled module under
+`_build/cure/ebin/` via OTP's `:cover`, run the self-hosted test suite,
+and emit an HTML report under `_build/cure/cover/index.html` plus a
+text summary.
+
+### Telemetry bridge
+
+Start `Cure.Telemetry.start/0` from your host application to subscribe
+to every `Cure.Pipeline.Events` stage and re-emit events under
+`[:cure, :pipeline, <stage>, <event_type>]`. The `:telemetry` dep is
+optional in `mix.exs`; when it is not on the load path the bridge
+silently becomes a no-op.
+
 ---
 
 ## LSP Server

@@ -1,0 +1,43 @@
+mod Std.Json
+  ## JSON encoder and decoder for Cure (v0.23.0).
+  ##
+  ## Runtime companion to the v0.21.0 `@derive(JSON)` extension. The
+  ## decoder returns a `Std.Json.Value` ADT; encoders walk the ADT
+  ## back out to a JSON string.
+
+  ## Key/value pair inside a JSON object. Named rather than using a
+  ## raw tuple type so the ADT surface stays simple.
+  rec JsonPair
+    key: String
+    value: Value
+
+  ## Tag-union representation for any parsed JSON document.
+  ##
+  ## - `Null`        <-> JSON `null`
+  ## - `Bool(b)`     <-> JSON `true` / `false`
+  ## - `Num(n)`      <-> JSON number (always a Float at runtime)
+  ## - `Str(s)`      <-> JSON string
+  ## - `Arr(xs)`     <-> JSON array
+  ## - `Obj(kvs)`    <-> JSON object (ordered list of `JsonPair`)
+  type Value =
+    | Null
+    | Bool(Bool)
+    | Num(Float)
+    | Str(String)
+    | Arr(List(Value))
+    | Obj(List(JsonPair))
+
+  @extern(:cure_std_json, :encode, 1)
+  fn encode(v: Value) -> String
+
+  @extern(:cure_std_json, :decode, 1)
+  fn decode(src: String) -> Result(Value, String)
+
+  # -- Construction helpers ----------------------------------------------------
+
+  ## Widen a Cure `Int` to a JSON number Value (integer path).
+  @extern(:cure_std_json, :num_of_int, 1)
+  fn num_of_int(n: Int) -> Value
+
+  ## Build a `JsonPair` for use inside `Obj(...)`.
+  fn pair(k: String, v: Value) -> JsonPair = JsonPair{key: k, value: v}

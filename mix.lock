@@ -15,4 +15,5 @@
   "metastatic": {:hex, :metastatic, "0.20.0", "1f72204d68f19cbf7137766a6915f144cd1e45c6321b8a001cb319fdc252451a", [:mix], [{:ex_panda, "~> 0.2", [hex: :ex_panda, repo: "hexpm", optional: false]}, {:jason, "~> 1.4", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm", "9f337ad6fc86eef0594f4eedf7ec25e6400de0132dd35f81b7b61ed42c94cc70"},
   "nimble_parsec": {:hex, :nimble_parsec, "1.4.2", "8efba0122db06df95bfaa78f791344a89352ba04baedd3849593bfce4d0dc1c6", [:mix], [], "hexpm", "4b21398942dda052b403bbe1da991ccd03a053668d147d53fb8c4e0efe09c973"},
   "oeditus_credo": {:hex, :oeditus_credo, "0.4.0", "3145a9d2229b2847b689ec55d3f13da0480f6f22001e820fd102c03114472e64", [:mix], [{:credo, "~> 1.7", [hex: :credo, repo: "hexpm", optional: false]}], "hexpm", "226dfe37c203f673502a9b682ce187c9db5c0732487586581a58c4a66fb46554"},
+  "telemetry": {:hex, :telemetry, "1.4.1", "ab6de178e2b29b58e8256b92b382ea3f590a47152ca3651ea857a6cae05ac423", [:rebar3], [], "hexpm", "2172e05a27531d3d31dd9782841065c50dd5c3c7699d95266b2edd54c2dafa1c"},
 }

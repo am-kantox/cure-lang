@@ -15,11 +15,13 @@
     </p>
     <p class="mt-2 text-sm text-base-content/50">
       Current release: <span class="font-mono">v{CureSite.cure_version()}</span>
-      -- <em>The Shape of Things</em>. Plain <code>#</code>
-      comments as first-class AST nodes, full Elixir-style bitstring
-      segments (<code>&lt;&lt;x::utf8, rest::binary&gt;&gt;</code>), a
-      Wadler-style algebra pretty-printer behind <code>cure fmt --algebra</code>, and structural refinement narrowing
-      via <code>Cure.Types.PatternRefinement</code>.
+      -- <em>Packaging, Proof, and Polish</em>. Remote package registry with
+      Ed25519-signed publishes and a Rekor-style transparency log,
+      <code>Std.Json</code> and <code>Std.Http</code> in stdlib,
+      property-based shrinking, <code>cure doctor</code> /
+      <code>cure fix</code> / <code>cure test --cover</code>, a
+      <code>:telemetry</code> bridge, and the <code>cure_brainloop</code>
+      showcase example.
     </p>
   </div>
   <%!-- Quick example --%>
@@ -107,7 +109,7 @@
       class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
     >
       <h3 class="font-semibold text-primary group-hover:text-accent">Standard Library</h3>
-      <p class="mt-1 text-sm text-base-content/60">18 self-hosted modules, ~200 functions.</p>
+      <p class="mt-1 text-sm text-base-content/60">27 self-hosted modules, ~290 functions.</p>
     </a>
     <a
       href={~p"/match"}

@@ -780,21 +780,107 @@ client against the read-only index protocol, Ed25519 archive
 signing, and the `cure publish --hex` export path are all
 rescheduled for v0.23.0.
 
+## Implemented: v0.23.0 -- Packaging, Proof, and Polish
+v0.23.0 ships the remote package-registry story that was
+rescheduled through three releases. It lands alongside a broad
+ergonomics upgrade: property-based shrinking, two new stdlib
+modules, a `cure doctor` diagnostic, a `cure fix` project-wide
+rewriter, a `:telemetry` bridge, `cure test --cover` coverage
+reporting, and the `cure_brainloop` showcase example.
+### Remote package registry
+- `Cure.Project.Registry` -- read-only HTTP client over OTP's
+  `:httpc`. Content-addressed, disk-cached, hash-verified responses.
+  New `:registry` pipeline stage (`:fetch_start`, `:fetch_ok`,
+  `:fetch_failed`, `:cache_hit`, `:hash_mismatch`).
+- `Cure.Project.Lock` -- `Cure.lock` reader / writer with
+  `resolve_with_lock/2`. When every top-level constraint still
+  accepts the locked version, `cure deps` skips the backtracker and
+  the network entirely.
+- `Cure.Project.resolve_deps/1` extended: dependencies without
+  `path` or `git` are registry dependencies. Tarballs are fetched,
+  hash-checked, signature-verified, unpacked under
+  `_build/deps/<name>-<version>/`, and added to the code path.
+- `Cure.Project.Signing` -- Ed25519 key management on top of OTP
+  `:crypto`. Keys under `~/.cure/keys/` with tight file perms.
+  Signs `name || NUL || version || NUL || sha256(tarball)`.
+- `Cure.Project.Transparency` -- Rekor-style append-only log
+  verifier. Canonicalises entries by key-sorted JSON, validates the
+  Merkle-like hash chain, degrades gracefully to
+  `{:ok, :unverified}` when `/log` is unreachable. Promotable to a
+  hard failure with `config :cure, strict_transparency: true`.
+- `Cure.Project.Publisher` -- assembles the package tarball,
+  signs, uploads. `build_hex_tarball/1` emits a Hex-compatible
+  tarball (`VERSION` / `CHECKSUM` / `metadata.config` /
+  `contents.tar.gz`) for cross-publishing via
+  `mix hex.publish package --replace`.
+### CLI surface
+- `cure publish`, `cure publish --dry-run`, `cure publish --hex`.
+- `cure search <query>`, `cure info <name>[:version]`.
+- `cure keys generate <handle>`, `cure keys list`.
+- `cure doctor` -- environment / project / source health report,
+  suitable as a CI gate.
+- `cure fix [--dry-run]` -- project-wide safe rewrites
+  (line endings, trailing whitespace, tabs -> two spaces,
+  blank-line runs, trailing newline).
+- `cure test --cover` -- runs the self-hosted test suite under
+  `:cover`, emits an HTML index under `_build/cure/cover/`.
+### Standard library (25 -> 27)
+- **`Std.Json`** (`lib/std/json.cure`) -- JSON encoder + decoder
+  backed by the `Value` ADT
+  (`Null | Bool | Num | Str | Arr | Obj`). Companion to the
+  v0.21.0 `@derive(JSON)` target.
+- **`Std.Http`** (`lib/std/http.cure`) -- `get/1`, `get/2` (with
+  headers), `post/3`, `head/1` returning
+  `Result(Response, HttpError)`. The registry client dogfoods it.
+- **`Std.Gen.shrink_int/1`**, **`shrink_list/1`**, **`shrink/1`** --
+  shrinking primitives.
+- **`Std.Test.forall_shrunk/3`** and
+  **`forall_shrunk_default/2`** -- shrinking-aware property runner.
+  Raises `{:property_failed_with_shrunk, minimal_value}` on the
+  minimised counterexample instead of the first draw.
+### Infrastructure
+- **`Cure.Telemetry`** -- subscribes to every stage of
+  `Cure.Pipeline.Events` and re-emits events under
+  `[:cure, :pipeline, <stage>, <event_type>]`. Production
+  deployments can feed compilation and Z3 latency into an existing
+  observability stack. `:telemetry` is declared optional in
+  `mix.exs`; missing the library silently turns the bridge into a
+  no-op.
+- **`Cure.Doctor`** -- structured diagnostic (Elixir / OTP / Z3 /
+  registry URL / telemetry / project / source health). Non-zero
+  exit on any warning or error finding.
+- **`Cure.Fix`** -- project-wide safe rewrites.
+- **`Cure.Cover`** -- `:cover` harness with HTML report generation.
+### Showcase example
+- `examples/cure_brainloop/` -- the top-pick showcase from the
+  internal `ideas_for_cure_apps.md`. Toy expression-language
+  interpreter with a REPL FSM. Exercises ADTs, records, refinement
+  types, protocols, effects, FSM callback mode, OTP interop, FFI,
+  and the new `Std.Json` module in one self-contained codebase.
+  Ships with an ExUnit suite covering lexer, parser, evaluator,
+  and environment semantics.
+### Error catalog
+Five new codes `E038` -- `E042`: Registry Fetch Failed, Registry
+Hash Mismatch, Registry Package Not Found, Registry Signature
+Invalid, Transparency Log Unreachable.
+### Documentation
+- `docs/PACKAGE_REGISTRY.md` rewritten from a v0.17.0-era design
+  document into the authoritative shipped contract.
+- `docs/PUBLISHING.md` -- end-to-end walkthrough for publishing a
+  Cure package, including Hex cross-publishing and strict
+  transparency-verification mode.
+### Numbers
+- 1144 tests pass (up from 1114; 3 doctests + 1141 tests);
+  `mix credo --strict`: 0 issues across 167 source files;
+  `mix cure.check.stdlib`: 27/27; `mix cure.check.examples`:
+  44/44.
 ## Future
-
 These are not scheduled but are on the long-term radar.
-
 **Type optimizer.** Monomorphization: when a polymorphic function is only
 called with concrete types, generate specialized versions. Profile-guided
 optimization (PGO): use profiler data to prioritize hot paths for
 specialization.
-
 **Broader IDE support.** VS Code extension with syntax highlighting, snippet
 templates, and integrated diagnostics. Helix and Zed configurations.
-
-**Hex.pm integration.** Publish Cure packages to Hex.pm alongside Elixir
-and Erlang packages. A Cure package would include compiled `.beam` files and
-a `Cure.toml` manifest.
-
 **REPL (advanced).** Stateful REPL with incremental compilation and
 persistent environment across expressions.

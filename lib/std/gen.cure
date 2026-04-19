@@ -40,3 +40,24 @@ mod Std.Gen
   fn list_int(max_len: Int, lo: Int, hi: Int) -> List(Int) =
     let len = int_in(0, max_len)
     list_of_int(len, lo, hi)
+
+  # -- Shrinking (v0.23.0) ----------------------------------------------------
+
+  ## Produce a list of "smaller" candidate values for `v`. The returned
+  ## list is ordered from most aggressive shrink (halve to zero) to
+  ## least aggressive (subtract one). Empty list means "already minimal".
+  ##
+  ## Used by `Std.Test.forall/3` when a property fails to iteratively
+  ## narrow down the counterexample.
+  @extern(:cure_std_gen, :shrink_int, 1)
+  fn shrink_int(v: Int) -> List(Int)
+
+  ## Shrink a list by dropping elements. Shortest candidates come first.
+  @extern(:cure_std_gen, :shrink_list, 1)
+  fn shrink_list(xs: List(Int)) -> List(List(Int))
+
+  ## Default polymorphic shrinker delegate; dispatches on the runtime
+  ## shape of `v` and returns the empty list for types with no defined
+  ## shrink.
+  @extern(:cure_std_gen, :shrink, 1)
+  fn shrink(v: T) -> List(T)

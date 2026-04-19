@@ -2,7 +2,7 @@ defmodule Cure.MixProject do
   use Mix.Project
 
   @app :cure
-  @version "0.22.0"
+  @version "0.23.0"
   @source_url "https://github.com/am-kantox/cure-lang"
 
   def project do
@@ -39,7 +39,7 @@ defmodule Cure.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :inets, :ssl, :crypto, :public_key, :tools],
       mod: {Cure.Application, []}
     ]
   end
@@ -60,6 +60,9 @@ defmodule Cure.MixProject do
     [
       # Core -- MetaAST backing
       {:metastatic, "~> 0.18"},
+
+      # Observability -- optional, used by Cure.Telemetry when loaded
+      {:telemetry, "~> 1.3", optional: true},
 
       # Development and documentation
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
@@ -115,6 +118,8 @@ defmodule Cure.MixProject do
         "docs/PATTERNS.md",
         "docs/BINARIES.md",
         "docs/PROOFS.md",
+        "docs/PACKAGE_REGISTRY.md",
+        "docs/PUBLISHING.md",
         "docs/FSM_GUIDE.md",
         "docs/STDLIB.md"
       ],

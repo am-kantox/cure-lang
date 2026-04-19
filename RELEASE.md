@@ -1,152 +1,120 @@
-# Cure v0.19.0 -- Bring the Furniture
-*Ergonomics, proofs, and the first half of a registry.*
+# Cure v0.23.0 -- Packaging, Proof, and Polish
+*The long-awaited remote package registry, a property-based test
+shrinker, two new stdlib modules, a health-check command, a
+project-wide fixer, a telemetry bridge, coverage reporting, and the
+cure_brainloop showcase example.*
 
 Cure is a dependently-typed programming language for the BEAM virtual
 machine with first-class finite state machines and SMT-backed
 verification.
 
-v0.18.0 rebuilt pattern matching into a deeply-recursive engine.
-v0.19.0 completes the "Bring the Furniture" slate that was deferred
-to keep destructuring clean. The furniture, from largest piece to
-smallest:
+v0.22.0 closed out the language-surface backlog. v0.23.0 ships the
+remote registry story that kept getting pushed -- with the rest of a
+broad ergonomics upgrade so the day-to-day cycle catches up to the
+language itself.
 
-- `proof` containers for laws-as-programs.
-- `assert_type expr : T` as a zero-runtime type-assertion wrapper.
-- Records with default field values.
-- `@derive(Show, Eq, Ord)` wired end-to-end on `rec`.
-- Property-based testing: `Std.Gen` + `Std.Test.forall`.
-- A lazy iterator protocol: `Std.Iter`.
-- The first half of the package registry (version parser + resolver).
-- Mutual-recursion totality (SCC + structural-decrease check).
-- Multi-head cons patterns: `[a, b, c | rest]`.
+## Remote package registry
 
-## Language
+Six new modules under `Cure.Project.*`:
 
-### `proof` containers
+- `Cure.Project.Registry` -- read-only HTTP client over OTP's
+  `:httpc`. Content-addressed, disk-cached, hash-verified responses.
+- `Cure.Project.Lock` -- `Cure.lock` reader / writer with a
+  `resolve_with_lock/2` entry point that short-circuits resolution
+  when every constraint still accepts the locked version.
+- `Cure.Project.Signing` -- Ed25519 keypair management and detached
+  signatures over `name || NUL || version || NUL || sha256(tarball)`.
+- `Cure.Project.Transparency` -- Rekor-style transparency-log
+  verifier with Merkle-like chain checks.
+- `Cure.Project.Publisher` -- assembles the tarball, signs it,
+  uploads to the index.
+- `Cure.Project.Json` -- minimal internal JSON codec so the compiler
+  has no runtime JSON dependency.
 
-```cure
-proof Std.Proof
-  fn plus_zero(_n: Int) -> Eq(Int, n, n) = :cure_refl
-  fn append_nil(_xs: List(T)) -> Eq(List(T), xs, xs) = :cure_refl
-```
+Remote resolution is integrated into `Cure.Project.resolve_deps/1`:
+any dependency without `path` or `git` is treated as a registry
+dependency, fetched with hash check, signature-verified, unpacked
+under `_build/deps/<name>-<version>/`.
 
-A new `proof` keyword sits alongside `mod`/`fsm`. The container
-compiles to a regular BEAM module, but every function's return type
-must be `Eq(T, a, b)` or a refinement annotation. Runtime values are
-the `:cure_refl` atom; the type checker does the work. Mismatches
-surface as `E026`.
+## New CLI surface
 
-### `assert_type expr : T`
+- `cure publish` / `cure publish --dry-run` / `cure publish --hex`
+- `cure search <query>` / `cure info <name>[:version]`
+- `cure keys generate <handle>` / `cure keys list`
+- `cure doctor` -- environment + project + source health report.
+- `cure fix [--dry-run]` -- project-wide safe code rewrites.
+- `cure test --cover` -- emits an HTML coverage report under
+  `_build/cure/cover/`.
 
-```cure
-fn doubled(n: Int) -> Int = assert_type n * 2 : Int
-```
+## Standard library (up to 27 modules)
 
-A compile-time type assertion that disappears at runtime. If the
-inferred type of `expr` does not fit `T`, the compiler emits `E027`.
+- **`Std.Json`** -- encoder + decoder driven by a `Value` ADT
+  (`Null | Bool | Num | Str | Arr | Obj`). Pairs with the v0.21.0
+  `@derive(JSON)` extension.
+- **`Std.Http`** -- thin wrapper over `:httpc`. `get`, `post`, `head`
+  returning `Result(Response, HttpError)`. The Cure registry client
+  dogfoods the same module.
+- **`Std.Gen.shrink*`** and **`Std.Test.forall_shrunk`** -- shrinking
+  primitives so property failures report minimised inputs instead of
+  "it failed on a 47-element map".
 
-### Record field defaults
+## Infrastructure
 
-```cure
-rec Person
-  name: String = "Anonymous"
-  age: Int = 0
-  active: Bool = true
-```
+- **`Cure.Telemetry`** -- optional `:telemetry` bridge that re-emits
+  every `Cure.Pipeline.Events` event under
+  `[:cure, :pipeline, <stage>, <event_type>]`. Production deployments
+  can pipe compilation / Z3 latency into their existing observability
+  stack without extra glue.
+- **`Cure.Doctor`** -- structured diagnostic (Elixir / OTP / Z3 /
+  registry URL / telemetry / project / source health).
+- **`Cure.Fix`** -- five safe rewrites (line endings, trailing
+  whitespace, tabs, blank-line runs, trailing newlines) across every
+  `.cure` under `lib/` and `test/`.
+- **`Cure.Cover`** -- `:cover` harness with HTML report generation.
 
-Construction merges declared defaults with the user-supplied fields.
-Overrides always win. Default type mismatches emit `E028`.
+## Showcase example
 
-### `@derive(Show, Eq, Ord)`
-
-```cure
-@derive(Show, Eq, Ord)
-rec Point
-  x: Int
-  y: Int
-```
-
-The decorator wires `Cure.Types.Derive` end to end: the synthesised
-`show/1`, `eq/2`, and `compare/2` functions are plain module exports.
-
-### Multi-head cons patterns
-
-```cure
-match xs
-  [a, b, c | rest] -> a + b + c
-  _                -> 0
-```
-
-The parser desugars multi-head cons to right-associated cells
-(`[a | [b | [c | rest]]]`). Works in pattern and construction
-positions.
-
-## Standard library
-
-- **`Std.Proof`** -- reflexivity-based arithmetic and list laws.
-- **`Std.Gen`** -- `int_in/2`, `bool/0`, `one_of/2`, `list_of_int/3`,
-  `list_int/3`. Backed by `:rand`.
-- **`Std.Iter`** -- lazy iterator protocol. Constructors: `empty/0`,
-  `from_list/1`, `range/2`. Consumers: `fold/3`, `take/2`,
-  `to_list/1`.
-- **`Std.Test.forall/3`** and **`Std.Test.forall_default/2`** --
-  property-based runner. Raises `:property_failed` on first
-  counterexample.
-
-## Totality
-
-`Cure.Types.Totality.check_mutual/1` runs a Tarjan SCC analysis over
-a module's call graph. Non-trivial strongly-connected components are
-reported as `:ok` (structural decrease proved) or `:suspect`
-(`E029`).
-
-## Packaging
-
-- `Cure.Project.Version` -- SemVer parser with `~>`, `>=`, `<=`,
-  `<`, `>`, `==`, compound constraints joined by `and`.
-  MAJOR.MINOR is accepted as shorthand for MAJOR.MINOR.0.
-- `Cure.Project.Resolver` -- deterministic backtracking resolver
-  over a local/git workspace. Newest-compatible-first; conflicts
-  surface as `E030`.
-
-The remote registry index service is slated for v0.20.0.
+- `examples/cure_brainloop/` -- a toy expression-language
+  interpreter with a REPL FSM. Exercises ADTs, records, refinement
+  types, protocols, effects, FSM callback mode, OTP interop, FFI, and
+  the new `Std.Json` module in one self-contained codebase. Ships
+  with an ExUnit suite covering lexer, parser, evaluator, and
+  environment semantics.
 
 ## Error catalog
 
-Five new codes: `E026` proof shape, `E027` assert_type failed,
-`E028` record default mismatch, `E029` mutual recursion not
-structural, `E030` package version conflict.
+Five new codes `E038`-`E042`:
+- `E038 Registry Fetch Failed`
+- `E039 Registry Hash Mismatch`
+- `E040 Registry Package Not Found`
+- `E041 Registry Signature Invalid`
+- `E042 Transparency Log Unreachable`
 
-## Numbers
+## Documentation
 
-- 4 new Elixir modules: `Cure.Project.Version`, `Cure.Project.Resolver`,
-  plus major extensions to `Cure.Types.Totality`, `Cure.Types.Derive`,
-  `Cure.Compiler.Codegen`, `Cure.Compiler.Parser`, `Cure.Types.Checker`,
-  `Cure.Types.Type`.
-- 3 new stdlib modules (`Std.Proof`, `Std.Gen`, `Std.Iter`);
-  `Std.Test` extended with `forall`.
-- 4 new examples (`defaults.cure`, `derived_show.cure`,
-  `proof_laws.cure`, `lazy_iter.cure`).
-- 1 new documentation file (`docs/PROOFS.md`).
-- New error codes `E026`--`E030`.
-- Test count jumps from 923 to ~970, new tests spread across
-  `pattern_compiler_test`, `record_defaults_test`, `assert_type_test`,
-  `derive_integration_test`, `proof_test`, `totality_mutual_test`,
-  `version_test`, `resolver_test`, `pbt_test`, `iter_test`,
-  `multi_head_cons_test`.
-- `mix credo --strict`: 0 issues.
-- `mix cure.check.stdlib`: 24/24 modules clean.
-- `mix cure.check.examples`: 30/30 programs clean.
+- `docs/PACKAGE_REGISTRY.md` rewritten from a v0.17.0-era design
+  document into the authoritative shipped contract.
+- `docs/PUBLISHING.md` -- end-to-end walkthrough for generating keys,
+  publishing a package, cross-publishing to Hex.pm, and enabling
+  strict transparency-verification mode.
+
+## Non-goals
+
+- Private / enterprise registries.
+- Binary artefacts other than `.beam` (no NIFs in the tarball).
+- Automated yank UI (the API accepts yank metadata; no dedicated
+  command).
+- Pubgrub-based resolver (the v0.17.0 design doc's "fancy" variant;
+  the deterministic backtracker stays).
 
 ## What's next
 
-- **v0.20.0**: the second half of the package registry -- the remote
-  index service, signing, and Hex.pm cross-publishing.
-- Refinement narrowing through nested record/map patterns.
-- Full bitstring-pattern segment specifiers in `PatternCompiler`.
-- Type-directed `@derive` extensions (Functor, Monoid, JSON).
+With the registry story closed, the v0.24.0 focus returns to the
+language itself: monomorphisation, profile-guided optimisation, and
+broader IDE integrations (Helix, Zed, upgraded VS Code extension).
 
 ## Naming
 
-"Bring the Furniture" -- subtitled *Ergonomics, proofs, and the first
-half of a registry*.
+"Packaging, Proof, and Polish" -- three P's: the shipped package
+registry, the proof-oriented shrinker, and the polish of
+doctor / fix / coverage / telemetry.

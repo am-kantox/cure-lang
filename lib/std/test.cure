@@ -37,3 +37,16 @@ mod Std.Test
   ## Convenience wrapper that uses 100 runs by default.
   fn forall_default(gen: Atom -> T, property: T -> Bool) -> Atom =
     forall(gen, property, 100)
+
+  # -- Shrinking-aware property runner (v0.23.0) -----------------------------
+
+  ## Run `property` against `runs` random samples. On the first failure,
+  ## shrink the counterexample using `Std.Gen.shrink/1` until no smaller
+  ## value also fails; raise `:property_failed_with_shrunk` carrying the
+  ## minimised value.
+  @extern(:cure_std_test, :forall_shrunk, 3)
+  fn forall_shrunk(gen: Atom -> T, property: T -> Bool, runs: Int) -> T
+
+  ## Same as `forall_shrunk/3` but with a 100-run default.
+  fn forall_shrunk_default(gen: Atom -> T, property: T -> Bool) -> T =
+    forall_shrunk(gen, property, 100)

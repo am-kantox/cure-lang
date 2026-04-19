@@ -48,7 +48,14 @@ defmodule Cure.CLI do
           ast: :boolean,
           algebra: :boolean,
           safe: :boolean,
-          check: :boolean
+          check: :boolean,
+          dry_run: :boolean,
+          hex: :boolean,
+          handle: :string,
+          token: :string,
+          cover: :boolean,
+          strict: :boolean,
+          registry: :string
         ],
         aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
       )
@@ -76,6 +83,13 @@ defmodule Cure.CLI do
         ["new" | rest] -> cmd_new(rest, opts)
         ["bench" | rest] -> cmd_bench(rest, opts)
         ["why" | [code]] -> cmd_explain(code)
+        ["doctor"] -> cmd_doctor(opts)
+        ["fix"] -> cmd_fix(opts)
+        ["publish" | _] -> cmd_publish(opts)
+        ["search" | [query]] -> cmd_search(query, opts)
+        ["info" | [name]] -> cmd_info(name, opts)
+        ["keys", "generate", handle] -> cmd_keys_generate(handle)
+        ["keys", "list"] -> cmd_keys_list()
         ["help"] -> help()
         [] -> help()
         [unknown | _] -> error("Unknown command: #{unknown}. Run 'cure help' for usage.")
@@ -310,6 +324,12 @@ defmodule Cure.CLI do
   defp cmd_test(opts) do
     filter = Keyword.get(opts, :filter, nil)
     doctests? = Keyword.get(opts, :doctests, false)
+    cover? = Keyword.get(opts, :cover, false)
+
+    if cover? do
+      Cure.Cover.start("_build/cure/ebin")
+    end
+
     test_files = Path.wildcard("test/**/*.cure")
 
     if test_files == [] do
@@ -362,6 +382,14 @@ defmodule Cure.CLI do
       end)
 
       info("#{pass} passed, #{fail} failed")
+
+      if cover? do
+        results_cov = Cure.Cover.collect()
+        _ = Cure.Cover.summary(results_cov)
+        _ = Cure.Cover.report(results_cov)
+        info("Coverage HTML written to _build/cure/cover/index.html")
+      end
+
       if fail > 0, do: exit({:shutdown, 1})
     end
   end
@@ -668,6 +696,185 @@ defmodule Cure.CLI do
     end
   end
 
+  # -- doctor -------------------------------------------------------------------
+
+  defp cmd_doctor(_opts) do
+    report = Cure.Doctor.run(".")
+    _ = Cure.Doctor.render(report)
+
+    unless report.ok?, do: exit({:shutdown, 1})
+  end
+
+  # -- fix ----------------------------------------------------------------------
+
+  defp cmd_fix(opts) do
+    dry? = Keyword.get(opts, :dry_run, false)
+    results = Cure.Fix.run(".", dry_run: dry?)
+    changed = Enum.filter(results, & &1.changed?)
+
+    case {changed, dry?} do
+      {[], _} ->
+        info("cure fix: nothing to change.")
+
+      {_, true} ->
+        Enum.each(changed, fn r ->
+          info("  would fix #{r.file}: #{Enum.join(Enum.map(r.applied, &Atom.to_string/1), ", ")}")
+        end)
+
+        exit({:shutdown, 1})
+
+      {_, false} ->
+        Enum.each(changed, fn r ->
+          info("  fixed #{r.file}: #{Enum.join(Enum.map(r.applied, &Atom.to_string/1), ", ")}")
+        end)
+
+        info("cure fix: #{length(changed)} file(s) rewritten.")
+    end
+  end
+
+  # -- publish / search / info -----------------------------------------------
+
+  defp cmd_publish(opts) do
+    if Keyword.get(opts, :registry) do
+      Application.put_env(:cure, :registry_url, Keyword.get(opts, :registry))
+    end
+
+    cond do
+      Keyword.get(opts, :hex, false) ->
+        case Cure.Project.Publisher.build_hex_tarball(".") do
+          {:ok, bytes} ->
+            path = "_build/cure/publish/hex.tar"
+            File.mkdir_p!(Path.dirname(path))
+            File.write!(path, bytes)
+            info("Hex-compatible tarball written to #{path}")
+            info("Next: `mix hex.publish package --replace` with the tarball above.")
+
+          {:error, reason} ->
+            error("cure publish --hex failed: #{inspect(reason)}")
+            exit({:shutdown, 1})
+        end
+
+      Keyword.get(opts, :dry_run, false) ->
+        case Cure.Project.Publisher.build_tarball(".") do
+          {:ok, bytes, sha, manifest} ->
+            info("Would upload #{manifest["name"]} #{manifest["version"]}")
+            info("  sha256 = #{sha}")
+            info("  size   = #{byte_size(bytes)} bytes")
+            info("  files  = #{length(Map.get(manifest, "dependencies", []))} declared deps")
+
+          {:error, reason} ->
+            error("cure publish --dry-run failed: #{inspect(reason)}")
+            exit({:shutdown, 1})
+        end
+
+      true ->
+        handle =
+          Keyword.get(opts, :handle) ||
+            System.get_env("CURE_HANDLE") ||
+            prompt("Maintainer handle: ")
+
+        token =
+          Keyword.get(opts, :token) ||
+            System.get_env("CURE_TOKEN") ||
+            prompt("Upload token: ")
+
+        case Cure.Project.Publisher.publish(".", handle, token) do
+          {:ok, resp} ->
+            info("Published: #{inspect(resp)}")
+
+          {:error, reason} ->
+            error("cure publish failed: #{inspect(reason)}")
+            exit({:shutdown, 1})
+        end
+    end
+  end
+
+  defp cmd_search(query, opts) do
+    if Keyword.get(opts, :registry) do
+      Application.put_env(:cure, :registry_url, Keyword.get(opts, :registry))
+    end
+
+    case Cure.Project.Registry.search(query) do
+      {:ok, hits} ->
+        if hits == [] do
+          info("No hits for '#{query}'.")
+        else
+          Enum.each(hits, fn h ->
+            info("  #{Map.get(h, "name", "?")} #{Map.get(h, "version", "?")} -- #{Map.get(h, "description", "")}")
+          end)
+        end
+
+      {:error, reason} ->
+        error("cure search failed: #{inspect(reason)}")
+        exit({:shutdown, 1})
+    end
+  end
+
+  defp cmd_info(name_version, opts) do
+    if Keyword.get(opts, :registry) do
+      Application.put_env(:cure, :registry_url, Keyword.get(opts, :registry))
+    end
+
+    {name, maybe_version} =
+      case String.split(name_version, ":", parts: 2) do
+        [n, v] -> {n, v}
+        [n] -> {n, nil}
+      end
+
+    case maybe_version do
+      nil ->
+        case Cure.Project.Registry.list_versions(name) do
+          {:ok, versions} ->
+            info("#{name}:")
+
+            Enum.each(versions, fn v ->
+              info("  #{v.version}  (sha256: #{v.sha256})")
+            end)
+
+          {:error, reason} ->
+            error("cure info failed: #{inspect(reason)}")
+            exit({:shutdown, 1})
+        end
+
+      v ->
+        case Cure.Project.Registry.fetch_manifest(name, v) do
+          {:ok, manifest} ->
+            IO.puts(Cure.Project.Json.encode(manifest))
+
+          {:error, reason} ->
+            error("cure info failed: #{inspect(reason)}")
+            exit({:shutdown, 1})
+        end
+    end
+  end
+
+  defp cmd_keys_generate(handle) do
+    try do
+      case Cure.Project.Signing.generate_keypair(handle) do
+        {:ok, ^handle} -> info("Generated keypair for '#{handle}' under ~/.cure/keys/")
+        other -> error("key generation returned unexpected: #{inspect(other)}")
+      end
+    rescue
+      e -> error("key generation failed: #{Exception.message(e)}")
+    end
+  end
+
+  defp cmd_keys_list do
+    trusted = Cure.Project.Signing.trusted_keys()
+
+    if map_size(trusted) == 0 do
+      info("No trusted keys. Generate one with `cure keys generate <handle>`.")
+    else
+      Enum.each(trusted, fn {h, pub} ->
+        info("  #{h}  #{Base.encode16(pub, case: :lower) |> String.slice(0, 16)}...")
+      end)
+    end
+  end
+
+  defp prompt(msg) do
+    IO.gets(msg) |> to_string() |> String.trim()
+  end
+
   # -- version / help ----------------------------------------------------------
 
   defp cmd_version do
@@ -693,10 +900,17 @@ defmodule Cure.CLI do
       new <name>           Scaffold a new project (--lib | --app | --fsm)
       init <name>          Same as `new --lib`
       deps                 Resolve project dependencies
-      test                 Run .cure tests under test/
+      test [--cover]       Run .cure tests under test/, optionally with coverage
       bench [path]         Run .cure benchmarks under bench/
       explain <Eddd>       Explain an error code
       why <Eddd>           Alias for `explain`
+      doctor               Environment + project + source health report
+      fix [--dry-run]      Apply safe project-wide code fixes
+      publish [opts]       Package and upload to the Cure registry
+      search <query>       Search the registry for packages
+      info <name[:ver]>    Show registry manifest / version list
+      keys generate <h>    Generate an Ed25519 signing keypair
+      keys list            List trusted publisher keys
       version              Show version
       help                 Show this help
 
@@ -711,6 +925,12 @@ defmodule Cure.CLI do
       --lib | --app | --fsm  `cure new` template selector
       --filter PATTERN       `cure test` filter
       --doctests             `cure test` includes doctests
+      --cover                `cure test --cover` emits _build/cure/cover/index.html
+      --dry-run              `cure fix --dry-run`, `cure publish --dry-run`
+      --hex                  `cure publish --hex` -- Hex-compatible tarball
+      --handle HANDLE        Maintainer handle for `cure publish`
+      --token TOKEN          Upload token for `cure publish`
+      --registry URL         Override registry base URL
       -v, --verbose          Verbose output
       -h, --help             Show help
     """)

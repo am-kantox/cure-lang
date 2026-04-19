@@ -1,0 +1,33 @@
+mod Brainloop
+  ## Reference Cure-side helpers for the cure_brainloop example.
+  ##
+  ## The full interpreter lives on the Elixir side in
+  ## `lib/cure_brainloop.ex`; this file showcases a small piece of
+  ## the domain in Cure itself -- an `Op` ADT and a `combine/3`
+  ## helper -- so the example exercises Cure ADT + match-exhaustiveness
+  ## alongside the Elixir driver.
+
+  type Op =
+    | Add
+    | Sub
+    | Mul
+    | Div
+
+  ## Apply a Brainloop binary operator. Returns `Error(:div_zero)` for
+  ## division by zero, otherwise `Ok(result)`.
+  fn apply(op: Op, left: Int, right: Int) -> Result(Int, Atom) =
+    match op
+      Add -> Ok(left + right)
+      Sub -> Ok(left - right)
+      Mul -> Ok(left * right)
+      Div ->
+        if right == 0 then Error(:div_zero) else Ok(left / right)
+
+  ## Decide whether an op is commutative. Used for the constant-
+  ## folding optimiser lifted out of the main interpreter.
+  fn commutative(op: Op) -> Bool =
+    match op
+      Add -> true
+      Sub -> false
+      Mul -> true
+      Div -> false

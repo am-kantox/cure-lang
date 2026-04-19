@@ -1,0 +1,37 @@
+mod Std.Http
+  ## Minimal HTTP client (v0.23.0).
+  ##
+  ## Thin wrapper over OTP's `:httpc`; no external dependencies. Produces
+  ## `Result(Response, HttpError)` so callers can compose HTTP with
+  ## regular `Result`-chains:
+  ##
+  ## ```
+  ## match Std.Http.get("https://example.com/api")
+  ##   Ok(resp)   -> ... resp.body ...
+  ##   Error(e)   -> ... handle ...
+  ## ```
+  ##
+  ## `Response.headers` is a list of (name, value) string pairs.
+
+  rec Response
+    status: Int
+    headers: List((String, String))
+    body: Bitstring
+
+  type HttpError =
+    | Timeout
+    | BadStatus(Int)
+    | NetworkError(String)
+    | DecodeError(String)
+
+  @extern(:cure_std_http, :get, 1)
+  fn get(url: String) -> Result(Response, HttpError)
+
+  @extern(:cure_std_http, :get, 2)
+  fn get_with_headers(url: String, headers: List((String, String))) -> Result(Response, HttpError)
+
+  @extern(:cure_std_http, :post, 3)
+  fn post(url: String, headers: List((String, String)), body: Bitstring) -> Result(Response, HttpError)
+
+  @extern(:cure_std_http, :head, 1)
+  fn head(url: String) -> Result(Response, HttpError)

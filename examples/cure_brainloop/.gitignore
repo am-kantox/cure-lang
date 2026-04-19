@@ -1,0 +1,4 @@
+_build/
+deps/
+*.beam
+cure_brainloop

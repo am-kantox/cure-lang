@@ -108,7 +108,7 @@ Or via the Mix task:
 mix cure.compile_stdlib
 ```
 
-This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 24 modules (~260 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, the dependent-type helpers `Std.Equal` and `Std.Refine`, the v0.18.0 destructuring helpers in `Std.Match`, and the v0.19.0 additions `Std.Proof`, `Std.Gen`, and `Std.Iter`.
+This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 27 modules (~290 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, the dependent-type helpers `Std.Equal` and `Std.Refine`, the v0.18.0 destructuring helpers in `Std.Match`, the v0.19.0 additions `Std.Proof`, `Std.Gen`, and `Std.Iter`, the v0.21.0 `Std.Access` lens kit, and the v0.23.0 additions `Std.Json` (runtime companion to `@derive(JSON)`) and `Std.Http` (thin `:httpc` wrapper returning `Result(Response, HttpError)`).
 
 ## Other CLI commands
 
@@ -121,10 +121,18 @@ cure deps                 # List dependencies
 cure deps tree            # Inspect dependency graph
 cure deps update          # Refresh Cure.lock
 cure test --doctests      # Run tests, including doctests
+cure test --cover         # Emit _build/cure/cover/index.html
 cure repl                 # Multi-line REPL with :t, :doc, :holes, ...
 cure watch lib/           # Recompile / check / test on every save
 cure fmt lib/             # Format Cure sources
 cure bench                # Run bench/**/*.cure benchmarks
+cure doctor               # Environment + project + source health report
+cure fix                  # Apply safe project-wide rewrites
+cure publish --dry-run    # Preview what `cure publish` would upload
+cure publish --hex        # Build a Hex-compatible tarball
+cure search <query>       # Search the registry
+cure info <name>[:ver]    # Inspect a package manifest
+cure keys generate <h>    # Generate an Ed25519 signing keypair
 ```
 
 ## Editor setup

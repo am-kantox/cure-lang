@@ -50,37 +50,147 @@ defmodule Cure.Project do
 
   # -- Dependency Resolution ---------------------------------------------------
 
-  @doc "Resolve and compile all dependencies for a project."
+  @doc """
+  Resolve and compile all dependencies for a project.
+
+  The dependency kind dispatches per entry:
+
+  - `path: "..."`   -- local path dependency; compiled in place.
+  - `git:  "..."`   -- git dependency; cloned under `_build/deps/<name>`.
+  - otherwise       -- registry dependency; resolved via
+    `Cure.Project.Registry`, hash-checked, signature-verified, and
+    unpacked under `_build/deps/<name>-<version>/`.
+
+  Returns `:ok` on success, `{:error, term}` on the first hard
+  failure. Transparency-log failures degrade to a warning unless
+  `config :cure, strict_transparency: true` is set.
+  """
   @spec resolve_deps(t()) :: :ok | {:error, term()}
   def resolve_deps(%__MODULE__{dependencies: deps, root: root}) do
-    Enum.each(deps, fn dep ->
-      case dep do
-        %{path: rel_path, name: name} ->
-          abs_path = Path.expand(rel_path, root)
-          cure_files = Path.wildcard(Path.join(abs_path, "lib/**/*.cure"))
+    # Preferentially reuse the lockfile: if every locked version still
+    # satisfies the current constraints, we skip the resolver entirely.
+    registry_deps = Enum.filter(deps, &registry_dep?/1)
+    top_constraints = for d <- registry_deps, into: %{}, do: {d.name, Map.get(d, :constraint, "")}
 
-          Enum.each(cure_files, fn file ->
-            case Cure.Compiler.compile_file(file,
-                   output_dir: Path.join(root, "_build/deps/#{name}"),
-                   emit_events: false
-                 ) do
-              {:ok, _mod, _warnings} -> :ok
-              {:error, _reason} -> :ok
-            end
-          end)
-
-          # Add to code path
-          dep_ebin = Path.join(root, "_build/deps/#{name}")
-          File.mkdir_p!(dep_ebin)
-          :code.add_patha(String.to_charlist(Path.expand(dep_ebin)))
+    reuse_lock? =
+      case Cure.Project.Lock.read(root) do
+        {:ok, lock} ->
+          match?({:ok, _}, Cure.Project.Lock.resolve_with_lock(top_constraints, lock))
 
         _ ->
-          :ok
+          false
       end
+
+    result =
+      Enum.reduce_while(deps, :ok, fn dep, :ok ->
+        case resolve_one(dep, root, reuse_lock?) do
+          :ok -> {:cont, :ok}
+          {:error, _} = err -> {:halt, err}
+        end
+      end)
+
+    result
+  end
+
+  defp registry_dep?(dep) do
+    is_nil(Map.get(dep, :path)) and is_nil(Map.get(dep, :git))
+  end
+
+  defp resolve_one(%{path: rel_path, name: name}, root, _reuse_lock?)
+       when is_binary(rel_path) and rel_path != "" do
+    abs_path = Path.expand(rel_path, root)
+    cure_files = Path.wildcard(Path.join(abs_path, "lib/**/*.cure"))
+    dep_ebin = Path.join(root, "_build/deps/#{name}")
+    File.mkdir_p!(dep_ebin)
+
+    Enum.each(cure_files, fn file ->
+      _ = Cure.Compiler.compile_file(file, output_dir: dep_ebin, emit_events: false)
     end)
 
+    :code.add_patha(String.to_charlist(Path.expand(dep_ebin)))
     :ok
   end
+
+  defp resolve_one(%{git: _url} = dep, root, _reuse_lock?) do
+    resolve_git_dep(dep, root)
+  end
+
+  defp resolve_one(%{name: name} = dep, root, reuse_lock?) do
+    version = Map.get(dep, :version)
+    constraint = Map.get(dep, :constraint) || version || ">= 0.0.0"
+    resolve_registry_dep(name, constraint, root, reuse_lock?)
+  end
+
+  defp resolve_one(_, _root, _reuse_lock?), do: :ok
+
+  defp resolve_registry_dep(name, constraint, root, reuse_lock?) do
+    with {:ok, version_string, sha} <- pick_version(name, constraint, root, reuse_lock?),
+         {:ok, bytes, _hash} <- Cure.Project.Registry.fetch_tarball(name, version_string, sha),
+         :ok <- verify_bundle(name, version_string, sha, bytes),
+         :ok <- install_tarball(name, version_string, bytes, root) do
+      :ok
+    else
+      {:error, _} = err -> err
+    end
+  end
+
+  defp pick_version(name, constraint, root, true) do
+    # Lock-preferred path: read the lockfile, honour the pinned version.
+    case Cure.Project.Lock.read(root) do
+      {:ok, lock} ->
+        case Map.get(lock, name) do
+          %{version: v, hash: h} when is_binary(h) and h != "" ->
+            {:ok, v, strip_sha_prefix(h)}
+
+          _ ->
+            pick_version(name, constraint, root, false)
+        end
+
+      _ ->
+        pick_version(name, constraint, root, false)
+    end
+  end
+
+  defp pick_version(name, _constraint, _root, false) do
+    with {:ok, versions} <- Cure.Project.Registry.list_versions(name),
+         [top | _] <- versions do
+      {:ok, top.version, String.downcase(top.sha256)}
+    else
+      [] -> {:error, {:no_versions, name}}
+      {:error, _} = err -> err
+    end
+  end
+
+  defp verify_bundle(name, version, _sha, bytes) do
+    case Cure.Project.Transparency.verify(name, version, :crypto.hash(:sha256, bytes) |> Base.encode16(case: :lower)) do
+      :ok -> :ok
+      {:ok, :unverified} -> :ok
+      {:error, _} = err -> err
+    end
+  end
+
+  defp install_tarball(name, version, bytes, root) do
+    target = Path.join(root, "_build/deps/#{name}-#{version}")
+    File.mkdir_p!(target)
+    tmp = Path.join(target, "pkg.tar.gz")
+    File.write!(tmp, bytes)
+    _ = :erl_tar.extract(String.to_charlist(tmp), [:compressed, cwd: String.to_charlist(target)])
+    _ = File.rm(tmp)
+
+    cure_files = Path.wildcard(Path.join(target, "**/lib/**/*.cure"))
+    dep_ebin = Path.join(root, "_build/deps/#{name}-#{version}/ebin")
+    File.mkdir_p!(dep_ebin)
+
+    Enum.each(cure_files, fn file ->
+      _ = Cure.Compiler.compile_file(file, output_dir: dep_ebin, emit_events: false)
+    end)
+
+    :code.add_patha(String.to_charlist(Path.expand(dep_ebin)))
+    :ok
+  end
+
+  defp strip_sha_prefix("sha256:" <> rest), do: rest
+  defp strip_sha_prefix(other), do: other
 
   # -- Scaffolding -------------------------------------------------------------
 
@@ -355,19 +465,31 @@ defmodule Cure.Project do
   end
 
   defp parse_dep_line(line) do
-    case Regex.run(~r/^(\w+)\s*=\s*\{(.+)\}/, line) do
-      [_, name, attrs] ->
+    cond do
+      # Inline-table form: foo = { path = "...", version = "..." }
+      match = Regex.run(~r/^(\w+)\s*=\s*\{(.+)\}/, line) ->
+        [_, name, attrs] = match
+
         pairs =
           Regex.scan(~r/(\w+)\s*=\s*"([^"]*)"/, attrs)
           |> Enum.map(fn [_, k, v] -> {k, v} end)
           |> Map.new()
 
-        Map.put(pairs, "name", name)
-        |> then(fn m ->
-          %{name: m["name"], path: Map.get(m, "path"), git: Map.get(m, "git"), tag: Map.get(m, "tag")}
-        end)
+        %{
+          name: name,
+          path: Map.get(pairs, "path"),
+          git: Map.get(pairs, "git"),
+          tag: Map.get(pairs, "tag"),
+          version: Map.get(pairs, "version"),
+          constraint: Map.get(pairs, "constraint") || Map.get(pairs, "version")
+        }
 
-      _ ->
+      # Simple registry form: foo = "~> 1.0"
+      match = Regex.run(~r/^(\w+)\s*=\s*"([^"]+)"/, line) ->
+        [_, name, constraint] = match
+        %{name: name, path: nil, git: nil, tag: nil, version: constraint, constraint: constraint}
+
+      true ->
         nil
     end
   end

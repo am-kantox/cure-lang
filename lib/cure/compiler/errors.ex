@@ -605,6 +605,59 @@ defmodule Cure.Compiler.Errors do
     Fix: pass a `Bitstring` value, for example a string literal
     (`"abc"`) or a `<<...>>` construction.
     """,
+    "E038" => """
+    E038: Registry Fetch Failed
+
+    A call to the Cure package registry returned a non-2xx status or
+    hit a transport error. The failure is surfaced through
+    `Cure.Pipeline.Events` on the `:registry` stage; rerun with
+    `--verbose` for the HTTP status or transport reason.
+
+    Fix: verify the registry URL (env `CURE_REGISTRY_URL`), check
+    network connectivity, or retry after the upstream incident is
+    resolved.
+    """,
+    "E039" => """
+    E039: Registry Hash Mismatch
+
+    A tarball downloaded from the registry does not match the sha256
+    the index declared for that version. This is treated as an
+    unconditional error: the bytes are discarded and the install
+    aborts.
+
+    Fix: run `cure deps update` to force a re-resolution against the
+    current index. If the mismatch persists, the registry entry is
+    corrupt and should be reported upstream.
+    """,
+    "E040" => """
+    E040: Registry Package Not Found
+
+    The registry index has no entry for the requested package name.
+
+    Fix: check the spelling in `Cure.toml`, confirm the package is
+    published, or search the index with `cure search <query>`.
+    """,
+    "E041" => """
+    E041: Registry Signature Invalid
+
+    A tarball's Ed25519 signature failed verification against the
+    trusted public key for its publisher. The install is aborted.
+
+    Fix: either trust the publisher's key explicitly
+    (`cure keys generate / cure keys list`) or reject the package
+    until the publisher rotates a compromised key.
+    """,
+    "E042" => """
+    E042: Transparency Log Unreachable
+
+    The registry's transparency log did not respond to the pre-install
+    verification request. By default the install continues with an
+    :unverified annotation; set `config :cure,
+    strict_transparency: true` to make this a hard failure.
+
+    Fix: check connectivity to the registry's `/log` endpoint, or
+    accept the unverified install if you trust the transport.
+    """,
     "E037" => """
     E037: Binary Segment Size Non-Linear
 

@@ -6,6 +6,146 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.23.0] -- Packaging, Proof, and Polish
+
+v0.23.0 ships the remote package-registry story that has been
+rescheduled three releases in a row. It lands alongside a broad
+ergonomics upgrade -- property-based shrinking, two new stdlib
+modules, a doctor diagnostic, a project-wide fixer, a telemetry
+bridge, coverage reporting -- and the `cure_brainloop` showcase
+example that exercises every Cure feature in a single project.
+
+### Added -- Remote package registry
+
+- `Cure.Project.Registry` -- read-only HTTP client over OTP's
+  `:httpc`. Implements the full endpoint set from
+  `docs/PACKAGE_REGISTRY.md`: `GET /packages/:name`,
+  `/packages/:name/:version`, `/packages/:name/:version/tarball`,
+  `GET /packages?q=<query>`, `GET /log`, `POST /packages`. Content-
+  addressed caching under `~/.cure/registry_cache/`. Emits `:registry`
+  pipeline events for every network call (`:fetch_start`, `:fetch_ok`,
+  `:fetch_failed`, `:cache_hit`, `:hash_mismatch`).
+- `Cure.Project.Lock` -- `Cure.lock` reader and writer. Grows a
+  `resolve_with_lock/2` entry point so `cure deps` can reuse the
+  lockfile when every constraint is still satisfied.
+- `Cure.Project.resolve_deps/1` extended: dependencies without `path`
+  or `git` are treated as registry dependencies -- fetched, hash-
+  checked, unpacked under `_build/deps/<name>-<version>/`, and added
+  to the code path.
+- `Cure.Project.Signing` -- Ed25519 key management on top of OTP
+  `:crypto`. Keys under `~/.cure/keys/` with tight file perms. Signs
+  `name || NUL || version || NUL || sha256(tarball)`. Verifies every
+  install against the trusted-key list.
+- `Cure.Project.Transparency` -- client-side verifier for the
+  Rekor-style publish log. Canonicalises entries by key-sorted JSON,
+  validates the Merkle-like hash chain, degrades gracefully to
+  `{:ok, :unverified}` when `/log` is unreachable. Promotable to a
+  hard failure with `config :cure, strict_transparency: true`.
+- `Cure.Project.Publisher` -- assembles the package tarball, signs,
+  and uploads. `build_hex_tarball/1` emits a Hex-compatible tarball
+  (`VERSION` / `CHECKSUM` / `metadata.config` / `contents.tar.gz`)
+  for cross-publishing via `mix hex.publish package --replace`.
+- `Cure.Project.Json` -- minimal internal JSON codec used by every
+  packaging module so the compiler has no runtime JSON dependency.
+
+### Added -- CLI
+
+- `cure publish`, `cure publish --dry-run`, `cure publish --hex`.
+- `cure search <query>`, `cure info <name>[:version]`.
+- `cure keys generate <handle>`, `cure keys list`.
+- `cure doctor` -- environment / project / source health report,
+  suitable as a CI gate.
+- `cure fix [--dry-run]` -- project-wide safe rewrites
+  (`normalize_line_endings`, `strip_trailing_whitespace`,
+  `strip_mixed_tabs`, `collapse_blank_lines`,
+  `ensure_trailing_newline`).
+- `cure test --cover` -- runs the self-hosted test suite under
+  `:cover`, emits an HTML index under `_build/cure/cover/`.
+- New switches: `--dry-run`, `--hex`, `--handle`, `--token`,
+  `--cover`, `--strict`, `--registry`.
+
+### Added -- Standard library (brings total to 27)
+
+- **`Std.Json`** (`lib/std/json.cure`) -- JSON encoder + decoder via
+  the `Value = Null | Bool(Bool) | Num(Float) | Str(String) |
+  Arr(List(Value)) | Obj(List((String, Value)))` ADT. Runtime is
+  `:cure_std_json`. Companion to the v0.21.0 `@derive(JSON)` target.
+- **`Std.Http`** (`lib/std/http.cure`) -- thin wrapper over `:httpc`.
+  `get/1`, `get/2`, `post/3`, `head/1` returning `Result(Response,
+  HttpError)`. Runtime is `:cure_std_http`.
+- **`Std.Gen.shrink_int/1`**, **`shrink_list/1`**, **`shrink/1`** --
+  shrinking primitives backing the property-based tests. Runtime is
+  `:cure_std_gen`.
+- **`Std.Test.forall_shrunk/3`** and
+  **`Std.Test.forall_shrunk_default/2`** -- shrinking-aware property
+  runner. Raises `{:property_failed_with_shrunk, value}` on the
+  minimised counterexample. Runtime is `:cure_std_test`.
+
+### Added -- Infrastructure
+
+- `Cure.Telemetry` -- subscribes to every stage of
+  `Cure.Pipeline.Events` and re-emits `[:cure, :pipeline, <stage>,
+  <event_type>]` events through OTP's optional `:telemetry` library.
+  Silent no-op when `:telemetry` is not on the load path.
+- `Cure.Doctor` -- structured diagnostic (Elixir / OTP / Z3 /
+  registry URL / telemetry / project / source health). Non-zero exit
+  on any warning or error finding.
+- `Cure.Fix` -- project-wide safe rewrites via `Cure.Fix.run/2`.
+- `Cure.Cover` -- instrumentation harness around OTP's `:cover`;
+  HTML report under `_build/cure/cover/`.
+
+### Added -- Example project
+
+- `examples/cure_brainloop/` -- the top-pick showcase from
+  `stuff/ideas_for_cure_apps.md`. A toy expression-language
+  interpreter with a REPL driven by a Cure FSM. Exercises ADTs,
+  records, refinement types, protocols, effects, FSM callback mode,
+  OTP interop, FFI, and the new `Std.Json` module in one coherent
+  codebase. Ships with an ExUnit suite covering lexer, parser,
+  evaluator, and environment semantics.
+
+### Added -- Error catalog
+
+Five new codes `E038` -- `E042`:
+- `E038 Registry Fetch Failed`
+- `E039 Registry Hash Mismatch`
+- `E040 Registry Package Not Found`
+- `E041 Registry Signature Invalid`
+- `E042 Transparency Log Unreachable`
+
+### Added -- Documentation
+
+- `docs/PACKAGE_REGISTRY.md` rewritten from a v0.17.0-era design
+  document into the authoritative shipped contract.
+- `docs/PUBLISHING.md` -- end-to-end walkthrough for publishing a
+  Cure package, including Hex cross-publishing and strict
+  transparency-verification mode.
+
+### Changed
+
+- `mix.exs` version bumped to `0.23.0`. `:telemetry, "~> 1.3"`
+  declared as an optional dependency. `:inets`, `:ssl`, `:crypto`,
+  `:public_key` listed as `extra_applications` so the registry and
+  signing code work out of the box.
+- `Cure.toml` dependency parser recognises three forms:
+  `name = { path = "..." }`, `name = { git = "...", tag = "..." }`,
+  and the new bare `name = "<constraint>"` for registry deps.
+- `cure deps` prefers the lockfile path when every constraint is
+  still satisfied by the locked versions; otherwise falls back to
+  fresh resolution and rewrites `Cure.lock`.
+
+### Tests
+
+- New test modules under `test/cure/project/`: `json_test.exs`,
+  `lock_test.exs`, `signing_test.exs`, `transparency_test.exs`,
+  `registry_test.exs`.
+- New `test/cure/doctor_test.exs`, `test/cure/fix_test.exs`,
+  `test/cure/telemetry_test.exs`.
+- New `test/cure/stdlib/cure_std_json_test.exs`,
+  `cure_std_gen_test.exs`, `cure_std_test_test.exs`.
+- `examples/cure_brainloop/test/cure_brainloop_test.exs` covers the
+  interpreter end-to-end.
+
 ## [0.22.0] -- Loose Ends
 
 v0.22.0 closes three language-surface gaps that the v0.20.0 / v0.21.0
