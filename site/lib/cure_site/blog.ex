@@ -8,7 +8,10 @@ defmodule CureSite.Blog do
     highlighters: [:makeup_cure, :makeup_elixir, :makeup_erlang],
     html_converter: CureSite.MarkdownConverter
 
-  @posts Enum.sort_by(@posts, & &1.date, {:desc, Date})
+  @posts Enum.sort(@posts, fn p1, p2 ->
+           Date.compare(p1.date, p2.date) == :gt or
+             (Date.compare(p1.date, p2.date) == :eq and p1.title >= p2.title)
+         end)
   @tags @posts |> Enum.flat_map(& &1.tags) |> Enum.uniq() |> Enum.sort()
 
   def all_posts, do: @posts
