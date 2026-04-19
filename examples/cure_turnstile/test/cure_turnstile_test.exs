@@ -8,25 +8,26 @@ defmodule CureTurnstileTest do
   describe "raw Cure.FSM.Turnstile gen_statem" do
     @fsm :"Cure.FSM.Turnstile"
 
-    test "start_link/0 initializes with empty map data" do
+    test "start_link/0 initializes with nil payload" do
       {:ok, pid} = @fsm.start_link()
-      {state, data} = @fsm.get_state(pid)
+      {state, payload} = @fsm.get_state(pid)
 
       assert state == :locked
-      assert data == %{}
+      # payload defaults to nil in the new FsmState contract
+      assert payload == nil
 
-      :gen_statem.stop(pid)
+      GenServer.stop(pid)
     end
 
-    test "start_link/1 initializes with custom data" do
+    test "start_link/1 initializes with custom payload" do
       {:ok, pid} = @fsm.start_link(0)
       assert {:locked, 0} = @fsm.get_state(pid)
 
-      :gen_statem.stop(pid)
+      GenServer.stop(pid)
     end
 
     test "coin do block increments data" do
-      {:ok, pid} = @fsm.start_link(0)
+      {:ok, pid} = @fsm.start_link(%Cure.FSM.State{payload: 0, meta: %{passages: 0}})
 
       @fsm.send_event(pid, :coin)
       _ = :sys.get_state(pid)
@@ -37,11 +38,11 @@ defmodule CureTurnstileTest do
       _ = :sys.get_state(pid)
       assert {:unlocked, 2} = @fsm.get_state(pid)
 
-      :gen_statem.stop(pid)
+      GenServer.stop(pid)
     end
 
-    test "push preserves data (no do block)" do
-      {:ok, pid} = @fsm.start_link(0)
+    test "push preserves payload (no do block)" do
+      {:ok, pid} = @fsm.start_link(%Cure.FSM.State{payload: 0, meta: %{passages: 0}})
 
       @fsm.send_event(pid, :coin)
       _ = :sys.get_state(pid)
@@ -51,21 +52,21 @@ defmodule CureTurnstileTest do
       _ = :sys.get_state(pid)
       assert {:locked, 1} = @fsm.get_state(pid)
 
-      :gen_statem.stop(pid)
+      GenServer.stop(pid)
     end
 
-    test "push on locked stays locked, data unchanged" do
-      {:ok, pid} = @fsm.start_link(0)
+    test "push on locked stays locked, payload unchanged" do
+      {:ok, pid} = @fsm.start_link(%Cure.FSM.State{payload: 0, meta: %{passages: 0}})
 
       @fsm.send_event(pid, :push)
       _ = :sys.get_state(pid)
       assert {:locked, 0} = @fsm.get_state(pid)
 
-      :gen_statem.stop(pid)
+      GenServer.stop(pid)
     end
 
     test "full cycles accumulate coin count" do
-      {:ok, pid} = @fsm.start_link(0)
+      {:ok, pid} = @fsm.start_link(%Cure.FSM.State{payload: 0, meta: %{passages: 0}})
 
       for n <- 1..5 do
         @fsm.send_event(pid, :coin)
@@ -77,7 +78,7 @@ defmodule CureTurnstileTest do
         assert {:locked, ^n} = @fsm.get_state(pid)
       end
 
-      :gen_statem.stop(pid)
+      GenServer.stop(pid)
     end
   end
 
@@ -138,6 +139,15 @@ defmodule CureTurnstileTest do
       end
 
       assert %{coins: 10, passages: 10, state: :locked} = CureTurnstile.stats(pid)
+    end
+
+    test "@notify_transitions reaches the caller" do
+      {:ok, pid} = CureTurnstile.start_link()
+
+      CureTurnstile.insert_coin(pid)
+
+      # Exactly one transition message is expected: locked -> unlocked on :coin.
+      assert_receive {:cure_fsm, ^pid, {:transition, :locked, :coin, :unlocked, 1}}, 500
     end
   end
 end

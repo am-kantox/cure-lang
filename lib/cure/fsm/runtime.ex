@@ -32,6 +32,8 @@ defmodule Cure.FSM.Runtime do
 
   use GenServer
 
+  alias Cure.FSM.State, as: FsmState
+
   @registry_table :cure_fsm_registry
 
   # -- Public API --------------------------------------------------------------
@@ -46,12 +48,21 @@ defmodule Cure.FSM.Runtime do
   Spawn a new FSM instance from a compiled FSM module.
 
   ## Options
-  - `:name` -- optional string name for registry lookup
-  - `:data` -- initial data (default: %{})
+  - `:name`    -- optional string name for registry lookup
+  - `:caller`  -- pid to which the FSM will send outbound notifications
+                  (default: `nil`, meaning notifications are no-ops)
+  - `:meta`    -- FSM-private metadata (default: `nil`)
+  - `:payload` -- user-visible initial payload (default: `nil`)
+  - `:data`    -- legacy alias for `:payload` (preserved for backward
+                  compatibility; takes precedence only when `:payload`
+                  is not given)
+  - `:init`    -- a pre-built `%Cure.FSM.State{}` struct, keyword list,
+                  or bare value. When given, it overrides all of the
+                  above field-granular options.
   """
   @spec spawn_fsm(module(), keyword()) :: {:ok, pid()} | {:error, term()}
   def spawn_fsm(fsm_module, opts \\ []) do
-    GenServer.call(__MODULE__, {:spawn_fsm, fsm_module, opts})
+    GenServer.call(__MODULE__, {:spawn_fsm, fsm_module, opts, self()})
   end
 
   @doc "Stop a running FSM instance."
@@ -60,10 +71,24 @@ defmodule Cure.FSM.Runtime do
     GenServer.call(__MODULE__, {:stop_fsm, pid})
   end
 
-  @doc "Send an event to an FSM instance."
+  @doc "Send an event to an FSM instance (no payload)."
   @spec send_event(pid(), term()) :: :ok
   def send_event(pid, event) do
-    :gen_statem.cast(pid, event)
+    dispatch_event(pid, event, nil)
+    GenServer.cast(__MODULE__, {:record_event, pid, event})
+    :ok
+  end
+
+  @doc """
+  Send an event to an FSM instance carrying a payload.
+
+  The payload is threaded through to the `on_transition` clause as its
+  third argument, giving incoming events a way to carry arbitrary data
+  alongside the event tag.
+  """
+  @spec send_event(pid(), term(), term()) :: :ok
+  def send_event(pid, event, payload) do
+    dispatch_event(pid, event, payload)
     GenServer.cast(__MODULE__, {:record_event, pid, event})
     :ok
   end
@@ -71,22 +96,83 @@ defmodule Cure.FSM.Runtime do
   @doc "Send a batch of events to an FSM instance."
   @spec send_batch(pid(), [term()]) :: :ok
   def send_batch(pid, events) do
-    Enum.each(events, fn event ->
-      :gen_statem.cast(pid, event)
+    Enum.each(events, fn
+      {event, payload} -> dispatch_event(pid, event, payload)
+      event -> dispatch_event(pid, event, nil)
     end)
 
     GenServer.cast(__MODULE__, {:record_batch, pid, events})
     :ok
   end
 
-  @doc "Get the current state and data of an FSM instance."
+  # Pick the wire format based on the FSM's mode. Callback-mode modules
+  # export `send_event/3` (which wraps the event + payload in the
+  # `{:event, event, payload}` tuple). Simple-mode modules export only
+  # `send_event/2` and delegate to `:gen_statem.cast/2`. When the target
+  # module cannot be resolved (e.g. an ad-hoc FSM not registered) we fall
+  # back to a raw `gen_statem.cast`.
+  defp dispatch_event(pid, event, payload) do
+    case fsm_module_of(pid) do
+      {:ok, mod} ->
+        cond do
+          function_exported?(mod, :send_event, 3) ->
+            mod.send_event(pid, event, payload)
+
+          function_exported?(mod, :send_event, 2) ->
+            mod.send_event(pid, event)
+
+          true ->
+            :gen_statem.cast(pid, event)
+        end
+
+      :error ->
+        :gen_statem.cast(pid, event)
+    end
+  end
+
+  defp fsm_module_of(pid) do
+    case get_info(pid) do
+      {:ok, %{module: mod}} -> {:ok, mod}
+      _ -> :error
+    end
+  end
+
+  @doc "Get the current state and payload of an FSM instance."
   @spec get_state(pid()) :: {:ok, {atom(), term()}} | {:error, term()}
   def get_state(pid) do
     try do
-      result = :gen_statem.call(pid, :get_state)
+      result = GenServer.call(pid, :get_state)
       {:ok, result}
     catch
-      :exit, reason -> {:error, reason}
+      :exit, _ ->
+        try do
+          result = :gen_statem.call(pid, :get_state)
+          {:ok, result}
+        catch
+          :exit, reason -> {:error, reason}
+        end
+    end
+  end
+
+  @doc """
+  Get the current state and the full `%Cure.FSM.State{}` struct of an FSM.
+
+  Unlike `get_state/1`, this exposes the `:caller` and `:meta` fields in
+  addition to `:payload`. Only callback-mode FSMs support this call; for
+  simple-mode FSMs it falls back to a synthetic struct with the raw data
+  under `:payload`.
+  """
+  @spec get_fsm_state(pid()) :: {:ok, {atom(), FsmState.t()}} | {:error, term()}
+  def get_fsm_state(pid) do
+    try do
+      result = GenServer.call(pid, :get_fsm_state)
+      {:ok, result}
+    catch
+      :exit, _ ->
+        case get_state(pid) do
+          {:ok, {current, payload}} -> {:ok, {current, %FsmState{payload: payload}}}
+          err -> err
+        end
     end
   end
 
@@ -213,10 +299,11 @@ defmodule Cure.FSM.Runtime do
   end
 
   @impl true
-  def handle_call({:spawn_fsm, fsm_module, opts}, _from, state) do
+  def handle_call({:spawn_fsm, fsm_module, opts, spawner}, _from, state) do
     name = Keyword.get(opts, :name)
+    init_arg = build_init_arg(opts, spawner)
 
-    case fsm_module.start_link() do
+    case fsm_module.start_link(init_arg) do
       {:ok, pid} ->
         # Monitor the FSM process for automatic cleanup
         Process.monitor(pid)
@@ -224,6 +311,7 @@ defmodule Cure.FSM.Runtime do
         info = %{
           module: fsm_module,
           name: name,
+          caller: resolved_caller(init_arg),
           started_at: System.monotonic_time(:millisecond),
           events: [],
           event_count: 0
@@ -247,6 +335,33 @@ defmodule Cure.FSM.Runtime do
       :exit, _ -> {:reply, :ok, state}
     end
   end
+
+  # Convert the `spawn_fsm` opts into the value passed to the FSM module's
+  # `start_link/1`. Priority: `:init` wins if supplied; otherwise assemble
+  # a struct from `:caller`, `:meta`, `:payload` (or the legacy `:data`).
+  defp build_init_arg(opts, spawner) do
+    cond do
+      Keyword.has_key?(opts, :init) ->
+        Keyword.fetch!(opts, :init)
+
+      Keyword.has_key?(opts, :caller) or Keyword.has_key?(opts, :meta) or
+          Keyword.has_key?(opts, :payload) ->
+        %FsmState{
+          caller: Keyword.get(opts, :caller, spawner),
+          meta: Keyword.get(opts, :meta),
+          payload: Keyword.get(opts, :payload)
+        }
+
+      Keyword.has_key?(opts, :data) ->
+        Keyword.fetch!(opts, :data)
+
+      true ->
+        %FsmState{caller: spawner}
+    end
+  end
+
+  defp resolved_caller(%FsmState{caller: caller}), do: caller
+  defp resolved_caller(_), do: nil
 
   @impl true
   def handle_cast({:record_event, pid, event}, state) do

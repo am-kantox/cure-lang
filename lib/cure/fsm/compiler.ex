@@ -115,9 +115,13 @@ defmodule Cure.FSM.Compiler do
     on_exit_clauses = Keyword.get(meta, :on_exit, [])
     on_failure_clauses = Keyword.get(meta, :on_failure, [])
     on_timer_clauses = Keyword.get(meta, :on_timer, [])
+    on_start_clauses = Keyword.get(meta, :on_start, [])
+    on_stop_clauses = Keyword.get(meta, :on_stop, [])
+    notify_transitions? = Keyword.get(meta, :notify_transitions, false)
+    auto_caller? = Keyword.get(meta, :auto_caller, false)
 
     transitions = extract_transitions(transition_nodes)
-    initial_state = determine_initial_state(transitions)
+    initial_state = Keyword.get(meta, :initial_state) || determine_initial_state(transitions)
     initial_atom = String.to_atom(String.downcase(initial_state || "unknown"))
 
     # Build the transition table as a list of {from, event, to, kind} tuples
@@ -142,11 +146,24 @@ defmodule Cure.FSM.Compiler do
         on_enter_clauses,
         on_exit_clauses,
         on_failure_clauses,
-        on_timer_clauses
+        on_timer_clauses,
+        on_start_clauses,
+        on_stop_clauses,
+        notify_transitions?,
+        auto_caller?
       )
 
-    # Compile the generated Elixir source to BEAM
-    [{^mod_atom, bytecode}] = Code.compile_string(module_code, file)
+    # Compile the generated Elixir source to BEAM. The generated module
+    # contains several defensive branches (partial-struct returns,
+    # on_start variants, soft-event fallthroughs, etc.) that the Elixir
+    # type system cannot prove reachable from the closed-world view of a
+    # single callback clause -- silence that noise during compilation.
+    {result, _diagnostics} =
+      Code.with_diagnostics([log: false], fn ->
+        Code.compile_string(module_code, file)
+      end)
+
+    [{^mod_atom, bytecode}] = result
 
     # Load the module
     :code.purge(mod_atom)
@@ -210,7 +227,11 @@ defmodule Cure.FSM.Compiler do
          on_enter_clauses,
          on_exit_clauses,
          on_failure_clauses,
-         on_timer_clauses
+         on_timer_clauses,
+         on_start_clauses,
+         on_stop_clauses,
+         notify_transitions?,
+         auto_caller?
        ) do
     trans_table_str = inspect(trans_table)
     hard_states_str = inspect(hard_states)
@@ -221,21 +242,29 @@ defmodule Cure.FSM.Compiler do
     on_exit_fn = generate_lifecycle_fn(:do_on_exit, 2, on_exit_clauses)
     on_failure_fn = generate_lifecycle_fn(:do_on_failure, 3, on_failure_clauses)
     on_timer_fn = generate_lifecycle_fn(:do_on_timer, 2, on_timer_clauses)
+    on_start_fn = generate_lifecycle_fn(:do_on_start, 1, on_start_clauses)
+    on_stop_fn = generate_lifecycle_fn(:do_on_stop, 2, on_stop_clauses)
 
     timer_init = if timer, do: "Process.send_after(self(), :on_timer, #{timer})", else: ""
     timer_handler = if timer, do: generate_timer_handler(timer), else: ""
+    auto_caller_init = if auto_caller?, do: "true", else: "false"
+    notify_transitions_flag = if notify_transitions?, do: "true", else: "false"
 
     """
     defmodule :"#{mod_atom}" do
       use GenServer
 
+      alias Cure.FSM.State, as: FsmState
+
       @transition_table #{trans_table_str}
       @hard_states #{hard_states_str}
       @soft_events #{soft_events_str}
+      @notify_transitions #{notify_transitions_flag}
+      @auto_caller #{auto_caller_init}
 
       # -- Public API ----------------------------------------------------------
 
-      def start_link, do: start_link(%{})
+      def start_link, do: start_link(%FsmState{})
       def start_link(init_data) do
         GenServer.start_link(__MODULE__, init_data)
       end
@@ -245,7 +274,11 @@ defmodule Cure.FSM.Compiler do
 
       def get_state(pid), do: GenServer.call(pid, :get_state)
 
+      def get_fsm_state(pid), do: GenServer.call(pid, :get_fsm_state)
+
       def transitions, do: @transition_table
+
+      def initial_state, do: :#{initial_atom}
 
       def allowed?(from, to) do
         Enum.any?(@transition_table, fn {f, _e, t, _k} ->
@@ -263,13 +296,48 @@ defmodule Cure.FSM.Compiler do
 
       @impl GenServer
       def init(init_data) do
+        fsm_state = FsmState.from_init(init_data)
+
+        fsm_state =
+          if @auto_caller and is_nil(fsm_state.caller) do
+            # When no caller was provided, fall back to the spawning process
+            # recorded by Cure.FSM.Runtime, if any.
+            case Process.get(:cure_fsm_spawner) do
+              pid when is_pid(pid) -> %FsmState{fsm_state | caller: pid}
+              _ -> fsm_state
+            end
+          else
+            fsm_state
+          end
+
+        FsmState.register_self(fsm_state)
+
+        fsm_state =
+          case do_on_start(fsm_state) do
+            {:ok, %FsmState{} = s} -> FsmState.register_self(s)
+            {:ok, partial} ->
+              s = FsmState.merge(fsm_state, partial)
+              FsmState.register_self(s)
+            _ -> fsm_state
+          end
+
         #{timer_init}
-        {:ok, %{current: :#{initial_atom}, payload: init_data, history: []}}
+        {:ok, %{current: :#{initial_atom}, fsm_state: fsm_state, history: []}}
+      end
+
+      @impl GenServer
+      def terminate(reason, state) do
+        _ = do_on_stop(reason, state.fsm_state)
+        :ok
       end
 
       @impl GenServer
       def handle_call(:get_state, _from, state) do
-        {:reply, {state.current, state.payload}, state}
+        {:reply, {state.current, state.fsm_state.payload}, state}
+      end
+
+      def handle_call(:get_fsm_state, _from, state) do
+        {:reply, {state.current, state.fsm_state}, state}
       end
 
       @impl GenServer
@@ -285,53 +353,45 @@ defmodule Cure.FSM.Compiler do
           if event in @soft_events do
             {:noreply, state}
           else
-            do_on_failure(event, event_payload, state)
+            do_on_failure(event, event_payload, state.fsm_state)
             {:noreply, state}
           end
         else
           # Call on_exit
-          do_on_exit(state.current, state)
+          _ = do_on_exit(state.current, state.fsm_state)
 
           # Call on_transition
-          case do_on_transition(state.current, event, event_payload, state.payload) do
+          case do_on_transition(state.current, event, event_payload, state.fsm_state) do
             {:ok, :__same__, new_payload} ->
-              new_state = %{state | payload: new_payload}
+              merged = FsmState.merge(state.fsm_state, new_payload)
+              FsmState.register_self(merged)
+              new_state = %{state | fsm_state: merged}
               {:noreply, new_state}
 
             {:ok, next, new_payload} ->
-              # Validate the returned target
-              if next in allowed_targets do
-                new_state = %{state |
-                  current: next,
-                  payload: new_payload,
-                  history: [{state.current, event} | Enum.take(state.history, 49)]
-                }
-                # Call on_enter
-                do_on_enter(next, new_state)
-                # Check for hard auto-fire
-                case Keyword.get(@hard_states, next) do
-                  nil -> {:noreply, new_state}
-                  hard_event -> {:noreply, new_state, {:continue, {:auto_transition, hard_event}}}
-                end
-              else
-                # Returned state not in allowed targets; pick first allowed
-                new_state = %{state |
-                  current: hd(allowed_targets),
-                  payload: new_payload,
-                  history: [{state.current, event} | Enum.take(state.history, 49)]
-                }
-                do_on_enter(hd(allowed_targets), new_state)
-                case Keyword.get(@hard_states, hd(allowed_targets)) do
-                  nil -> {:noreply, new_state}
-                  hard_event -> {:noreply, new_state, {:continue, {:auto_transition, hard_event}}}
-                end
+              merged = FsmState.merge(state.fsm_state, new_payload)
+              actual_next = if next in allowed_targets, do: next, else: hd(allowed_targets)
+              FsmState.register_self(merged)
+              new_state = %{state |
+                current: actual_next,
+                fsm_state: merged,
+                history: [{state.current, event} | Enum.take(state.history, 49)]
+              }
+              _ = do_on_enter(actual_next, merged)
+              if @notify_transitions do
+                FsmState.notify(merged, {:cure_fsm, self(),
+                  {:transition, state.current, event, actual_next, merged.payload}})
+              end
+              case Keyword.get(@hard_states, actual_next) do
+                nil -> {:noreply, new_state}
+                hard_event -> {:noreply, new_state, {:continue, {:auto_transition, hard_event}}}
               end
 
             {:error, _reason} ->
               if event in @soft_events do
                 {:noreply, state}
               else
-                do_on_failure(event, event_payload, state)
+                do_on_failure(event, event_payload, state.fsm_state)
                 {:noreply, state}
               end
           end
@@ -345,6 +405,19 @@ defmodule Cure.FSM.Compiler do
 
       #{timer_handler}
 
+      # -- Helpers available inside lifecycle hook bodies ---------------------
+
+      defp notify(message), do: Cure.FSM.State.notify_self(message)
+
+      defp caller do
+        case Cure.FSM.State.current() do
+          %Cure.FSM.State{caller: c} -> c
+          _ -> nil
+        end
+      end
+
+      defp fsm_self, do: self()
+
       # -- Callback implementations --------------------------------------------
 
       #{on_transition_fn}
@@ -352,6 +425,8 @@ defmodule Cure.FSM.Compiler do
       #{on_exit_fn}
       #{on_failure_fn}
       #{on_timer_fn}
+      #{on_start_fn}
+      #{on_stop_fn}
     end
     """
   end
@@ -360,16 +435,20 @@ defmodule Cure.FSM.Compiler do
     """
       @impl GenServer
       def handle_info(:on_timer, state) do
-        case do_on_timer(state.current, state) do
+        case do_on_timer(state.current, state.fsm_state) do
           :ok ->
             Process.send_after(self(), :on_timer, #{timer_ms})
             {:noreply, state}
           {:ok, new_payload} ->
+            merged = Cure.FSM.State.merge(state.fsm_state, new_payload)
+            Cure.FSM.State.register_self(merged)
             Process.send_after(self(), :on_timer, #{timer_ms})
-            {:noreply, %{state | payload: new_payload}}
+            {:noreply, %{state | fsm_state: merged}}
           {:transition, event, new_payload} ->
+            merged = Cure.FSM.State.merge(state.fsm_state, new_payload)
+            Cure.FSM.State.register_self(merged)
             Process.send_after(self(), :on_timer, #{timer_ms})
-            new_state = %{state | payload: new_payload}
+            new_state = %{state | fsm_state: merged}
             handle_cast({:event, event, nil}, new_state)
           {:reschedule, new_ms} ->
             Process.send_after(self(), :on_timer, new_ms)
@@ -423,11 +502,17 @@ defmodule Cure.FSM.Compiler do
   end
 
   # -- Cure AST to Elixir source string ----------------------------------------
-  # Minimal translator for the subset used in FSM callback clauses.
+  # Translator for the subset used in FSM callback clauses.
+  #
+  # Handles literals, variables, binary/unary ops, tuples, maps, lists,
+  # blocks, assignments, function calls (bare, module-qualified, and
+  # common Elixir kernel calls like `send`), conditionals (`if/then/else`),
+  # pattern matches, and attribute access.
 
   defp cure_ast_to_elixir(ast) do
     case ast do
-      # Tuple literal: {:tuple, meta, elements}
+      # Function calls: bare, module-qualified, `tuple(...)` constructor,
+      # or Elixir Kernel.send/2 (which the parser emits as name = "send").
       {:function_call, meta, args} ->
         name = Keyword.get(meta, :name, "")
 
@@ -459,17 +544,19 @@ defmodule Cure.FSM.Compiler do
 
       # Variable reference
       {:variable, _meta, name} ->
-        if String.starts_with?(name, "_"), do: name, else: name
+        name
 
       # Binary operations
       {:binary_op, meta, [left, right]} ->
-        op = Keyword.get(meta, :op, "+")
-        "#{cure_ast_to_elixir(left)} #{op} #{cure_ast_to_elixir(right)}"
+        op = Keyword.get(meta, :op) || Keyword.get(meta, :operator, "+")
+        op_str = binary_op_to_elixir(op)
+        "(#{cure_ast_to_elixir(left)} #{op_str} #{cure_ast_to_elixir(right)})"
 
       # Unary operations
       {:unary_op, meta, [operand]} ->
-        op = Keyword.get(meta, :op, "-")
-        "#{op}#{cure_ast_to_elixir(operand)}"
+        op = Keyword.get(meta, :op) || Keyword.get(meta, :operator, "-")
+        op_str = unary_op_to_elixir(op)
+        "#{op_str}#{cure_ast_to_elixir(operand)}"
 
       # Tuple expression (direct tuple syntax)
       {:tuple, _meta, elements} ->
@@ -479,8 +566,12 @@ defmodule Cure.FSM.Compiler do
       # Map
       {:map, _meta, pairs} ->
         inner =
-          Enum.map_join(pairs, ", ", fn {k, v} ->
-            "#{cure_ast_to_elixir(k)} => #{cure_ast_to_elixir(v)}"
+          Enum.map_join(pairs, ", ", fn
+            {:pair, _, [k, v]} ->
+              "#{cure_ast_to_elixir(k)} => #{cure_ast_to_elixir(v)}"
+
+            {k, v} ->
+              "#{cure_ast_to_elixir(k)} => #{cure_ast_to_elixir(v)}"
           end)
 
         "%{#{inner}}"
@@ -490,13 +581,47 @@ defmodule Cure.FSM.Compiler do
         inner = Enum.map_join(elements, ", ", &cure_ast_to_elixir/1)
         "[#{inner}]"
 
-      # Block
+      # Block: chain statements with newlines; Elixir evaluates the last
+      # expression as the block's value.
       {:block, _meta, stmts} ->
-        stmts |> Enum.map_join("\n", &cure_ast_to_elixir/1)
+        body = stmts |> Enum.map_join("\n", &cure_ast_to_elixir/1)
+        "(#{body})"
 
       # Pattern match / assignment
       {:assignment, _meta, [lhs, rhs]} ->
         "#{cure_ast_to_elixir(lhs)} = #{cure_ast_to_elixir(rhs)}"
+
+      # Conditional: if cond then a else b
+      {:conditional, _meta, [cond_ast, then_ast, else_ast]} ->
+        c = cure_ast_to_elixir(cond_ast)
+        t = cure_ast_to_elixir(then_ast)
+        e = cure_ast_to_elixir(else_ast)
+        "(if #{c}, do: (#{t}), else: (#{e}))"
+
+      # Attribute access: obj.field
+      {:attribute_access, meta, [obj]} ->
+        attr = Keyword.get(meta, :attribute)
+        "#{cure_ast_to_elixir(obj)}.#{attr}"
+
+      # Pattern match expression (match x -> arms)
+      {:pattern_match, _meta, [scrutinee | arms]} ->
+        scrut = cure_ast_to_elixir(scrutinee)
+
+        arm_strs =
+          Enum.map_join(arms, "\n", fn
+            {:match_arm, arm_meta, [body]} ->
+              pat = Keyword.get(arm_meta, :pattern)
+              guard = Keyword.get(arm_meta, :guard)
+              pat_str = cure_ast_to_elixir(pat)
+              body_str = cure_ast_to_elixir(body)
+              guard_str = if guard, do: " when #{cure_ast_to_elixir(guard)}", else: ""
+              "  #{pat_str}#{guard_str} -> #{body_str}"
+          end)
+
+        "(case #{scrut} do\n#{arm_strs}\nend)"
+
+      # Send: send(pid, msg) -- parser emits this as a function_call with
+      # name "send"; handled by the function_call clause above.
 
       # Atom (direct)
       atom when is_atom(atom) ->
@@ -515,6 +640,17 @@ defmodule Cure.FSM.Compiler do
         inspect(other)
     end
   end
+
+  # Translate Cure operator atoms/strings into valid Elixir operator
+  # source. Most match 1:1; `<>` concatenation and comparison operators
+  # are kept as-is.
+  defp binary_op_to_elixir(op) when is_atom(op), do: Atom.to_string(op)
+  defp binary_op_to_elixir(op) when is_binary(op), do: op
+  defp binary_op_to_elixir(_), do: "+"
+
+  defp unary_op_to_elixir(op) when is_atom(op), do: Atom.to_string(op)
+  defp unary_op_to_elixir(op) when is_binary(op), do: op
+  defp unary_op_to_elixir(_), do: "-"
 
   # ============================================================================
   # Shared: Transition Extraction

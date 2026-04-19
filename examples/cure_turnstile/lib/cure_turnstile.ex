@@ -1,115 +1,99 @@
 defmodule CureTurnstile do
   @moduledoc """
-  A turnstile controller built on a Cure FSM.
+  A turnstile controlled by a first-class Cure FSM.
 
-  The state machine is defined in `cure_src/turnstile.cure` and compiled to
-  `:\"Cure.FSM.Turnstile\"` -- a GenServer-based module using Cure's callback
-  mode with an `on_transition` handler.
+  The entire controller lives in `cure_src/turnstile.cure`, which
+  declares the transition graph, counts coins through the `:payload`
+  field, and counts passages through the `:meta` field. It also turns on
+  `@notify_transitions`, so every successful transition reaches the
+  process that spawned the FSM as
 
-  The `on_transition` clauses handle coin counting:
+      {:cure_fsm, fsm_pid, {:transition, from, event, to, payload}}
 
-      (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
-
-  This module wraps the FSM with passage counting on top.
+  This Elixir module is now a thin facade: there is no wrapper
+  GenServer, no `:sys.get_state/1` sync, no host-side bookkeeping. It
+  just spawns the FSM, forwards events, and reads `{state, payload}`
+  when asked for stats.
 
   ## Quick Start
 
       {:ok, pid} = CureTurnstile.start_link()
 
       CureTurnstile.insert_coin(pid)
-      # => :ok  (turnstile unlocks)
-
       CureTurnstile.push(pid)
-      # => :ok  (person passes, turnstile locks)
 
       CureTurnstile.stats(pid)
       # => %{state: :locked, coins: 1, passages: 1}
+
+  ## Listening for transitions
+
+  Because the FSM is spawned with the calling process as its `:caller`,
+  `receive`ing in the caller will pick up every transition. See the test
+  suite for the exact shape.
   """
 
-  use GenServer
+  alias Cure.FSM.State, as: FsmState
+  alias Cure.FSM.Runtime
 
   @fsm_module :"Cure.FSM.Turnstile"
 
-  # -- Public API --------------------------------------------------------------
+  @doc """
+  Start a turnstile FSM. The initial `:payload` is `0` (coins) and the
+  initial `:meta` is `%{passages: 0}`.
 
-  @doc "Start a turnstile. The FSM begins in the `:locked` state with data `0`."
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, Keyword.take(opts, [:name]))
+  The spawning process is recorded as the FSM's `:caller`; lifecycle
+  hooks reach it via `Std.Fsm.notify/1`, and -- because the `.cure`
+  file opts in with `@notify_transitions` -- every completed
+  transition sends a message to it.
+  """
+  @spec start_link() :: {:ok, pid()} | {:error, term()}
+  def start_link do
+    Runtime.spawn_fsm(@fsm_module,
+      init: %FsmState{caller: self(), meta: %{passages: 0}, payload: 0}
+    )
   end
 
-  @doc "Insert a coin. Unlocks the turnstile (or keeps it unlocked if already open)."
-  @spec insert_coin(GenServer.server()) :: :ok
-  def insert_coin(pid), do: GenServer.call(pid, :coin)
+  @doc "Insert a coin. Delivered as an event; the FSM advances asynchronously."
+  @spec insert_coin(pid()) :: :ok
+  def insert_coin(pid) do
+    Runtime.send_event(pid, :coin)
+    sync(pid)
+    :ok
+  end
 
-  @doc "Push through the turnstile. Locks it after passage (no-op if already locked)."
-  @spec push(GenServer.server()) :: :ok
-  def push(pid), do: GenServer.call(pid, :push)
+  @doc "Push through the turnstile. Delivered as an event."
+  @spec push(pid()) :: :ok
+  def push(pid) do
+    Runtime.send_event(pid, :push)
+    sync(pid)
+    :ok
+  end
+
+  @doc "Stop the turnstile."
+  @spec stop(pid()) :: :ok
+  def stop(pid), do: Runtime.stop_fsm(pid)
 
   @doc "Return the current FSM state atom (`:locked` or `:unlocked`)."
-  @spec state(GenServer.server()) :: atom()
-  def state(pid), do: GenServer.call(pid, :state)
+  @spec state(pid()) :: atom()
+  def state(pid) do
+    {current, _payload} = @fsm_module.get_state(pid)
+    current
+  end
 
   @doc "Return a stats map with `:state`, `:coins`, and `:passages`."
-  @spec stats(GenServer.server()) :: map()
-  def stats(pid), do: GenServer.call(pid, :stats)
+  @spec stats(pid()) :: map()
+  def stats(pid) do
+    {current, %FsmState{payload: coins, meta: meta}} = @fsm_module.get_fsm_state(pid)
+    passages = if is_map(meta), do: Map.get(meta, :passages, 0), else: 0
+    %{state: current, coins: coins, passages: passages}
+  end
 
   @doc "Check whether the turnstile is currently unlocked."
-  @spec unlocked?(GenServer.server()) :: boolean()
+  @spec unlocked?(pid()) :: boolean()
   def unlocked?(pid), do: state(pid) == :unlocked
 
-  # -- GenServer Callbacks -----------------------------------------------------
-
-  @impl true
-  def init(_opts) do
-    {:ok, fsm_pid} = @fsm_module.start_link(0)
-    {:ok, %{fsm: fsm_pid, passages: 0}}
-  end
-
-  @impl true
-  def handle_call(:coin, _from, state) do
-    @fsm_module.send_event(state.fsm, :coin)
-    sync_fsm(state.fsm)
-    {:reply, :ok, state}
-  end
-
-  def handle_call(:push, _from, state) do
-    {old_state, _} = @fsm_module.get_state(state.fsm)
-
-    @fsm_module.send_event(state.fsm, :push)
-    sync_fsm(state.fsm)
-
-    {new_state, _} = @fsm_module.get_state(state.fsm)
-
-    passages =
-      if old_state == :unlocked and new_state == :locked do
-        state.passages + 1
-      else
-        state.passages
-      end
-
-    {:reply, :ok, %{state | passages: passages}}
-  end
-
-  def handle_call(:state, _from, state) do
-    {fsm_state, _} = @fsm_module.get_state(state.fsm)
-    {:reply, fsm_state, state}
-  end
-
-  def handle_call(:stats, _from, state) do
-    {fsm_state, coins} = @fsm_module.get_state(state.fsm)
-    {:reply, %{state: fsm_state, coins: coins, passages: state.passages}, state}
-  end
-
-  @impl true
-  def terminate(_reason, state) do
-    try do
-      GenServer.stop(state.fsm)
-    catch
-      :exit, _ -> :ok
-    end
-  end
-
-  # Sync: ensure the async cast has been processed
-  defp sync_fsm(fsm_pid), do: _ = :sys.get_state(fsm_pid)
+  # The FSM processes events asynchronously (`GenServer.cast`); `sync/1`
+  # blocks until the event has been handled so callers can immediately
+  # read the resulting state.
+  defp sync(pid), do: _ = :sys.get_state(pid)
 end

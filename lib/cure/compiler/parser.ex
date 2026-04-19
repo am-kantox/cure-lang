@@ -2102,7 +2102,7 @@ defmodule Cure.Compiler.Parser do
     end
   end
 
-  @fsm_callback_names ~w(on_transition on_enter on_exit on_failure on_timer)
+  @fsm_callback_names ~w(on_transition on_enter on_exit on_failure on_timer on_start on_stop)
 
   defp parse_fsm_items(state, items_acc, meta_acc) do
     state = skip_newlines(state)
@@ -2162,6 +2162,25 @@ defmodule Cure.Compiler.Parser do
           end
 
         {[timer: ms], state}
+
+      "initial" ->
+        # @initial :state_name  (optional: payload: expr, meta: expr)
+        state_name_token = peek(state)
+
+        initial_name =
+          case state_name_token do
+            %Token{type: :symbol, value: v} -> to_string(v)
+            _ -> to_string(state_name_token.value)
+          end
+
+        state = advance(state)
+        {[initial_state: initial_name], state}
+
+      "notify_transitions" ->
+        {[notify_transitions: true], state}
+
+      "auto_caller" ->
+        {[auto_caller: true], state}
 
       _ ->
         {[], state}

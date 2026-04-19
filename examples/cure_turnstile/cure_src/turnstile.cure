@@ -4,8 +4,14 @@ fsm Turnstile with Integer
   Unlocked --coin-->  Unlocked
   Locked   --push-->  Locked
 
+  @notify_transitions
+
   on_transition
-    (:locked, :coin, _payload, data) -> %[:ok, :unlocked, data + 1]
-    (:unlocked, :push, _payload, data) -> %[:ok, :locked, data]
-    (:unlocked, :coin, _payload, data) -> %[:ok, :unlocked, data + 1]
-    (_, _, _, data) -> %[:ok, :__same__, data]
+    (:locked, :coin, _payload, %{payload: p, meta: m}) ->
+      %[:ok, :unlocked, %{payload: p + 1, meta: m}]
+    (:unlocked, :push, _payload, %{payload: p, meta: m}) ->
+      %[:ok, :locked, %{payload: p, meta: %{passages: m.passages + 1}}]
+    (:unlocked, :coin, _payload, %{payload: p, meta: m}) ->
+      %[:ok, :unlocked, %{payload: p + 1, meta: m}]
+    (_, _, _, state) ->
+      %[:ok, :__same__, state]

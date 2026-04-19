@@ -1,8 +1,20 @@
 mod Std.Fsm
   ## FSM runtime operations: start, send_event, get_state.
-  # Spawn an FSM instance from a compiled FSM module atom
+  # Spawn an FSM instance from a compiled FSM module atom.
+  # The spawning process is recorded as the FSM's caller automatically;
+  # lifecycle hooks can reach it via Std.Fsm.notify/1.
   @extern(Elixir.Cure.FSM.Builtins, :fsm_spawn, 1)
   fn spawn(fsm_module: Atom) -> Pid
+
+  # Spawn an FSM instance with an explicit initial payload.
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_spawn_with_payload, 2)
+  fn spawn_with_payload(fsm_module: Atom, payload: Any) -> Pid
+
+  # Spawn an FSM instance with a fully-specified initial state.
+  # `init` may be a %Cure.FSM.State{} struct, a keyword list with
+  # :caller/:meta/:payload, or a plain map in the same shape.
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_spawn_with, 2)
+  fn spawn_with(fsm_module: Atom, init: Any) -> Pid
 
   # Spawn a named FSM instance
   @extern(Elixir.Cure.FSM.Builtins, :fsm_spawn_named, 2)
@@ -12,17 +24,26 @@ mod Std.Fsm
   @extern(Elixir.Cure.FSM.Builtins, :fsm_stop, 1)
   fn stop(pid: Pid) -> Atom
 
-  # Send an event to an FSM
+  # Send an event to an FSM (without a payload)
   @extern(Elixir.Cure.FSM.Builtins, :fsm_send, 2)
   fn send(pid: Pid, event: Atom) -> Atom
+
+  # Send an event carrying a payload to an FSM
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_send_with, 3)
+  fn send_with(pid: Pid, event: Atom, payload: Any) -> Atom
 
   # Send a batch of events
   @extern(Elixir.Cure.FSM.Builtins, :fsm_send_batch, 2)
   fn send_batch(pid: Pid, events: List(Atom)) -> Atom
 
-  # Get the current state of an FSM (returns {state, data} tuple)
+  # Get the current state of an FSM (returns {state, payload} tuple)
   @extern(Elixir.Cure.FSM.Builtins, :fsm_get_state, 1)
   fn get_state(pid: Pid) -> Tuple
+
+  # Get the full %Cure.FSM.State{} struct for a running FSM as
+  # {state, %FsmState{caller, meta, payload}}.
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_full_state, 1)
+  fn full_state(pid: Pid) -> Tuple
 
   # Get just the state atom
   @extern(Elixir.Cure.FSM.Builtins, :fsm_state, 1)
@@ -43,3 +64,13 @@ mod Std.Fsm
   # Look up an FSM by name
   @extern(Elixir.Cure.FSM.Builtins, :fsm_lookup, 1)
   fn lookup(name: String) -> Pid
+
+  # Send `message` to the caller registered for the currently-executing
+  # FSM. Intended to be called from inside a lifecycle hook body; a no-op
+  # returning :no_caller when invoked outside an FSM process.
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_notify, 1)
+  fn notify(message: Any) -> Atom
+
+  # Return the caller pid registered for a running FSM, or nil.
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_caller, 1)
+  fn caller(pid: Pid) -> Pid

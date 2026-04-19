@@ -334,6 +334,12 @@ Protocol dispatch is compiled to guard-based multi-clause functions.
 
 ## FSMs (Finite State Machines)
 
+Cure supports two FSM compilation modes:
+
+**Simple mode** (no `on_transition` block) compiles to a `gen_statem`
+module. The resulting machine carries a freeform data term that each
+transition's `do` action may replace.
+
 ```cure
 fsm TrafficLight
   Red    --timer-->     Green
@@ -342,8 +348,94 @@ fsm TrafficLight
   *      --emergency--> Red
 ```
 
-FSMs compile to `gen_statem` BEAM modules. The compiler verifies
-reachability and deadlock freedom at compile time.
+**Callback mode** (v0.22.0, triggered by the presence of an
+`on_transition` block) compiles to a `GenServer` whose state is a
+fixed `%Cure.FSM.State{}` struct with three fields:
+
+- `:caller` -- the pid that spawned the FSM. Outbound notifications
+  (`Std.Fsm.notify/1`, `@notify_transitions`) reach this pid. Defaults
+  to the spawning process when `Std.Fsm.spawn/1` is used.
+- `:meta` -- FSM-private bookkeeping, invisible to callers.
+- `:payload` -- user-visible domain value; read by
+  `Std.Fsm.get_state/1`.
+
+Every lifecycle hook receives the struct as its last argument and may
+return either a full `%Cure.FSM.State{}`, a partial map with
+`:payload`/`:meta` keys that is merged into the current struct, or
+any bare value which is interpreted as the new payload.
+
+```cure
+fsm Counter
+  @notify_transitions
+
+  Idle --inc--> Idle
+  Idle --reset--> Idle
+
+  on_transition
+    (:idle, :inc,   _evp, %{payload: n, meta: m}) ->
+      %[:ok, :idle, %{payload: n + 1, meta: m}]
+    (:idle, :reset, _evp, %{payload: _, meta: m}) ->
+      %[:ok, :idle, %{payload: 0, meta: m}]
+    (_, _, _, state) -> %[:ok, :__same__, state]
+
+  on_start
+    (state) ->
+      notify(:started)
+      %[:ok, state]
+```
+
+### Lifecycle hooks
+
+- `on_start` -- called inside `init/1`. Receives the struct. May
+  return `:ok`, `{:ok, state}`, or `{:ok, partial}`.
+- `on_stop` -- called from `terminate/2`. Receives `(reason, state)`.
+- `on_transition` -- called on every accepted event. Receives
+  `(current_state, event, event_payload, %FsmState{})`.
+- `on_enter` -- called on entering a state. Receives
+  `(state, %FsmState{})`.
+- `on_exit` -- called on leaving a state. Receives
+  `(state, %FsmState{})`.
+- `on_failure` -- called when a transition is disallowed or the
+  handler returns `{:error, reason}`. Receives
+  `(event, event_payload, %FsmState{})`.
+- `on_timer` -- called every `@timer` milliseconds. Receives
+  `(state, %FsmState{})`.
+
+### Annotations
+
+- `@timer N` -- drive `on_timer` every `N` ms.
+- `@terminal State` -- mark a state as terminal (no outgoing
+  transitions required for deadlock freedom).
+- `@invariant expr` / `@verify expr` -- reserved for the verifier.
+- `@initial :state_name` -- override the initial state (default: the
+  first non-wildcard source).
+- `@notify_transitions` -- after every successful transition, send
+  `{:cure_fsm, pid, {:transition, from, event, to, payload}}` to the
+  caller.
+- `@auto_caller` -- when `:caller` is not explicitly provided, fall
+  back to the spawning process recorded under
+  `:cure_fsm_spawner` in the FSM's process dictionary.
+
+### Events with payloads
+
+Events may carry an arbitrary payload, threaded through to
+`on_transition` as the third argument:
+
+```cure
+let pid = Std.Fsm.spawn(:"Cure.FSM.Counter")
+Std.Fsm.send_with(pid, :inc, %{source: :button})
+```
+
+### Notifying the outside world
+
+Inside any lifecycle hook body, `notify(message)` sends `message` to
+the FSM's `:caller`. Callable as a bare identifier in Cure source; at
+the Elixir level it resolves to `Cure.FSM.State.notify_self/1`. When
+called outside a running FSM process, `notify/1` is a no-op returning
+`:no_caller`.
+
+The compiler verifies reachability, deadlock freedom, hard-event
+exclusivity, and terminal-state validity at compile time.
 
 ## Pattern Matching
 `match` (and `let`) support deep destructuring across every structural

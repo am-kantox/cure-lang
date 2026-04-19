@@ -104,7 +104,7 @@ defmodule Cure.FSM.FSMCallbackTest do
       assert mod == :"Cure.FSM.CallbackTurnstile"
       {:ok, pid} = mod.start_link(0)
 
-      # Initial state
+      # Initial state -- payload is the bare value we passed in
       {state, data} = mod.get_state(pid)
       assert state == :locked
       assert data == 0
@@ -129,6 +129,10 @@ defmodule Cure.FSM.FSMCallbackTest do
       {state, data} = mod.get_state(pid)
       assert state == :unlocked
       assert data == 2
+
+      # The full FsmState struct is reachable via get_fsm_state/1
+      {_current, %Cure.FSM.State{payload: p}} = mod.get_fsm_state(pid)
+      assert p == 2
 
       GenServer.stop(pid)
     after
@@ -218,7 +222,16 @@ defmodule Cure.FSM.FSMCallbackTest do
   end
 
   defp callback_turnstile_ast do
-    # Build a callback-mode AST with on_transition clauses
+    # Build a callback-mode AST with on_transition clauses.
+    #
+    # The 4th argument to every clause is the full %Cure.FSM.State{} struct;
+    # here we destructure it by map pattern to pull out :payload.
+    payload_pattern =
+      {:map, [],
+       [
+         {{:literal, [], :payload}, {:variable, [scope: :local], "data"}}
+       ]}
+
     on_transition_clauses = [
       {:match_arm,
        [
@@ -228,7 +241,7 @@ defmodule Cure.FSM.FSMCallbackTest do
               {:literal, [], :locked},
               {:literal, [], :coin},
               {:variable, [scope: :local], "_payload"},
-              {:variable, [scope: :local], "data"}
+              payload_pattern
             ]}
        ],
        [
@@ -247,7 +260,7 @@ defmodule Cure.FSM.FSMCallbackTest do
               {:literal, [], :unlocked},
               {:literal, [], :push},
               {:variable, [scope: :local], "_payload"},
-              {:variable, [scope: :local], "data"}
+              payload_pattern
             ]}
        ], [{:tuple, [], [{:literal, [], :ok}, {:literal, [], :locked}, {:variable, [scope: :local], "data"}]}]},
       {:match_arm,
@@ -258,7 +271,7 @@ defmodule Cure.FSM.FSMCallbackTest do
               {:variable, [scope: :local], "_state"},
               {:variable, [scope: :local], "_event"},
               {:variable, [scope: :local], "_payload"},
-              {:variable, [scope: :local], "data"}
+              payload_pattern
             ]}
        ], [{:tuple, [], [{:literal, [], :ok}, {:literal, [], :__same__}, {:variable, [scope: :local], "data"}]}]}
     ]
