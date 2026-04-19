@@ -582,6 +582,65 @@ match frame
 
 Binary exhaustiveness is tracked via code `E031`.
 
+**Trailing `rest::binary` refinement (v0.22.0).** A trailing
+`rest::binary` (or `rest::bytes`, `rest::bitstring`) segment after
+byte-aligned preceding segments inherits a refinement of the form
+`byte_size(rest) == byte_size(scrutinee) - sum_of_preceding_sizes`.
+The refinement flows through the SMT translator, so subsequent
+binary matches on `rest` type-check without having to re-assert the
+length invariant. Non-byte-aligned or non-linearisable preceding
+segments degrade the refinement to plain `Bitstring` and emit the
+`:refinement_ignored` event under code `E037`.
+
+### Binary comprehension generators
+
+```cure
+[byte for <<byte <- "abc">>]       # [97, 98, 99]
+[word for <<word::16 <- buf>>]     # 16-bit words, big-endian
+[ch   for <<ch::utf8 <- text>>]    # UTF-8 code points
+```
+
+A binary comprehension generator (v0.22.0) wraps the whole generator
+in `<<...>>`: pattern segments, the `<-` arrow, and the source
+expression all live between `<<` and `>>`. The segments reuse the
+regular binary-pattern grammar (specifier chains, `::size(n)`,
+`::unit(k)`, `::utf8`, ...). The comprehension body sees the
+generator variables narrowed to their segment types. A non-bitstring
+source produces an `E036` warning.
+
+### Lambda block bodies
+
+Anonymous functions (`fn (params) -> body`) accept four body shapes:
+
+```cure
+# Single expression (v0.12.0+).
+fn (x) -> x + 1
+
+# Indented block (v0.19.0+). Only usable where the lexer emits
+# `:indent`/`:dedent`, i.e. at top level or inside block-forming
+# constructs.
+fn (x) ->
+  let y = x + 1
+  y * 2
+
+# Brace-delimited (v0.22.0). Statements separated by `;`; the final
+# expression is the body's result. Works anywhere, including inside
+# argument lists where newlines are suppressed.
+map(xs, fn (x) -> { let y = x + 1; y * 2 })
+
+# end-terminated (v0.22.0). A single `end` keyword closes the body.
+# Statement separator is `;` (or newline when newlines are emitted).
+map(xs, fn (x) -> let y = x + 1; y * 2; end)
+```
+
+All four shapes produce the same `{:block, meta, exprs}` AST node.
+The `:block_shape` meta key (`:brace` or `:end`) lets the algebra
+formatter round-trip the author's chosen form. `end` is a reserved
+keyword from v0.22.0.
+
+An unclosed brace or missing `end` surfaces as `E035 Lambda Block
+Unterminated`.
+
 ### Pipe operator
 
 ```cure

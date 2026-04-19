@@ -5,6 +5,72 @@ All notable changes to Cure are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
+
+## [0.22.0] -- Loose Ends
+
+v0.22.0 closes three language-surface gaps that the v0.20.0 / v0.21.0
+work scaffolded but deliberately left open, and elevates the v0.21.0
+"Unreleased" first-class FSM overhaul into a shipped release. Lambdas
+gain explicit multi-statement body shapes that work inside argument
+lists, binary comprehension generators land (`for <<b <- buf>>`), and
+trailing `rest::binary` segments now carry a `byte_size`-based
+refinement so subsequent binary patterns type-check without having to
+re-assert every invariant.
+
+### Added -- Multi-statement lambda bodies
+
+- `Cure.Compiler.Parser.parse_lambda_body/2` routes the body through
+  a new `parse_lambda_block_body/2` dispatcher with four shapes:
+  indented block (unchanged from v0.19.0), single expression
+  (unchanged), brace-delimited `fn (x) -> { s1; s2; final }`, and
+  `end`-terminated `fn (x) -> s1; s2; final; end`. The brace and end
+  forms work inside argument positions where the lexer suppresses
+  newlines and `:indent`/`:dedent` are never emitted.
+- Both new forms compile to the same `{:block, meta, exprs}` AST
+  node the indented form produces; `:block_shape` meta keys
+  (`:brace` or `:end`) let the Printer and algebra formatter
+  round-trip the author's chosen shape.
+- `end` is now a reserved keyword (previously unused in `.cure`
+  source). The lexer's `@keywords` list grows by one.
+- `E035 Lambda Block Unterminated` error-catalog entry for an
+  unclosed `{` or missing `end` inside a lambda body.
+
+### Added -- Binary comprehension generators
+
+- `Cure.Compiler.Parser.parse_generator_or_filter/1` dispatches on
+  `:binary_open` and delegates to a new `parse_binary_generator/1`
+  path. The resulting AST is `{:binary_generator, meta, [pattern,
+  source]}` where `pattern` is the v0.21.0 `{:literal, [subtype:
+  :bytes], segments}` shape and the segments are parsed at BP 42 so
+  the trailing `<-` of the generator is not mis-tokenised as a
+  less-than comparison inside `<<...>>`.
+- `Cure.Compiler.Codegen.compile_comprehension/3` lowers
+  `:binary_generator` qualifiers to Erlang's `b_generate` form
+  inside the existing `:lc` comprehension so mixed qualifier lists
+  still compile uniformly.
+- `Cure.Types.Checker.do_infer/2` on `:comprehension` now binds
+  every qualifier's pattern variables via `bind_pattern_vars/3` so
+  the comprehension body type-checks with the generator variables
+  in scope.
+- `E036 Binary Comprehension Source Not Bitstring` error-catalog
+  entry.
+
+### Added -- `byte_size` arithmetic refinements
+
+- `Cure.SMT.Translator` speaks `byte_size/1` as an uninterpreted
+  `(Int) -> Int` function. Queries that reference `byte_size`
+  prepend `(declare-fun byte_size (Int) Int)` and switch to the
+  `QF_UFLIA` logic automatically.
+- `Cure.Types.PatternRefinement.narrow/2` rewrites its binary-
+  segment branch. Trailing `rest::binary` (`::bytes`, `::bitstring`,
+  `::bits`) tails receive a refinement whose predicate captures
+  `byte_size(__value__) == byte_size(__scrutinee__) - sum_of_preceding`,
+  where the sum is the byte-aligned count of preceding segments. When
+  any preceding segment's size cannot be linearised, the tail stays
+  bound to plain `:bitstring` and the pipeline emits a
+  `:refinement_ignored` event under code `E037`.
+- `E037 Binary Segment Size Non-Linear` error-catalog entry.
+
 ### Added -- First-class FSM handling
 - `Cure.FSM.State` -- the canonical runtime state record carried by
   every callback-mode FSM. A single struct with three fields:
@@ -83,6 +149,27 @@ into the handler's 4th argument directly (e.g. `data + 1`) must now
 destructure the struct (`%{payload: n}` -- map pattern against the
 struct works because structs are maps) to read the underlying payload.
 Simple-mode (`gen_statem`) FSMs are entirely unchanged.
+
+`end` is a new reserved keyword. No `.cure` file in the stdlib or
+examples uses `end` as an identifier, but third-party code that
+does will need to rename the binding.
+
+### Numbers
+
+- 1114 tests pass (up from 1078; 3 doctests + 1111 tests);
+  `mix credo --strict`: 0 issues across 142 source files;
+  `mix cure.check.stdlib`: 25/25; `mix cure.check.examples`:
+  44/44 (up from 40/40 -- 4 new example files:
+  `lambda_block.cure`, `binary_comprehension.cure`,
+  `byte_size_refinement.cure`, and the first-class FSM example).
+
+### Deferred to v0.23.0
+
+- Remote package-registry index service, publication signing, and
+  Hex.pm cross-publishing -- the `Cure.Project.Registry` HTTP
+  client, Ed25519 archive signing, and `cure publish --hex`
+  export path remain rescheduled for v0.23.0.
+
 ---
 ## [0.21.0] -- Through the Segments
 
@@ -228,8 +315,6 @@ Monoid, JSON) land on top of the existing Show/Eq/Ord trio.
 
 ### Deferred to v0.22.0
 
-- Remote package-registry index service, publication signing, and
-  Hex.pm cross-publishing.
 - Multi-statement lambda bodies -- brace-delimited
   (`fn (x) -> { stmt1; stmt2; final }`) and `end`-terminated block
   forms for anonymous functions embedded in argument lists where
@@ -239,10 +324,18 @@ Monoid, JSON) land on top of the existing Show/Eq/Ord trio.
   less-than comparison; a dedicated binary-generator path in
   `parse_generator_or_filter/1` will unlock this shape.
 - Full byte-size refinement propagation through `rest::binary`
-  tail segments -- v0.21.0 binds `rest` to plain `Bitstring`; a
-  future release will emit
+  tail segments -- v0.21.0 binds `rest` to plain `Bitstring`;
+  v0.22.0 will emit
   `byte_size(rest) == byte_size(scrutinee) - sum_of_preceding_sizes`
   once the SMT translator grows the arithmetic support.
+
+### Deferred to v0.23.0
+
+- Remote package-registry index service, publication signing, and
+  Hex.pm cross-publishing -- the `Cure.Project.Registry` HTTP
+  client, Ed25519 archive signing, and `cure publish --hex`
+  export path are rescheduled to v0.23.0 so that v0.22.0 can
+  focus on closing out the lambda / binary language-surface work.
 
 ---
 

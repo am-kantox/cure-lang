@@ -303,33 +303,231 @@ defmodule Cure.Types.PatternRefinement do
   end
 
   # Walk a sequence of `{:bin_segment, meta, [value]}` children and
-  # collect their variable bindings. Narrowing of `rest::binary` tail
-  # segments against the preceding `::size(n)` specifiers is done in a
-  # conservative form: `rest` binds to plain `:bitstring`, but future
-  # releases can extend this to emit a `byte_size(rest) == byte_size(s) - n`
-  # refinement once the SMT translator grows the arithmetic support.
+  # collect their variable bindings.
+  #
+  # v0.22.0: trailing `rest::binary` (or `rest::bytes`/`rest::bitstring`)
+  # tail segments now receive a `byte_size` refinement that ties them to
+  # the enclosing scrutinee's byte size:
+  #
+  #   byte_size(__value__) == byte_size(__scrutinee__) - sum_of_preceding
+  #
+  # where `__value__` is the tail's own length and `__scrutinee__` is a
+  # symbolic reference to the full match value. `sum_of_preceding` is an
+  # arithmetic sum of each preceding segment's byte count, computed from
+  # the specifier's `:size`/`:unit` entries. When a preceding segment's
+  # size cannot be linearised (e.g. a non-literal variable size with an
+  # unusual unit), the segment is skipped and the pipeline emits a
+  # warning under code `E037`; in that case the tail still binds to
+  # plain `Bitstring` for backward compatibility.
   defp narrow_binary_segments(segments, scrutinee_type) do
-    bindings =
-      Enum.reduce(segments, %{}, fn seg, acc ->
-        case seg do
-          {:bin_segment, seg_meta, [inner]} ->
-            type = bin_segment_type(seg_meta)
+    {bindings, _} = segments_bindings(segments, %{}, :preceding)
+    {bindings, scrutinee_type}
+  end
 
-            case inner do
-              {:variable, _, name} when is_binary(name) and name != "_" ->
-                Map.put(acc, name, type)
+  defp segments_bindings([], acc, _phase), do: {acc, []}
 
-              other ->
-                {sub, _} = narrow(other, type)
-                Map.merge(acc, sub)
-            end
+  defp segments_bindings([seg], acc, _phase) do
+    # The final segment may be the `rest::binary` tail.
+    acc = refine_final_segment(seg, segments_preceding(), acc)
+    {acc, []}
+  end
 
-          _ ->
-            acc
-        end
+  defp segments_bindings([seg | rest], acc, phase) do
+    acc =
+      case seg do
+        {:bin_segment, seg_meta, [inner]} ->
+          bind_preceding_segment(inner, seg_meta, acc)
+
+        _ ->
+          acc
+      end
+
+    # Track the segment in the preceding-size accumulator so the final
+    # segment's refinement can reference it. The per-call state is
+    # threaded via the process dictionary because `segments_bindings/3`
+    # is purely functional and we want to keep the public surface of
+    # `narrow_binary_segments/2` unchanged.
+    track_preceding(seg)
+    segments_bindings(rest, acc, phase)
+  end
+
+  defp bind_preceding_segment({:variable, _, name}, seg_meta, acc)
+       when is_binary(name) and name != "_" do
+    Map.put(acc, name, bin_segment_type(seg_meta))
+  end
+
+  defp bind_preceding_segment(other, seg_meta, acc) do
+    {sub, _} = narrow(other, bin_segment_type(seg_meta))
+    Map.merge(acc, sub)
+  end
+
+  # Narrowing is scoped to `narrow_binary_segments/2`, so we use the
+  # process dictionary to thread the list of preceding segments without
+  # changing the public arity.
+  defp track_preceding(seg) do
+    list = Process.get(:cure_pr_preceding, [])
+    Process.put(:cure_pr_preceding, list ++ [seg])
+    :ok
+  end
+
+  defp segments_preceding do
+    list = Process.get(:cure_pr_preceding, [])
+    Process.delete(:cure_pr_preceding)
+    list
+  end
+
+  defp refine_final_segment({:bin_segment, seg_meta, [inner]} = seg, preceding, acc) do
+    base_type = bin_segment_type(seg_meta)
+
+    case inner do
+      {:variable, _, name} when is_binary(name) and name != "_" ->
+        narrowed = maybe_byte_size_refinement(name, seg, seg_meta, base_type, preceding)
+        Map.put(acc, name, narrowed)
+
+      other ->
+        {sub, _} = narrow(other, base_type)
+        Map.merge(acc, sub)
+    end
+  end
+
+  defp refine_final_segment(_, _preceding, acc), do: acc
+
+  # Decide whether the final segment is eligible for the `byte_size`
+  # refinement. Only `binary`/`bytes`/`bitstring` tails without an
+  # explicit size specifier qualify (that is the `rest::binary` shape).
+  defp maybe_byte_size_refinement(name, _seg, seg_meta, base_type, preceding) do
+    tail_kind = Keyword.get(seg_meta, :type, :integer)
+    has_size? = Keyword.has_key?(seg_meta, :size)
+
+    tail? = tail_kind in [:binary, :bytes, :bitstring, :bits] and not has_size?
+
+    if tail? and base_type == :bitstring do
+      build_byte_size_refinement(name, preceding) || base_type
+    else
+      base_type
+    end
+  end
+
+  # Build `{:refinement, :bitstring, "__value__",
+  #   byte_size(__value__) == byte_size(__scrutinee__) - sum}` when every
+  # preceding segment has a resolvable byte count; otherwise `nil`.
+  defp build_byte_size_refinement(_name, preceding) do
+    case sum_preceding_bytes(preceding, []) do
+      {:ok, sum_ast} ->
+        line = 1
+        eq_meta = [operator: :==, category: :comparison, line: line]
+        minus_meta = [operator: :-, category: :arithmetic, line: line]
+
+        value_bytes =
+          {:function_call, [name: "byte_size", line: line], [{:variable, [line: line], "__value__"}]}
+
+        scrut_bytes =
+          {:function_call, [name: "byte_size", line: line], [{:variable, [line: line], "__scrutinee__"}]}
+
+        rhs = {:binary_op, minus_meta, [scrut_bytes, sum_ast]}
+        pred = {:binary_op, eq_meta, [value_bytes, rhs]}
+
+        Refinement.new(:bitstring, "__value__", pred)
+
+      :unknown ->
+        emit_refinement_downgrade_warning()
+        nil
+    end
+  end
+
+  defp sum_preceding_bytes([], []), do: {:ok, {:literal, [subtype: :integer, line: 1], 0}}
+
+  defp sum_preceding_bytes([], [single]), do: {:ok, single}
+
+  defp sum_preceding_bytes([], [first | rest]) do
+    line = 1
+    plus_meta = [operator: :+, category: :arithmetic, line: line]
+
+    ast =
+      Enum.reduce(rest, first, fn term, acc ->
+        {:binary_op, plus_meta, [acc, term]}
       end)
 
-    {bindings, scrutinee_type}
+    {:ok, ast}
+  end
+
+  defp sum_preceding_bytes([seg | rest], acc) do
+    case segment_byte_size(seg) do
+      {:ok, ast} -> sum_preceding_bytes(rest, acc ++ [ast])
+      :unknown -> :unknown
+    end
+  end
+
+  # Map a single segment to its byte count as a MetaAST arithmetic
+  # expression. Returns `:unknown` when the segment's size cannot be
+  # linearised (dynamic size with unusual unit, etc.).
+  defp segment_byte_size({:bin_segment, meta, _children}) do
+    type = Keyword.get(meta, :type, :integer)
+    size = Keyword.get(meta, :size)
+    unit = Keyword.get(meta, :unit)
+
+    default_unit =
+      case type do
+        t when t in [:integer, :float] -> 1
+        t when t in [:utf8, :utf16, :utf32] -> 1
+        t when t in [:binary, :bytes, :bitstring, :bits] -> 8
+        _ -> 1
+      end
+
+    default_size =
+      case type do
+        :integer -> 8
+        :float -> 64
+        :utf8 -> 8
+        :utf16 -> 16
+        :utf32 -> 32
+        :binary -> nil
+        :bytes -> nil
+        :bitstring -> nil
+        :bits -> nil
+        _ -> 8
+      end
+
+    size_value = resolve_size_literal(size) || default_size
+    unit_value = resolve_unit_literal(unit) || default_unit
+
+    cond do
+      size_value == nil ->
+        :unknown
+
+      is_integer(size_value) and is_integer(unit_value) and
+          rem(size_value * unit_value, 8) == 0 ->
+        {:ok, {:literal, [subtype: :integer, line: 1], div(size_value * unit_value, 8)}}
+
+      true ->
+        :unknown
+    end
+  end
+
+  defp segment_byte_size(_), do: :unknown
+
+  defp resolve_size_literal(nil), do: nil
+  defp resolve_size_literal({:literal, _, value}) when is_integer(value), do: value
+  defp resolve_size_literal(_), do: nil
+
+  defp resolve_unit_literal(nil), do: nil
+  defp resolve_unit_literal(n) when is_integer(n), do: n
+  defp resolve_unit_literal({:literal, _, value}) when is_integer(value), do: value
+  defp resolve_unit_literal(_), do: nil
+
+  # Pipeline warning emitted when a segment's size cannot be linearised;
+  # the tail segment stays bound to plain `:bitstring` in that case.
+  defp emit_refinement_downgrade_warning do
+    if Code.ensure_loaded?(Cure.Pipeline.Events) do
+      Cure.Pipeline.Events.emit(
+        :type_checker,
+        :refinement_ignored,
+        {:binary_size_non_linear, "binary segment size is non-linear; rest::binary refinement downgraded (E037)"},
+        %{}
+      )
+    end
+
+    :ok
   end
 
   defp bin_segment_type(meta) do

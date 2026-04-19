@@ -946,6 +946,16 @@ defmodule Cure.Compiler.Parser do
     # The lexer emits `<` and `-` as separate tokens for `<-`.
     # Strategy: parse LHS at BP above comparison (42) so `<` is not consumed,
     # then check if `< -` follows (generator) or fall back to a full-BP filter.
+    # v0.22.0: a leading `:binary_open` (`<<`) opens a binary-pattern
+    # generator (`for <<b <- buf>>`) that otherwise mis-tokenises as
+    # a less-than comparison inside the `<<...>>` literal.
+    case peek(state) do
+      %Token{type: :binary_open} -> parse_binary_generator(state)
+      _ -> parse_non_binary_generator_or_filter(state)
+    end
+  end
+
+  defp parse_non_binary_generator_or_filter(state) do
     saved_pos = state.pos
     {expr, state} = parse_expr(state, 42)
     state = skip_newlines(state)
@@ -980,6 +990,107 @@ defmodule Cure.Compiler.Parser do
           {{:filter, [], [expr]}, state}
         end
     end
+  end
+
+  # v0.22.0: binary-pattern generator `<<seg1, seg2, ... <- source>>`.
+  # Elixir-style surface syntax wraps the whole generator in `<<...>>`:
+  # the pattern segments, the `<-` arrow, and the source expression all
+  # live between the opening `<<` and the closing `>>`. The `<-` itself
+  # is emitted by the lexer as `:lt` followed by `:minus`; we parse
+  # segments at BP 42 so the leading `<` of `<-` is not consumed as a
+  # less-than comparison. The resulting AST is
+  # `{:binary_generator, meta, [pattern, source]}` where `pattern` is
+  # a `{:literal, [subtype: :bytes], segments}` (reusing the v0.21.0
+  # pattern-compiler path) and the codegen lowers it to Erlang's
+  # `b_generate` qualifier.
+  defp parse_binary_generator(state) do
+    open_token = peek(state)
+    state = advance(state)
+    state = skip_newlines(state)
+    {segments, state} = parse_binary_generator_segments(state, [])
+
+    # Consume `<-` (lexed as `:lt` + `:minus`).
+    state =
+      case {peek(state), peek_at(state, 1)} do
+        {%Token{type: :lt}, %Token{type: :minus}} ->
+          state |> advance() |> advance()
+
+        _ ->
+          expect(state, :lt) |> expect(:minus)
+      end
+
+    state = skip_newlines(state)
+    {source, state} = parse_expr(state, 0)
+    state = skip_newlines(state)
+    state = expect(state, :binary_close)
+
+    pattern =
+      {:literal, [subtype: :bytes, line: open_token.line, col: open_token.col], segments}
+
+    meta = [line: open_token.line, col: open_token.col]
+    {{:binary_generator, meta, [pattern, source]}, state}
+  end
+
+  # Parse `seg1, seg2, ...` inside a binary-generator, stopping when the
+  # next token is either the closing `>>` (`:binary_close`) or the
+  # generator arrow `<-` (`:lt` + `:minus`). Each segment is parsed via
+  # `parse_bin_generator_segment/1` so specifier chains (`::integer`,
+  # `::size(n)`, ...) carry through.
+  defp parse_binary_generator_segments(state, acc) do
+    case peek(state) do
+      %Token{type: :binary_close} ->
+        {Enum.reverse(acc), state}
+
+      %Token{type: :lt} ->
+        next = peek_at(state, 1)
+
+        if next != nil and next.type == :minus do
+          {Enum.reverse(acc), state}
+        else
+          advance_into_segment(state, acc)
+        end
+
+      _ ->
+        advance_into_segment(state, acc)
+    end
+  end
+
+  defp advance_into_segment(state, acc) do
+    {segment, state} = parse_bin_generator_segment(state)
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :comma} ->
+        state = advance(state)
+        state = skip_newlines(state)
+        parse_binary_generator_segments(state, [segment | acc])
+
+      _ ->
+        {Enum.reverse([segment | acc]), state}
+    end
+  end
+
+  # Variant of `parse_bin_segment/1` that stops before `<` (BP 40) so
+  # the trailing `<-` of a binary generator is not mis-tokenised as a
+  # less-than comparison operator.
+  defp parse_bin_generator_segment(state) do
+    start_token = peek(state)
+    {value, state} = parse_expr(state, 42)
+
+    {specifier_meta, state} =
+      case peek(state) do
+        %Token{type: :colon_colon} ->
+          state = advance(state)
+          parse_bin_specifier_chain(state, [])
+
+        _ ->
+          {[], state}
+      end
+
+    meta =
+      [line: start_token.line, col: start_token.col] ++ specifier_meta
+
+    {{:bin_segment, meta, [value]}, state}
   end
 
   # -- Keyword-Triggered Prefix Expressions ----------------------------------
@@ -1558,18 +1669,178 @@ defmodule Cure.Compiler.Parser do
   end
 
   # -- Lambda (anonymous fn) -------------------------------------------------
-
+  #
+  # v0.22.0 introduces two new multi-statement body shapes in addition
+  # to the historical indented-block and single-expression forms:
+  #
+  #   fn (x) -> { stmt1; stmt2; final }     (brace-delimited)
+  #   fn (x) ->
+  #     stmt1
+  #     stmt2
+  #   end                                   (end-terminated)
+  #
+  # Both compile to the same `{:block, meta, exprs}` AST node that the
+  # v0.19.0 indented form already produces; the only user-visible
+  # difference is that these two forms work inside argument lists,
+  # where the lexer suppresses newlines and `:indent`/`:dedent` are
+  # never emitted.
   defp parse_lambda_body(state, token) do
     state = expect(state, :lparen)
     {params, state} = parse_lambda_params(state)
     state = expect(state, :rparen)
     state = expect(state, :arrow)
     state = skip_newlines(state)
-    {body, state} = parse_expr_or_block(state)
+    {body, state} = parse_lambda_block_body(state, token)
 
     param_nodes = Enum.map(params, fn name -> {:param, [], name} end)
     ast = {:lambda, [params: param_nodes, line: token.line, col: token.col], [body]}
     {ast, state}
+  end
+
+  # Route the lambda body to one of four shapes: indented block, brace
+  # block, end-terminated block, or single expression. The brace and end
+  # forms emit a `{:block, [block_shape: :brace | :end, ...], exprs}`
+  # node so the Printer and AlgebraFormatter can round-trip the
+  # author's chosen shape.
+  defp parse_lambda_block_body(state, token) do
+    case peek(state) do
+      %Token{type: :indent} ->
+        parse_indented_lambda_body(state, token)
+
+      %Token{type: :lbrace} ->
+        parse_brace_lambda_body(state, token)
+
+      _ ->
+        parse_bare_lambda_body(state, token)
+    end
+  end
+
+  # Indented block, optionally followed by an `end` terminator:
+  #
+  #   fn (x) ->
+  #     stmt1
+  #     stmt2
+  #   end
+  #
+  # The `end` is optional; when present the block shape is tagged so
+  # the formatter can keep it. Without `end` the block reverts to the
+  # v0.19.0 indented form.
+  defp parse_indented_lambda_body(state, token) do
+    {body, state} = parse_block(state)
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :keyword, value: :end} ->
+        state = advance(state)
+        {tag_block_shape(body, :end, token), state}
+
+      _ ->
+        {body, state}
+    end
+  end
+
+  # Brace block `{ stmt1; stmt2; final }`. Statement separator is `;`,
+  # with newlines accepted as a synonym when the brace body happens to
+  # live outside a paren scope. Empty braces compile to `:ok`.
+  defp parse_brace_lambda_body(state, token) do
+    state = expect(state, :lbrace)
+    state = skip_stmt_seps(state)
+
+    case peek(state) do
+      %Token{type: :rbrace} ->
+        state = advance(state)
+        {{:literal, [subtype: :null, line: token.line, col: token.col], nil}, state}
+
+      _ ->
+        {exprs, state} = parse_brace_block_body(state, [])
+        state = expect(state, :rbrace)
+        {build_block(exprs, :brace, token), state}
+    end
+  end
+
+  # Bare (no leading `{` or `:indent`) body. When the first expression
+  # is followed by a statement separator *and* an `end` keyword
+  # eventually appears, treat the sequence as an end-terminated block;
+  # otherwise parse a single expression as the lambda body.
+  defp parse_bare_lambda_body(state, token) do
+    saved_pos = state.pos
+    {first, state} = parse_expr(state, 0)
+
+    case peek(state) do
+      %Token{type: :keyword, value: :end} ->
+        state = advance(state)
+        {build_block([first], :end, token), state}
+
+      %Token{type: :semicolon} ->
+        state = %{state | pos: saved_pos}
+        parse_end_terminated_lambda_body(state, token)
+
+      _ ->
+        {first, state}
+    end
+  end
+
+  # `fn (x) -> stmt1; stmt2; ... end` -- explicit `end` terminator, with
+  # `;` (and when available, newlines) as the statement separator.
+  defp parse_end_terminated_lambda_body(state, token) do
+    {exprs, state} = parse_brace_block_body(state, [])
+    state = skip_stmt_seps(state)
+
+    case peek(state) do
+      %Token{type: :keyword, value: :end} ->
+        state = advance(state)
+        {build_block(exprs, :end, token), state}
+
+      other ->
+        line = if is_nil(other), do: token.line, else: other.line
+        col = if is_nil(other), do: token.col, else: other.col
+        error = {:lambda_block_unterminated, line, col, "E035"}
+        state = add_error(state, error)
+        {build_block(exprs, :end, token), state}
+    end
+  end
+
+  # Parse a sequence of statements separated by `;` or newlines. Stops
+  # when the next token is `:rbrace`, `:keyword :end`, or `:eof`.
+  defp parse_brace_block_body(state, acc) do
+    state = skip_stmt_seps(state)
+
+    case peek(state) do
+      %Token{type: type} when type in [:rbrace, :eof] ->
+        {Enum.reverse(acc), state}
+
+      %Token{type: :keyword, value: :end} ->
+        {Enum.reverse(acc), state}
+
+      _ ->
+        {expr, state} = parse_expr(state, 0)
+        state = skip_stmt_seps(state)
+        parse_brace_block_body(state, [expr | acc])
+    end
+  end
+
+  defp skip_stmt_seps(state) do
+    case peek(state) do
+      %Token{type: :semicolon} -> skip_stmt_seps(advance(state))
+      %Token{type: :newline} -> skip_stmt_seps(advance(state))
+      _ -> state
+    end
+  end
+
+  defp build_block(exprs, shape, token) do
+    case exprs do
+      [] -> {:literal, [subtype: :null, line: token.line, col: token.col], nil}
+      [single] -> single
+      many -> {:block, [block_shape: shape, line: token.line, col: token.col], many}
+    end
+  end
+
+  defp tag_block_shape({:block, meta, exprs}, shape, _token) when is_list(meta) do
+    {:block, Keyword.put(meta, :block_shape, shape), exprs}
+  end
+
+  defp tag_block_shape(expr, shape, token) do
+    {:block, [block_shape: shape, line: token.line, col: token.col], [expr]}
   end
 
   defp parse_lambda_params(state) do

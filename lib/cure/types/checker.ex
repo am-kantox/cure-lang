@@ -1046,13 +1046,42 @@ defmodule Cure.Types.Checker do
   end
 
   # -- Comprehension -----------------------------------------------------------
+  #
+  # v0.22.0: comprehensions carry `:generator`, `:binary_generator`, and
+  # `:filter` qualifiers. The body's type is inferred in an environment
+  # that has the generator variables bound (via `bind_pattern_vars/3`).
+  # Filters and unknown qualifiers thread the environment through but
+  # do not bind anything new. The comprehension result type is always
+  # `{:list, body_type}` (binary generators iterate over a bitstring
+  # source but still yield a list).
 
-  defp do_infer(env, {:comprehension, _meta, [body | _qualifiers]}) do
-    case do_infer(env, body) do
-      {:ok, bt, env} -> {:ok, {:list, bt}, env}
+  defp do_infer(env, {:comprehension, _meta, [body | qualifiers]}) do
+    body_env = Enum.reduce(qualifiers, env, &bind_qualifier_vars(&2, &1))
+
+    case do_infer(body_env, body) do
+      {:ok, bt, _} -> {:ok, {:list, bt}, env}
       err -> err
     end
   end
+
+  defp bind_qualifier_vars(env, {:generator, _, [pattern, collection]}) do
+    elem_type =
+      case do_infer(env, collection) do
+        {:ok, {:list, t}, _} -> t
+        _ -> :any
+      end
+
+    bind_pattern_vars(env, pattern, elem_type)
+  end
+
+  defp bind_qualifier_vars(env, {:binary_generator, _, [pattern, _source]}) do
+    # Binary generator patterns carry their own segment types via
+    # `:bin_segment` meta; `bind_pattern_vars/3` already narrows each
+    # segment variable from the specifier's `:type` entry.
+    bind_pattern_vars(env, pattern, :bitstring)
+  end
+
+  defp bind_qualifier_vars(env, _), do: env
 
   # -- Containers (nested modules, etc.) -- skip in expression position --------
 

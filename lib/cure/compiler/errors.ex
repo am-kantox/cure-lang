@@ -62,6 +62,16 @@ defmodule Cure.Compiler.Errors do
     format_diagnostic("error", "syntax error", file, line, "expected #{expected}, got #{got} at column #{col}")
   end
 
+  def format_error({:lambda_block_unterminated, line, col, code}, file) do
+    format_diagnostic(
+      "error",
+      "lambda block unterminated (#{code})",
+      file,
+      line,
+      "multi-statement lambda body at column #{col} was not closed with '}' or 'end'"
+    )
+  end
+
   # -- Lex Errors --------------------------------------------------------------
 
   def format_error({:lex_error, reason}, file) do
@@ -564,6 +574,60 @@ defmodule Cure.Compiler.Errors do
     wildcard by widening to `let _ = r`, or annotate the let's
     AST metadata with `partial: true` (reserved for tooling that
     knows the pattern is acceptable by construction).
+    """,
+    "E035" => """
+    E035: Lambda Block Unterminated
+
+    A multi-statement lambda body (v0.22.0) opened a brace block or
+    began an `end`-terminated block but never closed it. The parser
+    reached the end of the enclosing expression without seeing `}`
+    or `end`.
+
+    Example:
+      map(xs, fn (x) -> { x + 1; x * 2 ) # Error: missing '}'
+      map(xs, fn (x) -> x + 1; x * 2)    # Error: missing 'end'
+
+    Fix: close the block with a matching `}` for brace-delimited
+    bodies or with `end` for end-terminated ones. If the body is a
+    single expression, use the v0.19.0 single-expression or indented
+    form without `{` and without `;`.
+    """,
+    "E036" => """
+    E036: Binary Comprehension Source Not Bitstring
+
+    A binary comprehension generator `for <<pattern <- source>>`
+    requires `source` to be a `Bitstring` (or a refinement of it).
+    An Int, List, or other shape cannot drive byte-level iteration.
+
+    Example:
+      [b for <<b <- 123>>]   # Error: 123 is Int, not Bitstring
+
+    Fix: pass a `Bitstring` value, for example a string literal
+    (`"abc"`) or a `<<...>>` construction.
+    """,
+    "E037" => """
+    E037: Binary Segment Size Non-Linear
+
+    The compiler tried to emit a `byte_size(rest) ==
+    byte_size(scrutinee) - sum_of_preceding_sizes` refinement for a
+    trailing `rest::binary` segment, but one of the preceding
+    segments carries a size expression the SMT translator cannot
+    linearise (for example an arbitrary runtime expression, or a
+    non-byte-aligned specifier). The refinement is downgraded to
+    plain `Bitstring` and the pipeline emits this warning so you
+    can choose whether to tighten the pattern or accept the
+    looser type.
+
+    Example:
+      fn f(buf: Bitstring, n: Int) -> Int =
+        match buf
+          <<head::size(n)-unit(3), rest::binary>> -> ...
+                    # warning: non-byte-aligned head size (E037)
+
+    Fix: use byte-aligned sizes (multiples of 8 bits) or explicit
+    literal sizes so the arithmetic can be emitted; otherwise accept
+    that `rest` binds to plain `Bitstring` and let runtime pattern
+    matching enforce the remaining invariants.
     """
   }
 

@@ -1530,6 +1530,14 @@ defmodule Cure.Compiler.Codegen do
           {coll_form, st} = do_compile_expr(collection, st)
           {{:generate, line, pat_form, coll_form}, st}
 
+        # v0.22.0: binary-pattern generator `<<seg1, seg2, ...>> <- source`.
+        # Lowers to Erlang's `b_generate` qualifier so the Erlang compiler
+        # drives the byte-level iteration.
+        {:binary_generator, _, [pattern, source]}, st ->
+          {pat_form, st} = compile_pattern(pattern, st)
+          {src_form, st} = do_compile_expr(source, st)
+          {{:b_generate, line, pat_form, src_form}, st}
+
         {:filter, _, [expr]}, st ->
           {expr_form, st} = do_compile_expr(expr, st)
           {expr_form, st}

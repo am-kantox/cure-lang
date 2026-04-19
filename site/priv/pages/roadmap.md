@@ -592,14 +592,17 @@ maps, with `E025` on non-exhaustive bindings).
 
 ### Deferred to v0.22.0
 
+Multi-statement lambda bodies -- brace-delimited
+(`fn (x) -> { stmt1; stmt2; final }`) and `end`-terminated
+(`fn (x) ->\n  stmt1\n  stmt2\nend`) block forms for anonymous
+functions embedded in argument lists where the existing
+indented-block form is not usable.
+### Deferred to v0.23.0
+
 Remote package-registry index service, publication signing, and
 Hex.pm cross-publishing -- a `Cure.Project.Registry` HTTP client
 against a read-only index protocol, Ed25519 archive signing, and
-a `cure publish --hex` export path. Multi-statement lambda
-bodies -- brace-delimited (`fn (x) -> { stmt1; stmt2; final }`)
-and `end`-terminated (`fn (x) ->\n  stmt1\n  stmt2\nend`) block
-forms for anonymous functions embedded in argument lists where
-the existing indented-block form is not usable.
+a `cure publish --hex` export path.
 
 ## Implemented: v0.21.0 -- Through the Segments
 
@@ -702,18 +705,80 @@ Pattern Not Exhaustive) with examples and fix guidance.
   `docs/LANGUAGE_SPEC.md` and `docs/TUTORIAL.md` (new Chapter 11
   "Binary parsing").
 
-### Deferred to v0.22.0
-
-Binary comprehension generators (`for <<b <- buf>>`) -- the parser
-currently mis-tokenises `<-` inside `<<...>>` as a less-than
-comparison; a dedicated binary-generator path will unlock this
-shape. Full byte-size refinement propagation through `rest::binary`
-tail segments: v0.21.0 binds `rest` to plain `Bitstring`; a future
-release will emit `byte_size(rest) == byte_size(scrutinee) -
-sum_of_preceding_sizes` once the SMT translator grows the
-arithmetic support. Remote package-registry index service,
-publication signing, Hex.pm cross-publishing, and multi-statement
-lambda bodies continue to be tracked for v0.22.0.
+## Implemented: v0.22.0 -- Loose Ends
+v0.22.0 closes the three language-surface gaps that v0.20.0 /
+v0.21.0 deliberately left open: multi-statement lambda bodies,
+binary comprehension generators, and full byte-size refinement
+propagation through `rest::binary` tails. The v0.21.0 "Unreleased"
+first-class FSM overhaul also graduates into a shipped release.
+### Multi-statement lambda bodies
+- `Cure.Compiler.Parser.parse_lambda_body/2` routes the body
+  through a new `parse_lambda_block_body/2` dispatcher. Indented
+  and single-expression bodies keep their v0.19.0 semantics; two
+  new shapes land for argument positions where the lexer
+  suppresses newlines:
+```cure
+map(xs, fn(x) -> { let y = x + 1; y + 2 })
+map(xs, fn(x) -> let y = x + 1; y + 2; end)
+```
+- Both shapes emit `{:block, [block_shape: :brace | :end, ...], exprs}`,
+  reusing the existing codegen and checker paths. The Printer and
+  algebra formatter round-trip the author's chosen shape.
+- `end` is now a reserved keyword. Cure's stdlib and example
+  programs do not use it as an identifier; third-party code that
+  does must rename.
+### Binary comprehension generators
+- `parse_generator_or_filter/1` dispatches on `:binary_open` and
+  delegates to `parse_binary_generator/1`. Segments inside the
+  generator are parsed at binding power 42 so the trailing `<-`
+  arrow is not mis-tokenised as a less-than comparison.
+- `Cure.Compiler.Codegen.compile_comprehension/3` lowers the new
+  `:binary_generator` qualifier to Erlang's `b_generate` form
+  inside the existing `:lc` comprehension:
+```cure
+[byte for <<byte <- "abc">>]       # [97, 98, 99]
+[word for <<word::16 <- buf>>]     # 16-bit words
+[ch   for <<ch::utf8 <- text>>]    # UTF-8 code points
+```
+- `Cure.Types.Checker.do_infer/2` on `:comprehension` now binds
+  every qualifier's pattern variables into the body's environment
+  via `bind_pattern_vars/3`.
+### `byte_size` arithmetic refinements
+- `Cure.SMT.Translator` speaks `byte_size/1` as an uninterpreted
+  `(Int) -> Int` function. Queries that reference `byte_size`
+  prepend `(declare-fun byte_size (Int) Int)` and switch to the
+  `QF_UFLIA` logic automatically.
+- `Cure.Types.PatternRefinement.narrow/2` rewrites its binary-
+  segment branch. Trailing `rest::binary`/`rest::bytes`/
+  `rest::bitstring` tails receive
+  `{rest: Bitstring | byte_size(rest) == byte_size(scrutinee) - sum}`
+  where the sum is the byte-aligned count of preceding segments.
+  When a segment's size cannot be linearised the tail degrades to
+  plain `Bitstring` and the pipeline emits a `:refinement_ignored`
+  event under code `E037`.
+### Error catalog
+Three new codes `E035`-`E037` (Lambda Block Unterminated, Binary
+Comprehension Source Not Bitstring, Binary Segment Size Non-Linear).
+### First-class FSM handling
+The v0.21.0 "Unreleased" block that described the `%Cure.FSM.State{}`
+rewrite of callback-mode FSMs is promoted to a shipped surface.
+`start_link/1` accepts three init shapes, `on_transition` clauses
+receive the struct as their 4th argument, and `@notify_transitions`
+/ `@initial` / `@auto_caller` annotations carry first-class payload
+semantics. Simple-mode (`gen_statem`) FSMs are entirely unchanged.
+### Numbers
+- 1114 tests pass (up from 1078; 3 doctests + 1111 tests);
+  `mix credo --strict`: 0 issues across 142 source files;
+  `mix cure.check.stdlib`: 25/25; `mix cure.check.examples`:
+  44/44 (up from 40/40).
+- 3 new example files (`lambda_block.cure`,
+  `binary_comprehension.cure`, `byte_size_refinement.cure`).
+### Deferred to v0.23.0
+Remote package-registry index service, publication signing, and
+Hex.pm cross-publishing -- the `Cure.Project.Registry` HTTP
+client against the read-only index protocol, Ed25519 archive
+signing, and the `cure publish --hex` export path are all
+rescheduled for v0.23.0.
 
 ## Future
 

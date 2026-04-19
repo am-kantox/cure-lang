@@ -1,0 +1,30 @@
+mod LambdaBlock
+  ###
+  Multi-statement lambda bodies (v0.22.0).
+
+  In argument positions where the indented-block form is not usable,
+  Cure accepts two explicit multi-statement forms for anonymous
+  functions: a brace-delimited `{ s1; s2; final }` and an
+  `end`-terminated `s1; s2; final; end`. Both compile to the same
+  `{:block, meta, exprs}` AST node that the v0.19.0 indented form
+  produces, so the rest of the compiler treats them uniformly.
+  ###
+
+  ## Single-expression lambda stays the default.
+  fn bump(x: Int) -> Int =
+    let f = fn(n) -> n + 1
+    f(x)
+
+  ## Brace form: statements separated by `;`, final expression is the result.
+  fn brace(x: Int) -> Int =
+    let f = fn(n) -> { let doubled = n + n; doubled + 1 }
+    f(x)
+
+  ## end-terminated form: same semantics, different surface syntax.
+  fn ended(x: Int) -> Int =
+    let f = fn(n) -> let doubled = n + n; doubled + 2; end
+    f(x)
+
+  ## Entry point used by `mix cure.check.examples`.
+  fn main() -> Int =
+    bump(10) + brace(10) + ended(10)

@@ -277,7 +277,31 @@ defmodule Cure.Compiler.Printer do
   defp to_string({:lambda, meta, [body]}, depth, indent) do
     params = Keyword.get(meta, :params, [])
     params_str = Enum.map_join(params, ", ", fn {:param, _, name} -> name end)
-    "fn(#{params_str}) -> #{to_string(body, depth, indent)}"
+    body_str = lambda_body_to_string(body, depth, indent)
+    "fn(#{params_str}) -> #{body_str}"
+  end
+
+  # v0.22.0: multi-statement bodies carry a `block_shape` in meta. Round-trip
+  # the author's chosen shape -- brace (`{...}`) or end-terminated
+  # (`stmt1; stmt2; end`). Indented bodies without an explicit shape fall
+  # through to the generic `to_string/3` path.
+  defp lambda_body_to_string({:block, meta, exprs} = block, depth, indent) do
+    case Keyword.get(meta, :block_shape) do
+      :brace ->
+        body = Enum.map_join(exprs, "; ", &to_string(&1, depth, indent))
+        "{ #{body} }"
+
+      :end ->
+        body = Enum.map_join(exprs, "; ", &to_string(&1, depth, indent))
+        "#{body}; end"
+
+      _ ->
+        to_string(block, depth, indent)
+    end
+  end
+
+  defp lambda_body_to_string(other, depth, indent) do
+    to_string(other, depth, indent)
   end
 
   # -- Function Definition ---------------------------------------------------

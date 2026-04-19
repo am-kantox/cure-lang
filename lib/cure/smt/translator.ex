@@ -34,6 +34,7 @@ defmodule Cure.SMT.Translator do
 
     query = [
       "(set-logic #{logic})\n",
+      maybe_declare_byte_size(constraint_ast),
       Enum.map(vars, fn v -> declare_var(v, Map.get(var_types, v, :int)) end),
       "(assert ",
       do_translate(constraint_ast),
@@ -56,7 +57,8 @@ defmodule Cure.SMT.Translator do
     smt_type = cure_type_to_smt(base_type)
 
     query = [
-      "(set-logic QF_LIA)\n",
+      "(set-logic QF_UFLIA)\n",
+      maybe_declare_byte_size([pred1, pred2]),
       "(declare-const #{var_name} #{smt_type})\n",
       # Assert negation of implication: not (P1 => P2)
       # i.e., P1 and not P2
@@ -77,9 +79,12 @@ defmodule Cure.SMT.Translator do
   @spec generate_constraint_query(tuple(), String.t(), atom()) :: String.t()
   def generate_constraint_query(predicate, var_name, base_type) do
     smt_type = cure_type_to_smt(base_type)
+    uses_byte_size? = contains_byte_size?(predicate)
+    logic = if uses_byte_size?, do: "QF_UFLIA", else: "QF_LIA"
 
     query = [
-      "(set-logic QF_LIA)\n",
+      "(set-logic #{logic})\n",
+      maybe_declare_byte_size(predicate),
       "(declare-const #{var_name} #{smt_type})\n",
       "(assert ",
       do_translate(predicate),
@@ -156,6 +161,16 @@ defmodule Cure.SMT.Translator do
           ")"
         ]
 
+      # v0.22.0: byte_size is modelled as an uninterpreted Int -> Int
+      # function. The declaration is emitted by `maybe_declare_byte_size/1`
+      # when the query touches one or more `byte_size(...)` calls; the
+      # translator here just emits the s-expression call form.
+      "byte_size" ->
+        case translated_args do
+          [arg] -> ["(byte_size ", arg, ")"]
+          many -> ["(byte_size ", Enum.join(many, " "), ")"]
+        end
+
       _ ->
         ["(; unknown: #{name} ;)"]
     end
@@ -225,9 +240,12 @@ defmodule Cure.SMT.Translator do
   # -- Logic Inference ---------------------------------------------------------
 
   defp infer_logic(ast) do
-    features = analyze_features(ast, %{has_nonlinear: false, has_floats: false})
+    features =
+      analyze_features(ast, %{has_nonlinear: false, has_floats: false, has_uf: false})
 
     cond do
+      features.has_uf and features.has_floats -> "AUFLIRA"
+      features.has_uf -> "QF_UFLIA"
       features.has_floats and features.has_nonlinear -> "QF_NRA"
       features.has_floats -> "QF_LRA"
       features.has_nonlinear -> "QF_NIA"
@@ -246,7 +264,46 @@ defmodule Cure.SMT.Translator do
     if Keyword.get(meta, :subtype) == :float, do: %{acc | has_floats: true}, else: acc
   end
 
+  defp analyze_features({:function_call, meta, args}, acc) do
+    acc =
+      case Keyword.get(meta, :name) do
+        "byte_size" -> %{acc | has_uf: true}
+        _ -> acc
+      end
+
+    Enum.reduce(args, acc, &analyze_features/2)
+  end
+
   defp analyze_features(_, acc), do: acc
+
+  # Emit a `(declare-fun byte_size (Int) Int)` declaration when the given
+  # AST (or list of ASTs) contains at least one `byte_size/1` call. Empty
+  # iodata otherwise so callers can concatenate unconditionally.
+  defp maybe_declare_byte_size(ast) do
+    if contains_byte_size?(ast) do
+      "(declare-fun byte_size (Int) Int)\n"
+    else
+      []
+    end
+  end
+
+  defp contains_byte_size?(asts) when is_list(asts) do
+    Enum.any?(asts, &contains_byte_size?/1)
+  end
+
+  defp contains_byte_size?({:function_call, meta, args}) do
+    Keyword.get(meta, :name) == "byte_size" or Enum.any?(args, &contains_byte_size?/1)
+  end
+
+  defp contains_byte_size?({:binary_op, _, [l, r]}) do
+    contains_byte_size?(l) or contains_byte_size?(r)
+  end
+
+  defp contains_byte_size?({:unary_op, _, [inner]}) do
+    contains_byte_size?(inner)
+  end
+
+  defp contains_byte_size?(_), do: false
 
   # -- Type Mapping ------------------------------------------------------------
 

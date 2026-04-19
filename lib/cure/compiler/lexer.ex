@@ -36,7 +36,7 @@ defmodule Cure.Compiler.Lexer do
 
   @keywords ~w(
     mod fn let type rec proto impl fsm local use as
-    match if elif else then for do
+    match if elif else then for do end
     in try catch finally throw return yield
     spawn send receive after
     when where and or not
