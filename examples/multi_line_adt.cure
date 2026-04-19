@@ -1,0 +1,31 @@
+mod MultiLineAdt
+  ###
+  Multi-line ADT declarations (v0.21.0).
+
+  `type` ADTs may span multiple lines with leading `|` on every
+  continuation line (the form most common in OCaml and Haskell):
+
+      type Shape =
+        | Circle(Int)
+        | Square(Int)
+        | Triangle(Int, Int, Int)
+
+  The single-line form `type Shape = Circle(Int) | Square(Int) |
+  Triangle(Int, Int, Int)` continues to work; the two are
+  syntactically equivalent.
+  ###
+
+  type Shape =
+    | Circle(Int)
+    | Square(Int)
+    | Triangle(Int, Int, Int)
+
+  ## Area by variant dispatch.
+  fn area(s: Shape) -> Int =
+    match s
+      Circle(r)        -> r * r * 3
+      Square(side)     -> side * side
+      Triangle(a, b, _c) -> a * b / 2
+
+  fn main() -> Int =
+    area(Circle(3)) + area(Square(2)) + area(Triangle(3, 4, 5))

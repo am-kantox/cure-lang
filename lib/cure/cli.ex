@@ -47,6 +47,7 @@ defmodule Cure.CLI do
           aggressive: :boolean,
           ast: :boolean,
           algebra: :boolean,
+          safe: :boolean,
           check: :boolean
         ],
         aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
@@ -438,21 +439,29 @@ defmodule Cure.CLI do
 
   # -- fmt ---------------------------------------------------------------------
 
-  # Two modes:
+  # Four modes:
   #
-  #   * (default) safe, source-preserving formatter. Runs
-  #     `Cure.Compiler.Formatter`, which normalises line endings,
-  #     trailing whitespace, leading-tab indentation, blank-line runs,
-  #     and operator spacing. Plain `#` comments, string literals,
-  #     regex bodies, and doc comments are preserved byte-for-byte.
-  #     Every rewrite is round-trip-validated against the original
-  #     AST before being written to disk.
+  #   * (default, v0.21.0) algebra pretty-printer. Reformats from the
+  #     AST using `Cure.Compiler.Algebra` + `Cure.Compiler.AlgebraFormatter`,
+  #     with round-trip verification that falls back to the original
+  #     source when the rewrite would change program structure. Plain
+  #     `#` comment nodes and doc comments survive the round-trip.
+  #
+  #   * `--safe`: legacy byte-level formatter from v0.20.0, kept as an
+  #     escape hatch for sources that have layout the algebra formatter
+  #     does not yet support.
+  #
+  #   * `--algebra`: explicit opt-in; synonymous with the default.
   #
   #   * `--aggressive` / `--ast`: canonicalising AST pretty printer.
-  #     Reformats the buffer from the parse tree, which strips plain
-  #     `#` comments and any layout that doesn't survive a parser
-  #     round-trip. The command prints a banner before touching disk
-  #     so users know what they're opting into.
+  #     Reformats the buffer from the parse tree through
+  #     `Cure.Compiler.Printer`, which strips plain `#` comments and
+  #     any layout that doesn't survive a parser round-trip. Prints a
+  #     banner before touching disk so users know what they're opting
+  #     into.
+  #
+  #   * `--check`: dry-run that prints which files would change without
+  #     rewriting them. Uses the algebra formatter in v0.21.0.
   defp cmd_fmt(paths, opts) do
     cure_files =
       case paths do
@@ -469,25 +478,28 @@ defmodule Cure.CLI do
       cure_files == [] ->
         info("No .cure files found")
 
-      Keyword.get(opts, :algebra, false) ->
-        fmt_algebra(cure_files)
-
       Keyword.get(opts, :aggressive, false) or Keyword.get(opts, :ast, false) ->
         fmt_aggressive(cure_files)
+
+      Keyword.get(opts, :safe, false) ->
+        fmt_safe(cure_files)
 
       Keyword.get(opts, :check, false) ->
         fmt_check(cure_files)
 
       true ->
-        fmt_safe(cure_files)
+        # v0.21.0: algebra formatter is the default. The explicit
+        # `--algebra` flag is kept for symmetry with `--safe` but
+        # otherwise a no-op.
+        fmt_algebra(cure_files)
     end
   end
 
-  # v0.20.0 algebra formatter (opt-in). The existing safe byte-level
-  # formatter remains the default; `--algebra` renders from the AST
-  # using `Cure.Compiler.Algebra` + `Cure.Compiler.AlgebraFormatter`,
-  # with round-trip verification that falls back to the original
-  # source when the rewrite would change program structure.
+  # v0.21.0: algebra formatter is now the default. It renders the
+  # buffer from the AST using `Cure.Compiler.Algebra` and
+  # `Cure.Compiler.AlgebraFormatter`, with round-trip verification that
+  # falls back to the original source when the rewrite would change
+  # program structure.
   defp fmt_algebra(files) do
     Enum.each(files, fn file ->
       source = File.read!(file)
@@ -518,11 +530,16 @@ defmodule Cure.CLI do
     end)
   end
 
+  # v0.21.0: `cure fmt --check` runs through the algebra formatter so
+  # it agrees with the new default. Falls back to the original source
+  # internally when round-trip verification fails, so it never reports
+  # a file as "needs formatting" solely because of a known-unsupported
+  # layout edge case.
   defp fmt_check(files) do
     mismatched =
       Enum.filter(files, fn file ->
         source = File.read!(file)
-        {:ok, formatted} = Cure.Compiler.Formatter.format(source)
+        {:ok, formatted} = Cure.Compiler.Formatter.format_algebra(source)
         formatted != source
       end)
 
@@ -670,7 +687,7 @@ defmodule Cure.CLI do
       lsp                  Start the Language Server Protocol server
       stdlib               Compile the standard library
       doc [path|dir]       Generate HTML documentation
-      fmt [path|dir]       Format .cure source files
+      fmt [path|dir]       Format .cure source files (algebra by default; --safe, --aggressive, --check)
       repl                 Interactive Cure session (multi-line, :help for commands)
       watch [path]         Recompile/check/test on every save
       new <name>           Scaffold a new project (--lib | --app | --fsm)

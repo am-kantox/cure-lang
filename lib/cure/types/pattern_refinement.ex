@@ -64,18 +64,37 @@ defmodule Cure.Types.PatternRefinement do
   def narrow({:pin, _, _}, scrutinee_type), do: {%{}, scrutinee_type}
 
   # Literal pattern -- narrow scrutinee to the equality refinement.
-  def narrow({:literal, meta, value}, scrutinee_type) do
-    base = literal_base_type(meta) || base_of(scrutinee_type)
+  # v0.21.0: binary literals `<<seg1, seg2, ...>>` are emitted by the
+  # parser as `{:literal, [subtype: :bytes, ...], segments}` and handled
+  # in a dedicated branch below. All other literal patterns fall through
+  # to the scalar equality-refinement path.
+  def narrow({:literal, meta, segments}, scrutinee_type)
+      when is_list(segments) and length(segments) > 0 do
+    case Keyword.get(meta, :subtype) do
+      :bytes ->
+        narrow_binary_segments(segments, scrutinee_type)
 
-    case base do
-      nil ->
-        {%{}, scrutinee_type}
-
-      atom when is_atom(atom) ->
-        pred = equality_predicate(value, meta)
-        refined = Refinement.new(atom, "__value__", pred)
-        {%{}, refined}
+      _ ->
+        narrow_scalar_literal(meta, segments, scrutinee_type)
     end
+  end
+
+  def narrow({:literal, meta, []}, scrutinee_type) do
+    case Keyword.get(meta, :subtype) do
+      :bytes ->
+        # The empty binary `<<>>` narrows the scrutinee to a Bitstring
+        # of byte size 0. We keep the representation coarse (just
+        # `:bitstring`) until the checker's SMT translator learns to
+        # consume a `byte_size == 0` refinement.
+        {%{}, :bitstring}
+
+      _ ->
+        narrow_scalar_literal(meta, [], scrutinee_type)
+    end
+  end
+
+  def narrow({:literal, meta, value}, scrutinee_type) do
+    narrow_scalar_literal(meta, value, scrutinee_type)
   end
 
   # Unary-op (only negative integer literals in pattern position).
@@ -265,6 +284,68 @@ defmodule Cure.Types.PatternRefinement do
 
   defp list_elem_type({:list, t}), do: t
   defp list_elem_type(_), do: :any
+
+  # v0.21.0: scalar-literal narrowing. Kept as a helper so the
+  # binary-literal branch in `narrow/2` can short-circuit before we
+  # reach the equality-refinement path.
+  defp narrow_scalar_literal(meta, value, scrutinee_type) do
+    base = literal_base_type(meta) || base_of(scrutinee_type)
+
+    case base do
+      nil ->
+        {%{}, scrutinee_type}
+
+      atom when is_atom(atom) ->
+        pred = equality_predicate(value, meta)
+        refined = Refinement.new(atom, "__value__", pred)
+        {%{}, refined}
+    end
+  end
+
+  # Walk a sequence of `{:bin_segment, meta, [value]}` children and
+  # collect their variable bindings. Narrowing of `rest::binary` tail
+  # segments against the preceding `::size(n)` specifiers is done in a
+  # conservative form: `rest` binds to plain `:bitstring`, but future
+  # releases can extend this to emit a `byte_size(rest) == byte_size(s) - n`
+  # refinement once the SMT translator grows the arithmetic support.
+  defp narrow_binary_segments(segments, scrutinee_type) do
+    bindings =
+      Enum.reduce(segments, %{}, fn seg, acc ->
+        case seg do
+          {:bin_segment, seg_meta, [inner]} ->
+            type = bin_segment_type(seg_meta)
+
+            case inner do
+              {:variable, _, name} when is_binary(name) and name != "_" ->
+                Map.put(acc, name, type)
+
+              other ->
+                {sub, _} = narrow(other, type)
+                Map.merge(acc, sub)
+            end
+
+          _ ->
+            acc
+        end
+      end)
+
+    {bindings, scrutinee_type}
+  end
+
+  defp bin_segment_type(meta) do
+    case Keyword.get(meta, :type, :integer) do
+      :integer -> :int
+      :float -> :float
+      :utf8 -> :char
+      :utf16 -> :char
+      :utf32 -> :char
+      :binary -> :bitstring
+      :bytes -> :bitstring
+      :bitstring -> :bitstring
+      :bits -> :bitstring
+      _ -> :any
+    end
+  end
 
   # Build an equality predicate `__value__ == literal`. The reserved
   # name mirrors what `Cure.Types.Refinement` uses as a placeholder

@@ -423,10 +423,44 @@ representation so every narrowed type is something the SMT translator
 already understands. `bind_pattern_vars/3` in the type checker keeps its
 existing precise element typing for tuples / lists / records / maps --
 `PatternRefinement` is exposed as a separate module for callers that want
-the narrowed scrutinee. v0.21.0 will route `do_infer({:pattern_match, ...})`
-through it so match-arm bodies take advantage of the narrowing, and the
-path-sensitive refinement pass can propagate disjoint-tag witnesses across
-subsequent expressions in the same branch.
+the narrowed scrutinee.
+
+### Binary destructuring and exhaustiveness (v0.21.0)
+
+v0.21.0 wires the v0.20.0 segment AST through the type checker. Every
+binary pattern in a `match` arm, multi-clause function head, or `let`
+binding introduces its inner variables with the type implied by the
+segment specifier: `integer`/`size(n)` -> `Int`, `float` -> `Float`,
+`utf8`/`utf16`/`utf32` -> `Char`,
+`binary`/`bytes`/`bitstring`/`bits` -> `Bitstring`.
+
+A dedicated exhaustiveness pass --
+`Cure.Types.PatternChecker.check_binary_exhaustiveness/2` -- runs
+whenever the scrutinee of a `match` is a `Bitstring` (or a Bitstring
+refinement). A top-level wildcard, or the combination of an
+empty-binary arm (`<<>>`) and an open-ended tail arm
+(`<<_, _rest::binary>>`), covers the scrutinee; otherwise the
+compiler prints a concrete witness under code `E031`.
+
+`PatternRefinement.narrow/2` also gets a binary-literal branch that
+walks the segment children and collects the per-segment bindings
+separately from the scrutinee narrowing. v0.21.0 keeps the narrowing
+conservative -- a trailing `rest::binary` binds to plain `Bitstring` --
+but the hook is in place for future releases to emit
+`byte_size(rest) == byte_size(scrutinee) - sum_of_preceding_sizes`
+once the SMT translator gains the arithmetic.
+
+### `let` destructuring exhaustiveness (v0.21.0)
+
+`let` bindings now route through `bind_pattern_vars/3` just like
+match arms, so ADT constructors, tuples, cons patterns, record
+patterns, maps, and binary patterns on the LHS all introduce their
+inner variables with the right narrowed types. A single-arm
+exhaustiveness gate runs through the existing `PatternChecker` and
+emits code `E034` as a warning when the pattern cannot cover the
+RHS type -- the binding still compiles, matching Erlang's `=`
+semantics. Setting `partial: true` on the assignment metadata
+suppresses the warning.
 
 ## Guard-based flow typing
 

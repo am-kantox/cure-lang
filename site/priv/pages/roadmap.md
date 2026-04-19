@@ -568,18 +568,152 @@ Erlang-style destructuring of binaries in `match`, function heads,
 
 ### Deferred to v0.21.0
 
+Type-checker refinement narrowing *through* binary patterns
+(propagating `size(n)` into refinements on `rest`). Exhaustiveness
+analysis for binary patterns (`Cure.Types.PatternChecker`).
+Promotion of `cure fmt --algebra` to the default formatter.
+Type-directed `@derive` extensions (Functor, Monoid, JSON). Full
+Erlang-style destructuring of binaries in `match` expressions,
+function heads, `let` bindings, and comprehension generators --
+the segment AST from v0.20.0 is the groundwork; v0.21.0 adds
+type-checker narrowing across binary segments and the
+exhaustiveness analysis that goes with it.
+
+Three parser/type gaps surfaced during the v0.20.0 cycle also
+roll into v0.21.0: ADT constructor payloads must accept arbitrary
+type expressions (including function arrows, so
+`type Callback = On((Int) -> Int) | Off` parses and type-checks);
+multi-line `type` ADT declarations with leading `|` on
+continuation lines must parse (the indented layout currently
+defeats `parse_type_def`); and `let` must support in-place
+destructuring with the same depth and exhaustiveness guarantees
+as `match` arms (ADT constructors, tuples, lists, records, and
+maps, with `E025` on non-exhaustive bindings).
+
+### Deferred to v0.22.0
+
 Remote package-registry index service, publication signing, and
-Hex.pm cross-publishing. Type-checker refinement narrowing
-*through* binary patterns (propagating `size(n)` into refinements
-on `rest`). Exhaustiveness analysis for binary patterns
-(`Cure.Types.PatternChecker`). Promotion of `cure fmt --algebra`
-to the default formatter. Type-directed `@derive` extensions
-(Functor, Monoid, JSON). Full Erlang-style destructuring of
-binaries in `match` expressions, function heads, `let` bindings,
-and comprehension generators -- the segment AST from v0.20.0 is
-the groundwork; v0.21.0 adds type-checker narrowing across
-binary segments and the exhaustiveness analysis that goes with
-it.
+Hex.pm cross-publishing -- a `Cure.Project.Registry` HTTP client
+against a read-only index protocol, Ed25519 archive signing, and
+a `cure publish --hex` export path. Multi-statement lambda
+bodies -- brace-delimited (`fn (x) -> { stmt1; stmt2; final }`)
+and `end`-terminated (`fn (x) ->\n  stmt1\n  stmt2\nend`) block
+forms for anonymous functions embedded in argument lists where
+the existing indented-block form is not usable.
+
+## Implemented: v0.21.0 -- Through the Segments
+
+The v0.21.0 release turns the v0.20.0 AST scaffolding into
+user-visible features and clears three language gaps that surfaced
+during the v0.20.0 cycle. The headline is full Erlang-style
+destructuring of binaries in `match`, multi-clause function heads,
+and `let` bindings, with a dedicated exhaustiveness pass that
+surfaces under code `E031`.
+
+### Binary destructuring
+
+- `Cure.Types.Checker.bind_pattern_vars/3` grows a `:bin_segment`
+  clause. Every `<<...>>` pattern in `match`, function heads, and
+  `let` introduces its inner variables with the type implied by the
+  segment specifier: `integer`/`size(n)` -> `Int`, `float` ->
+  `Float`, `utf8`/`utf16`/`utf32` -> `Char`,
+  `binary`/`bytes`/`bitstring`/`bits` -> `Bitstring`.
+- `Cure.Types.PatternChecker.check_binary_exhaustiveness/2` --
+  dedicated Maranget-lite coverage analysis over a sequence of
+  binary-pattern arms. A top-level wildcard, or the combination of
+  an empty-binary arm and an open-ended tail arm, covers the
+  scrutinee; otherwise a concrete witness (`"<<>>"` or
+  `"<<_, _rest::binary>>"`) is reported under code `E031`.
+- `Cure.Types.PatternRefinement.narrow/2` gets a binary-literal
+  branch that narrows the scrutinee through the segments.
+
+### In-place `let` destructuring
+
+- `let` bindings reuse the v0.18.0 deep-destructuring engine.
+  `let Ok(x) = expr`, `let %[a, b] = pair`, `let [h | t] = xs`,
+  `let Point{x, y} = p`, and `let <<tag, _::binary>> = buf` all
+  bind the right variables with the right narrowed types.
+- Non-exhaustive `let` patterns emit code `E034` as a warning;
+  the binding still compiles, and Erlang's `=` raises at runtime
+  on a failed match.
+
+### Multi-line `type` ADT declarations
+
+- `parse_type_def/1` absorbs an optional wrapping `:indent`/`:dedent`
+  pair, accepts an optional leading `|` before the first variant,
+  and `parse_more_variants/1` skips newlines before peeking for
+  `|`. Both layouts parse identically to the single-line form:
+
+```cure
+type Shape =
+  | Circle(Int)
+  | Square(Int)
+  | Triangle(Int, Int, Int)
+```
+
+- `E033` Multi-line Type Layout Invalid added to the error catalog.
+
+### ADT function-type payloads
+
+Constructor payloads accept arbitrary type expressions including
+function arrows. `type Callback = On(Int -> Int) | Off` and
+`type Transform = Morph((Int, Int) -> Int) | Id` compile end-to-end;
+pattern matching binds the callable to a variable callable from
+inside the arm.
+
+### Algebra formatter as default
+
+`cure fmt` now runs the Wadler/`Inspect.Algebra`-style pretty
+printer by default. The legacy byte-level formatter remains
+available via `cure fmt --safe`; `cure fmt --check` routes through
+the algebra formatter so CI agrees with interactive use.
+
+### `@derive(Functor, Monoid, JSON)`
+
+`Cure.Types.Derive.derive/3` gains three new targets: `:functor`
+emits `fmap(x, f)` that applies `f` to every field; `:monoid`
+emits `combine(a, b)` that pairwise combines each field with `<>`;
+`:json` emits `to_json(x)` that renders the record as a JSON
+object whose keys are the field names. `can_derive?/1` is extended
+accordingly.
+
+### Multi-clause parameter destructuring
+
+`check_multi_clause/7` routes every clause parameter through
+`bind_pattern_vars/3` instead of only binding bare variables. ADT
+constructors, tuples, cons patterns, record patterns, and binary
+patterns in function heads now introduce their inner variables for
+the clause body.
+
+### Error catalog
+
+Four new codes `E031`-`E034` (Binary Pattern Not Exhaustive,
+Function Type Payload Invalid, Multi-line Type Layout Invalid, Let
+Pattern Not Exhaustive) with examples and fix guidance.
+
+### Numbers
+
+- 1078 tests pass (up from 1050, 3 doctests + 1075 tests);
+  `mix credo --strict`: 0 issues across 137 source files;
+  `mix cure.check.stdlib`: 25/25; `mix cure.check.examples`: 40/40.
+- 5 new examples (`binary_destructuring.cure`, `adt_fn_payload.cure`,
+  `multi_line_adt.cure`, `let_destructuring.cure`,
+  `json_derive.cure`); 1 new doc (`docs/BINARIES.md`); updates to
+  `docs/LANGUAGE_SPEC.md` and `docs/TUTORIAL.md` (new Chapter 11
+  "Binary parsing").
+
+### Deferred to v0.22.0
+
+Binary comprehension generators (`for <<b <- buf>>`) -- the parser
+currently mis-tokenises `<-` inside `<<...>>` as a less-than
+comparison; a dedicated binary-generator path will unlock this
+shape. Full byte-size refinement propagation through `rest::binary`
+tail segments: v0.21.0 binds `rest` to plain `Bitstring`; a future
+release will emit `byte_size(rest) == byte_size(scrutinee) -
+sum_of_preceding_sizes` once the SMT translator grows the
+arithmetic support. Remote package-registry index service,
+publication signing, Hex.pm cross-publishing, and multi-statement
+lambda bodies continue to be tracked for v0.22.0.
 
 ## Future
 

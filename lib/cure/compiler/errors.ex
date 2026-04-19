@@ -493,6 +493,77 @@ defmodule Cure.Compiler.Errors do
 
     Fix: relax one of the constraints, or pin to a compatible
     version.
+    """,
+    "E031" => """
+    E031: Binary Pattern Not Exhaustive
+
+    A sequence of binary patterns (in a `match`, function head, `let`,
+    or comprehension generator) does not cover every byte-length
+    inhabitant of the scrutinee's Bitstring type.
+
+    Example:
+      fn first_byte(buf: Bitstring) -> Int =
+        match buf
+          <<b, _rest::binary>> -> b
+      # Warning: missing pattern `<<>>`
+
+    Fix: add the missing shape (typically `<<>>` or a size-0 case),
+    provide a catch-all arm, or narrow the scrutinee type with a
+    `byte_size` refinement so the uncovered cases are ruled out
+    statically.
+    """,
+    "E032" => """
+    E032: Function Type Payload Invalid
+
+    An ADT constructor payload carries a value whose type cannot be
+    resolved. The most common trigger is a bare identifier that does
+    not refer to a declared type. Function-type payloads
+    (e.g. `On(Int -> Int)` and `On((Int, Int) -> Int)`) are allowed
+    and compile to first-class functions at runtime.
+
+    Example:
+      type Callback = On(DoesNotExist) | Off   # Error: unknown type
+
+    Fix: use a concrete type, a declared type alias, or a function
+    arrow for callable payloads.
+    """,
+    "E033" => """
+    E033: Multi-line Type Layout Invalid
+
+    A `type` ADT declaration spans multiple lines but the layout
+    cannot be absorbed by `parse_type_def/1`. This usually means the
+    continuation lines are not indented beyond the `type` keyword or
+    a leading `|` is followed by a closing `:dedent` instead of a
+    variant name.
+
+    Example:
+      type Shape =
+      | Circle(Int)   # error: continuation lines must be indented
+
+    Fix: indent every continuation line at the same column inside
+    the parent block, for example:
+      type Shape =
+        | Circle(Int)
+        | Square(Int)
+    """,
+    "E034" => """
+    E034: Let Pattern Not Exhaustive
+
+    A `let` binding destructures its RHS with a pattern that does
+    not cover every inhabitant of the RHS type. The binding still
+    compiles -- Erlang's `=` raises at runtime on a failed match --
+    but the compiler surfaces the gap as a warning so you can decide
+    whether to widen the pattern or mark the let partial.
+
+    Example:
+      fn first_ok(r: Result(Int, String)) -> Int =
+        let Ok(x) = r       # warning: missing `Error(_)`
+        x
+
+    Fix: rewrite as a `match` with every branch covered, add a
+    wildcard by widening to `let _ = r`, or annotate the let's
+    AST metadata with `partial: true` (reserved for tooling that
+    knows the pattern is acceptable by construction).
     """
   }
 

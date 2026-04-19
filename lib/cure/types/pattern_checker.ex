@@ -368,4 +368,81 @@ defmodule Cure.Types.PatternChecker do
   end
 
   defp constructor?(_), do: false
+
+  # -- Binary exhaustiveness (v0.21.0) ----------------------------------------
+  #
+  # Checks whether a sequence of binary-pattern arms covers every
+  # inhabitant of a Bitstring-typed scrutinee. The heuristic:
+  #
+  #   1. If any arm is a top-level wildcard (variable binding), the
+  #      match is trivially exhaustive.
+  #   2. If any arm is a binary pattern whose last segment is an
+  #      open-ended tail (`rest::binary`, `rest::bits`, `rest::bitstring`,
+  #      `rest::bytes`, or any segment without a `:size` meta), the
+  #      arm covers every remaining suffix and is therefore a
+  #      structural catch-all for Bitstring scrutinees.
+  #   3. If any arm is the empty binary `<<>>`, the zero-byte case is
+  #      covered.
+  #
+  # A set of arms is considered exhaustive if either (1), (2) or the
+  # combination of (3) plus at least one open-ended arm covers both
+  # the empty and non-empty sub-cases. Otherwise we report a concrete
+  # missing witness for the minimum-length uncovered shape.
+  @doc """
+  Binary-pattern exhaustiveness check.
+
+  Returns `:exhaustive` or `{:non_exhaustive, witnesses}`. `witnesses`
+  are source-shaped strings such as `"<<>>"` or `"<<_, _rest::binary>>"`.
+  """
+  @spec check_binary_exhaustiveness(term(), [tuple()]) :: check_result()
+  def check_binary_exhaustiveness(scrutinee_type, patterns) do
+    cond do
+      not bitstring_scrutinee?(scrutinee_type) ->
+        :exhaustive
+
+      Enum.any?(patterns, &top_level_wildcard?/1) ->
+        :exhaustive
+
+      true ->
+        has_empty? = Enum.any?(patterns, &empty_binary_pattern?/1)
+        has_tail? = Enum.any?(patterns, &binary_with_open_tail?/1)
+
+        cond do
+          has_empty? and has_tail? -> :exhaustive
+          has_tail? and not has_empty? -> {:non_exhaustive, ["<<>>"]}
+          has_empty? and not has_tail? -> {:non_exhaustive, ["<<_, _rest::binary>>"]}
+          true -> {:non_exhaustive, ["<<>>", "<<_, _rest::binary>>"]}
+        end
+    end
+  end
+
+  defp bitstring_scrutinee?(:bitstring), do: true
+  defp bitstring_scrutinee?({:refinement, :bitstring, _, _}), do: true
+  defp bitstring_scrutinee?(_), do: false
+
+  defp empty_binary_pattern?({:literal, meta, []}),
+    do: Keyword.get(meta, :subtype) == :bytes
+
+  defp empty_binary_pattern?(_), do: false
+
+  defp binary_with_open_tail?({:literal, meta, segments})
+       when is_list(segments) and segments != [] do
+    if Keyword.get(meta, :subtype) != :bytes do
+      false
+    else
+      last = List.last(segments)
+
+      case last do
+        {:bin_segment, seg_meta, _} ->
+          type = Keyword.get(seg_meta, :type)
+          size = Keyword.get(seg_meta, :size)
+          type in [:binary, :bits, :bitstring, :bytes] and size == nil
+
+        _ ->
+          false
+      end
+    end
+  end
+
+  defp binary_with_open_tail?(_), do: false
 end

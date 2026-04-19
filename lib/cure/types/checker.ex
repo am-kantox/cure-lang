@@ -481,16 +481,21 @@ defmodule Cure.Types.Checker do
       Enum.map(clauses, fn %{params: params, guard: guard, body: body_list} ->
         clause_env = Env.push_scope(env)
 
-        # Bind pattern variables
+        # Bind pattern variables (v0.21.0: route every pattern through
+        # `bind_pattern_vars/3` so structured patterns such as binary
+        # literals `<<a, rest::binary>>`, tuples `%[x, y]`, cons
+        # `[h | t]`, and ADT constructors `Ok(v)` introduce their
+        # inner variables instead of being silently dropped).
+        clause_env =
+          Enum.reduce(params, clause_env, fn pattern, e ->
+            bind_pattern_vars(e, pattern, :any)
+          end)
+
+        # The flat param_info list still drives guard refinement.
         param_info =
           Enum.flat_map(params, fn
             {:variable, _, vname} -> [{vname, :any}]
             _ -> []
-          end)
-
-        clause_env =
-          Enum.reduce(param_info, clause_env, fn {vname, vtype}, e ->
-            Env.extend(e, vname, vtype)
           end)
 
         # Apply guard refinement
@@ -762,7 +767,17 @@ defmodule Cure.Types.Checker do
   end
 
   # -- Let Binding
-
+  #
+  # v0.21.0: `let` now supports in-place destructuring with the same depth
+  # and exhaustiveness guarantees as `match` arms. The LHS pattern is
+  # bound through `bind_pattern_vars/3` (shared with `match`), so
+  # `let Ok(x) = expr`, `let %[a, b] = pair`, `let [h | t] = xs`, and
+  # `let Point{x, y} = p` all introduce the right bindings with the
+  # right narrowed types. Non-exhaustive destructurings surface as
+  # code `E034` warnings (not errors) -- the match still compiles and
+  # raises at runtime if the pattern fails, matching Erlang's `=` semantics.
+  # A `let` annotated with `partial: true` in its metadata suppresses
+  # the warning.
   defp do_infer(env, {:assignment, meta, [pattern, value]}) do
     annotation_ast = Keyword.get(meta, :type_annotation)
     line = Keyword.get(meta, :line, 1)
@@ -772,7 +787,8 @@ defmodule Cure.Types.Checker do
         declared = Type.resolve(annotation_ast)
 
         if Type.subtype?(val_type, declared) do
-          env = bind_pattern(env, pattern, declared)
+          env = bind_pattern_vars(env, pattern, declared)
+          maybe_warn_let_non_exhaustive(pattern, declared, meta, line)
           {:ok, declared, env}
         else
           {:error,
@@ -780,7 +796,8 @@ defmodule Cure.Types.Checker do
             line: line}}
         end
       else
-        env = bind_pattern(env, pattern, val_type)
+        env = bind_pattern_vars(env, pattern, val_type)
+        maybe_warn_let_non_exhaustive(pattern, val_type, meta, line)
         {:ok, val_type, env}
       end
     end
@@ -854,6 +871,24 @@ defmodule Cure.Types.Checker do
           warning =
             {:non_exhaustive_match,
              "match expression has nested non-exhaustive cases (E025), missing: #{Enum.join(missing, ", ")}",
+             line: line}
+
+          Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
+
+        _ ->
+          :ok
+      end
+
+      # v0.21.0: binary-pattern exhaustiveness. Only reports when the
+      # scrutinee is a Bitstring (or a refinement of it); all other
+      # scrutinee types return `:exhaustive` immediately from
+      # `check_binary_exhaustiveness/2` and fall through to no-op.
+      case PatternChecker.check_binary_exhaustiveness(scrut_type, patterns) do
+        {:non_exhaustive, missing} ->
+          line = Keyword.get(meta, :line, 1)
+
+          warning =
+            {:binary_not_exhaustive, "binary match is not exhaustive (E031), missing: #{Enum.join(missing, ", ")}",
              line: line}
 
           Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
@@ -1275,11 +1310,8 @@ defmodule Cure.Types.Checker do
     |> Enum.all?(fn {p, a} -> Type.subtype?(a, p) or p == :any or a == :any end)
   end
 
-  defp bind_pattern(env, {:variable, _, "_"}, _type), do: env
-  defp bind_pattern(env, {:variable, _, name}, type), do: Env.extend(env, name, type)
-  defp bind_pattern(env, _, _type), do: env
-
-  # Recursively bind all variables introduced by a match arm pattern.
+  # Recursively bind all variables introduced by a match arm or `let`
+  # pattern.
   #
   # Threads the scrutinee type through the pattern so every leaf variable
   # picks up the most precise type the structure allows. Supports:
@@ -1309,7 +1341,33 @@ defmodule Cure.Types.Checker do
   defp bind_pattern_vars(env, {:variable, _, "_"}, _type), do: env
   defp bind_pattern_vars(env, {:variable, _, "_" <> _}, _type), do: env
   defp bind_pattern_vars(env, {:variable, _, name}, type), do: Env.extend(env, name, type)
-  defp bind_pattern_vars(env, {:literal, _, _}, _type), do: env
+
+  # v0.21.0: binary literal patterns `<<seg1, seg2, ...>>` are emitted
+  # by the parser as `{:literal, [subtype: :bytes, ...], segments}`.
+  # Recurse into every `{:bin_segment, meta, [value]}` so the segment
+  # variables (e.g. `b` in `<<b, rest::binary>>`) pick up the correct
+  # types from the segment's `:type` meta. An empty segment list is the
+  # literal `<<>>` which binds nothing.
+  defp bind_pattern_vars(env, {:literal, meta, segments}, _type) do
+    case Keyword.get(meta, :subtype) do
+      :bytes when is_list(segments) ->
+        Enum.reduce(segments, env, fn seg, e ->
+          bind_pattern_vars(e, seg, bin_segment_type(seg))
+        end)
+
+      _ ->
+        env
+    end
+  end
+
+  # The bin_segment AST carries the segment's variable/literal in its
+  # children and the specifier meta (`:type`, `:size`, `:unit`,
+  # `:signedness`, `:endianness`) on the meta. Recurse into the
+  # child with the inferred segment type so the variable binds to
+  # the right scalar/bitstring type.
+  defp bind_pattern_vars(env, {:bin_segment, _meta, [inner]}, type) do
+    bind_pattern_vars(env, inner, type)
+  end
 
   defp bind_pattern_vars(env, {:pin, _, _}, _type), do: env
 
@@ -1378,6 +1436,28 @@ defmodule Cure.Types.Checker do
 
   defp list_element_type({:list, t}), do: t
   defp list_element_type(_), do: :any
+
+  # Map a `{:bin_segment, meta, ...}` specifier to the scalar type the
+  # segment binds. The default specifier (`integer-unsigned-big-size(8)`)
+  # yields `:int`; `:utf8`/`:utf16`/`:utf32` yield `:char` (the code
+  # point); `:binary`/`:bytes`/`:bitstring`/`:bits` yield `:bitstring`;
+  # `:float` yields `:float`. Anything unknown falls back to `:any`.
+  defp bin_segment_type({:bin_segment, meta, _}) do
+    case Keyword.get(meta, :type, :integer) do
+      :integer -> :int
+      :float -> :float
+      :utf8 -> :char
+      :utf16 -> :char
+      :utf32 -> :char
+      :binary -> :bitstring
+      :bytes -> :bitstring
+      :bitstring -> :bitstring
+      :bits -> :bitstring
+      _ -> :any
+    end
+  end
+
+  defp bin_segment_type(_), do: :any
 
   defp resolve_map_value_type(env, type, key) do
     field_name =
@@ -1476,6 +1556,43 @@ defmodule Cure.Types.Checker do
   end
 
   defp constructor?(_), do: false
+
+  # -- Let Exhaustiveness (v0.21.0) -------------------------------------------
+
+  # Single-arm exhaustiveness gate for `let` bindings.
+  #
+  # A plain-variable or wildcard LHS is trivially exhaustive and exits the
+  # pattern-checker fast path. Structured LHS patterns (ADT constructors,
+  # tuples, lists, records, maps, binaries) are classified through the
+  # existing `PatternChecker` so the message format matches `match`
+  # non-exhaustiveness. The warning is tagged `E034` so `cure explain E034`
+  # describes the fix. A `let` whose metadata carries `partial: true`
+  # suppresses the warning.
+  defp maybe_warn_let_non_exhaustive(pattern, scrut_type, meta, line) do
+    cond do
+      Keyword.get(meta, :partial, false) ->
+        :ok
+
+      trivially_exhaustive_let?(pattern) ->
+        :ok
+
+      true ->
+        case PatternChecker.check_match(scrut_type, [pattern]) do
+          {:non_exhaustive, missing} ->
+            warning =
+              {:let_not_exhaustive,
+               "let binding pattern is not exhaustive (E034), missing: #{Enum.join(missing, ", ")}", line: line}
+
+            Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
+
+          _ ->
+            :ok
+        end
+    end
+  end
+
+  defp trivially_exhaustive_let?({:variable, _, _}), do: true
+  defp trivially_exhaustive_let?(_), do: false
 
   defp extract_line({_, meta, _}) when is_list(meta), do: Keyword.get(meta, :line, 1)
   defp extract_line(_), do: 1

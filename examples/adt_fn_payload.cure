@@ -1,0 +1,32 @@
+mod AdtFnPayload
+  ###
+  ADT constructor payloads carrying function types (v0.21.0).
+
+  The payload of an ADT variant can be any type expression, including
+  function arrows. Function-type payloads compile to first-class
+  functions at runtime; pattern matching binds the function to a
+  variable you can call like any other lambda.
+  ###
+
+  ## Unary callback or identity.
+  type Callback = On(Int -> Int) | Off
+
+  ## Binary transform or identity on the first argument.
+  type Transform = Morph((Int, Int) -> Int) | Id
+
+  ## Apply a callback; identity when Off.
+  fn apply_cb(cb: Callback, x: Int) -> Int =
+    match cb
+      On(f) -> f(x)
+      Off   -> x
+
+  ## Apply a binary transform.
+  fn apply_t(t: Transform, a: Int, b: Int) -> Int =
+    match t
+      Morph(f) -> f(a, b)
+      Id       -> a
+
+  fn main() -> Int =
+    let incremented = apply_cb(On(fn(n) -> n + 1), 10)
+    let summed      = apply_t(Morph(fn(a, b) -> a + b), 3, 4)
+    incremented + summed

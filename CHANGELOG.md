@@ -6,29 +6,167 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added -- Std.Access
+---
 
-- New `Std.Access` stdlib module implementing an Elixir-style `Access`
-  behaviour for Cure. Self-hosted under `lib/std/access.cure` and
-  dispatched through the existing `proto`/`impl` machinery.
+## [0.21.0] -- Through the Segments
+
+v0.21.0 turns the v0.20.0 AST scaffolding into user-visible features
+and clears three language gaps that surfaced during the v0.20.0
+cycle. The headline is full Erlang-style destructuring of binaries
+in `match`, multi-clause function heads, and `let` bindings, with a
+dedicated exhaustiveness pass and the corresponding `E031`
+diagnostic. ADT constructor payloads now accept function arrows,
+`type` ADT declarations parse multi-line, `let` bindings admit deep
+destructuring, the algebra pretty-printer is promoted to be the
+default formatter, and three new `@derive` targets (Functor,
+Monoid, JSON) land on top of the existing Show/Eq/Ord trio.
+
+### Added -- Binary destructuring
+
+- `Cure.Types.Checker.bind_pattern_vars/3` grows a `:bin_segment`
+  clause. Every `<<...>>` pattern in `match` arms, multi-clause
+  function heads, and `let` bindings now introduces its inner
+  variables with the type implied by the segment specifier:
+  `integer`/`size(n)` -> `Int`, `float` -> `Float`,
+  `utf8`/`utf16`/`utf32` -> `Char`,
+  `binary`/`bytes`/`bitstring`/`bits` -> `Bitstring`.
+- `Cure.Types.PatternChecker.check_binary_exhaustiveness/2` --
+  dedicated Maranget-lite coverage analysis over a sequence of
+  binary-pattern arms. A top-level wildcard, or the combination of
+  an empty-binary arm and an open-ended tail arm, covers the
+  scrutinee; otherwise a concrete witness (`"<<>>"` or
+  `"<<_, _rest::binary>>"`) is reported under code `E031`.
+- `Cure.Types.PatternRefinement.narrow/2` grows a binary-literal
+  branch that narrows the scrutinee type through the segments and
+  returns the variable bindings separately.
+- `E031` Binary Pattern Not Exhaustive error-catalog entry with
+  example and fix guidance.
+
+### Added -- Let destructuring
+
+- `let` bindings reuse the v0.18.0 deep-destructuring engine.
+  `let Ok(x) = expr`, `let %[a, b] = pair`, `let [h | t] = xs`,
+  `let Point{x, y} = p`, and `let <<tag, _::binary>> = buf` all
+  bind the right variables with the right narrowed types.
+- Non-exhaustive `let` patterns emit code `E034` as a warning; the
+  binding still compiles, and Erlang's `=` raises at runtime on a
+  failed match. Setting `partial: true` on the assignment metadata
+  suppresses the warning.
+- `E034` Let Pattern Not Exhaustive error-catalog entry.
+
+### Added -- Multi-line `type` ADT declarations
+
+- `parse_type_def/1`, `parse_type_variant/1`, and
+  `parse_more_variants/1` accept the canonical multi-line ADT
+  layout with leading `|` on every continuation line, or with the
+  first variant on the same line as `=` and subsequent variants
+  marked with `|`. An optional wrapping `:indent`/`:dedent` pair
+  emitted by the lexer is absorbed by the type-def recogniser.
+- `E033` Multi-line Type Layout Invalid error-catalog entry.
+
+### Added -- ADT function-type payloads
+
+- Validated: constructor payloads accept arbitrary type
+  expressions including function arrows
+  (`type Callback = On(Int -> Int) | Off` and
+  `type Transform = Morph((Int, Int) -> Int) | Id`). Function-typed
+  payloads compile to first-class functions and are callable from
+  inside match arms.
+- `E032` Function Type Payload Invalid error-catalog entry reserved
+  for the case where a variant payload is not a resolvable type
+  expression.
+
+### Added -- `@derive(Functor, Monoid, JSON)`
+
+- `Cure.Types.Derive.derive/3` gains three new targets:
+  - `:functor` emits `fmap(x, f)` that applies `f` to every field.
+    Intended for single-parameter records; works on any record.
+  - `:monoid` emits `combine(a, b)` that pairwise combines every
+    field with the `<>` operator. Users supply `empty/0`
+    separately; the derivation does not guess a neutral element.
+  - `:json` emits `to_json(x)` that renders a record as a JSON
+    object string with field names as JSON keys. `from_json/1`
+    is reserved for a future release.
+- `can_derive?/1` extended accordingly.
+
+### Added -- Algebra formatter is the default
+
+- `cure fmt` now runs the Wadler/`Inspect.Algebra`-style pretty
+  printer from v0.20.0 by default. The legacy byte-level formatter
+  remains available via `cure fmt --safe`. `cure fmt --algebra`
+  stays as a synonym for the default. `cure fmt --check` routes
+  through the same algebra formatter so CI agrees with interactive
+  use.
+
+### Added -- Multi-clause parameter destructuring
+
+- `Cure.Types.Checker.check_multi_clause/7` routes every clause
+  parameter through `bind_pattern_vars/3` instead of only binding
+  bare variables. ADT constructors, tuples, cons patterns, record
+  patterns, and binary patterns in function heads now introduce
+  their inner variables for the clause body.
+
+### Added -- Std.Access (carried from 0.20.x)
+
+- New `Std.Access` stdlib module implementing an Elixir-style
+  `Access` behaviour for Cure. Self-hosted under
+  `lib/std/access.cure` and dispatched through the existing
+  `proto`/`impl` machinery.
 - Core protocol `proto Access(C)` with callbacks `fetch/2`,
   `get_and_update/3`, and `pop/2`. Implementations are provided for
-  `Map` (which also covers records, since records compile to maps with
-  a `__struct__` discriminator) and for `List` interpreted as a
-  keyword-style list of `%[key, value]` pairs. Popping from a map that
-  carries a `:__struct__` key raises `:struct_pop_not_allowed`, matching
-  Elixir's struct semantics.
+  `Map` (which also covers records, since records compile to maps
+  with a `__struct__` discriminator) and for `List` interpreted as
+  a keyword-style list of `%[key, value]` pairs. Popping from a
+  map that carries a `:__struct__` key raises
+  `:struct_pop_not_allowed`, matching Elixir's struct semantics.
 - Direct helpers: `fetch/2`, `fetch_bang/2` (raises `:key_error`),
   `get/3` (with default), `get_and_update/3`, `pop/2`.
 - Composable lens ADT `Accessor` with factories `key/1`,
   `key_default/2`, `key_bang/1`, `elem_at/1`, `at/1`, `all/0`,
-  `filter/1` -- analogues of Elixir's `Access.key/2`, `Access.at/1`,
-  `Access.all/0`, and `Access.filter/1`.
+  `filter/1`.
 - Nested traversal helpers: `fetch_in/2`, `get_in/2`, `put_in/3`,
   `update_in/3`, `get_and_update_in/3`, `pop_in/2`, accepting a
   `List(Accessor)` path.
-- `Cure.Stdlib.Preload` updated to load `Cure.Std.Access` alongside the
-  rest of the stdlib beams.
+- `Cure.Stdlib.Preload` updated to load `Cure.Std.Access` alongside
+  the rest of the stdlib beams.
+
+### Added -- Examples
+
+- `examples/binary_destructuring.cure`, `examples/adt_fn_payload.cure`,
+  `examples/multi_line_adt.cure`, `examples/let_destructuring.cure`,
+  `examples/json_derive.cure`.
+
+### Added -- Docs
+
+- `docs/BINARIES.md` -- authoritative binary pattern reference.
+- `docs/LANGUAGE_SPEC.md` updates: multi-line ADT layout, ADT
+  function-type payloads, `let` destructuring, binary patterns.
+- `docs/TUTORIAL.md` -- new Chapter 11 "Binary parsing"; FSMs
+  renumbered to Chapter 12.
+
+### Numbers
+
+- 1078 tests pass (up from 1050); `mix credo --strict`: 0 issues
+  across 137 source files; `mix cure.check.stdlib`: 25/25;
+  `mix cure.check.examples`: 40/40.
+
+### Deferred to v0.22.0
+
+- Remote package-registry index service, publication signing, and
+  Hex.pm cross-publishing.
+- Multi-statement lambda bodies -- brace-delimited
+  (`fn (x) -> { stmt1; stmt2; final }`) and `end`-terminated block
+  forms for anonymous functions embedded in argument lists where
+  the existing indented-block form is not usable.
+- Binary comprehension generators (`for <<b <- buf>>`) -- the
+  parser currently mis-tokenises `<-` inside `<<...>>` as a
+  less-than comparison; a dedicated binary-generator path in
+  `parse_generator_or_filter/1` will unlock this shape.
+- Full byte-size refinement propagation through `rest::binary`
+  tail segments -- v0.21.0 binds `rest` to plain `Bitstring`; a
+  future release will emit
+  `byte_size(rest) == byte_size(scrutinee) - sum_of_preceding_sizes`
+  once the SMT translator grows the arithmetic support.
 
 ---
 
@@ -112,17 +250,6 @@ expose disjoint-tag and literal-equality witnesses through
   and legacy flat-list bytes representations.
 - `Cure.Types.Checker.do_infer` skips `{:comment, ...}` nodes and
   reports `:unit` for them.
-
-### Deferred to v0.21.0
-
-- Type-checker refinement narrowing *through* binary patterns
-  (propagating `size(n)` into refinements on `rest`).
-- Exhaustiveness analysis for binary patterns
-  (`Cure.Types.PatternChecker`).
-- Remote package-registry index service, publication signing, and
-  Hex.pm cross-publishing.
-- Promoting `cure fmt --algebra` to the default formatter.
-- Type-directed `@derive` extensions (Functor, Monoid, JSON).
 
 ---
 

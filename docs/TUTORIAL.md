@@ -1,8 +1,8 @@
 # Cure Tutorial
-A guided tour of Cure for newcomers. Eleven short chapters take you
+A guided tour of Cure for newcomers. Twelve short chapters take you
 from an empty directory to a working project that uses dependent
-types, deep destructuring, FSMs, the REPL, and the type checker as a
-writing tool.
+types, deep destructuring, binary parsing, FSMs, the REPL, and the
+type checker as a writing tool.
 ## 1. Hello, Cure
 Install Cure (from the repo root):
 ```bash
@@ -138,7 +138,36 @@ fn factorial(n: Int) -> Int
 The totality checker classifies functions by coverage and structural
 recursion. `factorial` is total because every recursive call shrinks
 its structural argument (`n` -> `n - 1`).
-## 11. FSMs
+## 11. Binary parsing
+Cure supports full Erlang-style binary pattern matching in
+`match` arms, multi-clause function heads, and `let` bindings.
+Every segment is `value [:: specifier_chain]`; the specifier chain
+is hyphen-joined and covers `integer`, `float`, `utf8`/`utf16`/`utf32`,
+`binary`/`bytes`/`bitstring`/`bits`, signedness, endianness,
+`size(expr)`, and `unit(n)`.
+```cure
+fn first_byte(buf: Bitstring) -> Int =
+  match buf
+    <<b, _rest::binary>> -> b
+    <<>>                 -> 0
+```
+The type checker runs a dedicated exhaustiveness pass
+(`Cure.Types.PatternChecker.check_binary_exhaustiveness/2`) that
+reports `E031` when a set of arms does not cover every inhabitant
+of the scrutinee. A match with at least one wildcard, or with both
+an empty-binary arm (`<<>>`) and an open-ended tail arm
+(`<<_, _rest::binary>>`), is exhaustive.
+`let` bindings accept the same binary patterns:
+```cure
+fn parse_header(buf: Bitstring) -> Int =
+  let <<tag, _rest::binary>> = buf
+  tag
+```
+A non-exhaustive `let` emits `E034` as a warning; the binding still
+compiles and Erlang's `=` raises at runtime on a failed match.
+See `docs/BINARIES.md` for the authoritative reference and
+`examples/binary_destructuring.cure` for an end-to-end walk-through.
+## 12. FSMs
 First-class finite state machines:
 ```cure
 fsm Turnstile with Integer

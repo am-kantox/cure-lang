@@ -97,38 +97,39 @@ Options:
 
 **`cure fmt [path|dir]`** -- Format `.cure` source files in place.
 
-By default, runs the **safe, source-preserving formatter**
-(`Cure.Compiler.Formatter`). It normalises line endings, strips
-trailing whitespace, expands leading tabs into two spaces, collapses
-runs of blank lines to a single blank line, canonicalises operator
-spacing, and ensures a single trailing newline. Plain `#` comments,
-string and regex literals, and doc comments are preserved
-byte-for-byte. Every rewrite is round-trip-validated against the
-original AST; if anything would change the parse result, the file is
-left untouched.
+As of v0.21.0, the default formatter is the
+**Wadler/`Inspect.Algebra`-style pretty printer** built on
+`Cure.Compiler.Algebra` and `Cure.Compiler.AlgebraFormatter`. It
+uses a best-fit line-wrapping algorithm, separates top-level
+definitions with blank lines, and round-trips plain `#` comments
+(lexed under `preserve_comments: true`) as real `# ...` lines in
+source order. Every rewrite is round-trip-validated against the
+original AST modulo comment placement; if verification fails, the
+file is left untouched, so the formatter is non-destructive by
+construction.
 
 ```bash
-cure fmt                         # formats all .cure files in lib/ and test/
+cure fmt                         # algebra formatter (default)
 cure fmt lib/std/core.cure       # format a specific file
 cure fmt --check                 # CI mode: exits 1 if any file would change
-cure fmt --algebra               # v0.20.0 AST-driven pretty printer
+cure fmt --safe                  # legacy byte-level safe formatter
 cure fmt --aggressive            # legacy AST rewrite; strips comments
 ```
 
 Options:
 
 - `--check` -- report files that would be reformatted and exit
-  non-zero; leaves files on disk untouched.
-- `--algebra` -- v0.20.0 opt-in AST formatter built on a new
-  `Inspect.Algebra`-style document module
-  (`Cure.Compiler.Algebra` + `Cure.Compiler.AlgebraFormatter`).
-  Uses a best-fit line-wrapping algorithm, separates top-level
-  definitions with blank lines, and round-trips plain `#` comments
-  (lexed under the new `preserve_comments: true` flag) as real
-  `# ...` lines in source order. Every rewrite is
-  round-trip-validated against the original AST modulo comment
-  placement; if verification fails, the file is left untouched.
-  Will be promoted to the default formatter in v0.21.0.
+  non-zero; leaves files on disk untouched. v0.21.0 routes
+  `--check` through the algebra formatter so CI agrees with
+  interactive use.
+- `--safe` -- v0.20.0 byte-level formatter. Normalises line endings,
+  strips trailing whitespace, expands leading tabs into two spaces,
+  collapses runs of blank lines to a single blank line,
+  canonicalises operator spacing, and ensures a single trailing
+  newline. Kept as an escape hatch for sources that trip the
+  algebra formatter's round-trip check.
+- `--algebra` -- explicit opt-in to the algebra formatter;
+  synonymous with the default since v0.21.0.
 - `--aggressive` / `--ast` -- legacy AST pretty printer
   (`Cure.Compiler.Printer`). Strips plain `#` comments and any
   non-canonical whitespace. Prints a warning before touching
@@ -456,6 +457,29 @@ part in a cycle in which no argument shrinks on every path.
 
 **E030: Package Version Conflict** -- the dependency resolver could not find
 a set of versions satisfying every active constraint.
+
+### v0.21.0 codes
+
+**E031: Binary Pattern Not Exhaustive** -- a sequence of binary patterns
+(in a `match`, function head, `let`, or comprehension generator) does not
+cover every byte-length inhabitant of the scrutinee's Bitstring type. The
+compiler prints a concrete missing witness such as `"<<>>"` or
+`"<<_, _rest::binary>>"`.
+
+**E032: Function Type Payload Invalid** -- an ADT constructor payload
+carries a value whose type cannot be resolved. Function-type payloads
+(e.g. `On(Int -> Int)` and `On((Int, Int) -> Int)`) are allowed and compile
+to first-class functions at runtime.
+
+**E033: Multi-line Type Layout Invalid** -- a `type` ADT declaration
+spans multiple lines but the layout cannot be absorbed by the type-def
+recogniser. Usually means the continuation lines are not indented
+beyond the `type` keyword.
+
+**E034: Let Pattern Not Exhaustive** -- a `let` binding destructures its
+RHS with a pattern that does not cover every inhabitant of the RHS type.
+The binding still compiles -- Erlang's `=` raises at runtime on a failed
+match -- but the compiler surfaces the gap as a warning.
 
 ### Error formatting
 

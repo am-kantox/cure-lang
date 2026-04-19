@@ -1,0 +1,47 @@
+mod LetDestructuring
+  ###
+  In-place destructuring in `let` bindings (v0.21.0).
+
+  `let` now supports the same pattern grammar as `match` arms:
+  ADT constructors, tuples (`%[...]`), cons cells (`[h | t]`),
+  record field punning (`Point{x, y}`), maps, and binary segments
+  (`<<a, rest::binary>>`). Each bound variable carries the narrowed
+  scrutinee type.
+  ###
+
+  rec Point
+    x: Int
+    y: Int
+
+  local fn make_point(x: Int, y: Int) -> Point = Point{x: x, y: y}
+
+  ## ADT constructor: binds x from the Ok variant.
+  fn first_ok(r: Result(Int, String)) -> Int =
+    let Ok(x) = r
+    x
+
+  ## Tuple destructure via the `%[...]` syntax.
+  fn sum_pair() -> Int =
+    let %[a, b] = %[3, 4]
+    a + b
+
+  ## Cons destructure binds head and tail.
+  fn head_of() -> Int =
+    let [h | _tail] = [10, 20, 30]
+    h
+
+  ## Record punning binds each field to a local of the same name.
+  fn move_diagonal(p: Point, delta: Int) -> Point =
+    let Point{x, y} = p
+    make_point(x + delta, y + delta)
+
+  ## Binary destructure reads the first byte.
+  fn first_byte(buf: Bitstring) -> Int =
+    let <<b, _rest::binary>> = buf
+    b
+
+  fn main() -> Int =
+    let sum = sum_pair()
+    let ok  = first_ok(Ok(5))
+    let h   = head_of()
+    sum + ok + h

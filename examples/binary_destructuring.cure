@@ -1,0 +1,30 @@
+mod BinaryDestructuring
+  ###
+  Binary destructuring showcase (v0.21.0).
+
+  Cure supports the full Erlang-style `<<...>>` segment grammar in
+  pattern position across `match` expressions, multi-clause function
+  heads, and `let` bindings. Segment specifiers follow `::` and chain
+  with `-` (`::integer-size(8)`, `::binary-size(n)`, `::utf8`).
+  ###
+
+  ## Read the first byte of a buffer; zero for the empty binary.
+  fn first_byte(buf: Bitstring) -> Int =
+    match buf
+      <<b, _rest::binary>> -> b
+      <<>>                 -> 0
+
+  ## Multi-clause form using binary patterns as function-head patterns.
+  fn parse_leading(buf: Bitstring) -> Int
+    | <<a, _rest::binary>> -> a
+    | <<>>                 -> 0
+
+  ## Destructure a fixed-size header inside a `let`.
+  fn parse_header(buf: Bitstring) -> Int =
+    let <<tag, _rest::binary>> = buf
+    tag
+
+  ## Demonstration entry point.
+  fn main() -> Int =
+    let header = <<42, 1, 2, 3>>
+    first_byte(header) + parse_leading(header) + parse_header(header)

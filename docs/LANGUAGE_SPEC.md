@@ -134,6 +134,29 @@ type Option(T) = Some(T) | None
 type Result(T, E) = Ok(T) | Error(E)
 ```
 
+**Multi-line layout (v0.21.0).** ADT declarations may span multiple
+lines with leading `|` on continuation lines. The single-line and
+multi-line forms are syntactically equivalent.
+
+```cure
+type Shape =
+  | Circle(Int)
+  | Square(Int)
+  | Triangle(Int, Int, Int)
+```
+
+**Function-type payloads (v0.21.0).** Constructor payloads accept
+arbitrary type expressions, including function arrows:
+
+```cure
+type Callback = On(Int -> Int) | Off
+type Transform = Morph((Int, Int) -> Int) | Id
+```
+
+Function-typed payloads compile to first-class functions at runtime;
+pattern matching binds the function to a variable you can call like
+any other lambda.
+
 ### Refinement types
 
 ```cure
@@ -428,6 +451,44 @@ if x > 0 then "positive" else "non-positive"
 let x = 42
 let y = x * 2
 ```
+
+**In-place destructuring (v0.21.0).** `let` bindings support the same
+pattern grammar as `match` arms: ADT constructors, tuples, cons
+cells, record field punning, maps, and binary segments. Each bound
+variable carries the narrowed scrutinee type.
+
+```cure
+let Ok(x)         = parse(input)       # ADT constructor
+let %[a, b]       = pair                # tuple destructure
+let [h | _rest]   = xs                  # cons destructure
+let Point{x, y}   = p                   # record punning
+let <<b, _::binary>> = buf              # binary destructure
+```
+
+Non-exhaustive `let` patterns emit code `E034` as a warning (not an
+error): the binding still compiles, and Erlang's `=` raises at
+runtime on a failed match. Setting `partial: true` on the assignment
+metadata suppresses the warning.
+
+### Binary patterns
+
+Binary literals use Erlang-style segment grammar between `<<` and
+`>>`. Every segment is `value [:: specifier_chain]`; the specifier
+chain is hyphen-joined and covers type (`integer`, `float`, `utf8`,
+`utf16`, `utf32`, `binary`, `bytes`, `bitstring`, `bits`),
+signedness, endianness, `size(expr)`, and `unit(n)`. See
+`docs/BINARIES.md` for the authoritative reference.
+
+```cure
+let header       = <<42, 1, 2, 3>>
+let <<tag, _::binary>> = buffer
+
+match frame
+  <<len::16, payload::binary-size(len), _::binary>> -> payload
+  <<>>                                              -> <<>>
+```
+
+Binary exhaustiveness is tracked via code `E031`.
 
 ### Pipe operator
 

@@ -1723,6 +1723,24 @@ defmodule Cure.Compiler.Parser do
   end
 
   # -- Type  type Name[(Params)] = ... ---------------------------------------
+  #
+  # v0.21.0: the RHS of a `type` declaration may span multiple lines with
+  # the canonical ADT `|` separator on continuation lines, and accept an
+  # optional leading `|` before the first variant:
+  #
+  #     type Shape =
+  #       | Circle(Int)
+  #       | Square(Int)
+  #       | Triangle(Int, Int, Int)
+  #
+  #     type Shape =
+  #       Circle(Int)
+  #       | Square(Int)
+  #
+  # Both are equivalent to the single-line form `type Shape = Circle(Int) | Square(Int)`.
+  # The lexer emits a single `:indent`/`:dedent` pair around the continuation
+  # block; `parse_type_def/1` absorbs it so the variants themselves can be
+  # parsed by the existing `parse_type_variant/1` / `parse_more_variants/1`.
 
   defp parse_type_def(state) do
     token = peek(state)
@@ -1748,38 +1766,70 @@ defmodule Cure.Compiler.Parser do
     state = expect(state, :assign)
     state = skip_newlines(state)
 
-    # Check if RHS is a refinement type: {x: T | pred}
-    case peek(state) do
-      %Token{type: :lbrace} ->
-        {refinement, state} = parse_refinement_type(state)
-        meta = [name: name, refinement: true, line: token.line, col: token.col]
-        meta = if type_params != [], do: Keyword.put(meta, :type_params, type_params), else: meta
-        ast = {:type_annotation, meta, refinement}
-        {ast, state}
+    # v0.21.0: allow the RHS to live inside an indented block so the
+    # multi-line ADT layout parses. Track whether we entered a block so
+    # we can consume the matching `:dedent` on exit.
+    {opened_block, state} =
+      case peek(state) do
+        %Token{type: :indent} -> {true, advance(state)}
+        _ -> {false, state}
+      end
 
-      _ ->
-        # Parse as ADT variants (A(T) | B | C) or type alias
-        {first_variant, state} = parse_type_variant(state)
-        state = skip_newlines(state)
+    state = skip_newlines(state)
 
-        case peek(state) do
-          %Token{type: :bar} ->
-            # ADT: multiple variants separated by |
-            {rest_variants, state} = parse_more_variants(state)
-            variants = [first_variant | rest_variants]
-            meta = [container_type: :enum, name: name, line: token.line, col: token.col]
-            meta = if type_params != [], do: Keyword.put(meta, :type_params, type_params), else: meta
-            ast = {:container, meta, variants}
-            {ast, state}
+    {ast, state} =
+      case peek(state) do
+        %Token{type: :lbrace} ->
+          {refinement, state} = parse_refinement_type(state)
+          meta = [name: name, refinement: true, line: token.line, col: token.col]
+          meta = if type_params != [], do: Keyword.put(meta, :type_params, type_params), else: meta
+          {{:type_annotation, meta, refinement}, state}
 
-          _ ->
-            # Type alias: type Name = ExistingType
-            meta = [name: name, line: token.line, col: token.col]
-            meta = if type_params != [], do: Keyword.put(meta, :type_params, type_params), else: meta
-            ast = {:type_annotation, meta, [first_variant]}
-            {ast, state}
-        end
-    end
+        _ ->
+          # v0.21.0: accept an optional leading `|` before the first variant.
+          state =
+            case peek(state) do
+              %Token{type: :bar} ->
+                s = advance(state)
+                skip_newlines(s)
+
+              _ ->
+                state
+            end
+
+          # Parse as ADT variants (A(T) | B | C) or type alias
+          {first_variant, state} = parse_type_variant(state)
+          state = skip_newlines(state)
+
+          case peek(state) do
+            %Token{type: :bar} ->
+              # ADT: multiple variants separated by |
+              {rest_variants, state} = parse_more_variants(state)
+              variants = [first_variant | rest_variants]
+              meta = [container_type: :enum, name: name, line: token.line, col: token.col]
+              meta = if type_params != [], do: Keyword.put(meta, :type_params, type_params), else: meta
+              {{:container, meta, variants}, state}
+
+            _ ->
+              # Type alias: type Name = ExistingType
+              meta = [name: name, line: token.line, col: token.col]
+              meta = if type_params != [], do: Keyword.put(meta, :type_params, type_params), else: meta
+              {{:type_annotation, meta, [first_variant]}, state}
+          end
+      end
+
+    # Close the optional wrapping block by consuming the matching `:dedent`.
+    # Surrounding newlines are skipped for us by the caller's own
+    # `skip_newlines` but we also tolerate any trailing newline inside the
+    # block.
+    state =
+      if opened_block do
+        state |> skip_newlines() |> expect_dedent()
+      else
+        state
+      end
+
+    {ast, state}
   end
 
   defp parse_type_variant(state) do
@@ -1802,7 +1852,11 @@ defmodule Cure.Compiler.Parser do
     end
   end
 
+  # v0.21.0: skip any newlines before peeking for the next `|` so multi-line
+  # ADT declarations parse identically to their single-line counterparts.
   defp parse_more_variants(state) do
+    state = skip_newlines(state)
+
     case peek(state) do
       %Token{type: :bar} ->
         state = advance(state)
