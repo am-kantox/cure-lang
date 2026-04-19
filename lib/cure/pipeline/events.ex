@@ -76,8 +76,19 @@ defmodule Cure.Pipeline.Events do
 
       {Cure.Pipeline.Events, stage, event_type, payload, metadata}
   """
-  @spec emit(stage(), event_type(), term(), metadata()) :: :ok
-  def emit(stage, event_type, payload, metadata) when is_atom(stage) and is_atom(event_type) do
+  @spec emit(stage(), event_type(), term(), metadata() | keyword()) :: :ok
+  def emit(stage, event_type, payload, metadata) when is_list(metadata) do
+    metadata = metadata |> Map.new() |> Map.take([:file, :line, :timestamp])
+    emit(stage, event_type, payload, metadata)
+  end
+
+  def emit(stage, event_type, payload, %{} = metadata) when is_atom(stage) and is_atom(event_type) do
+    metadata =
+      metadata
+      |> Map.put_new(:file, "nofile")
+      |> Map.put_new(:line, 1)
+      |> Map.put_new(:timestamp, DateTime.utc_now() |> DateTime.to_unix(:millisecond))
+
     message = {__MODULE__, stage, event_type, payload, metadata}
 
     Registry.dispatch(@registry, stage, fn entries ->

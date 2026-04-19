@@ -396,22 +396,20 @@ defmodule Cure.Types.PatternRefinement do
   # refinement. Only `binary`/`bytes`/`bitstring` tails without an
   # explicit size specifier qualify (that is the `rest::binary` shape).
   defp maybe_byte_size_refinement(name, _seg, seg_meta, base_type, preceding) do
-    tail_kind = Keyword.get(seg_meta, :type, :integer)
-    has_size? = Keyword.has_key?(seg_meta, :size)
-
-    tail? = tail_kind in [:binary, :bytes, :bitstring, :bits] and not has_size?
-
-    if tail? and base_type == :bitstring do
-      build_byte_size_refinement(name, preceding) || base_type
+    with :bitstring <- base_type,
+         {:ok, tail_kind} when tail_kind in [:binary, :bytes, :bitstring, :bits] <- Keyword.fetch(seg_meta, :type),
+         false <- Keyword.has_key?(seg_meta, :size),
+         type when not is_nil(type) <- build_byte_size_refinement(name, preceding, seg_meta) do
+      type
     else
-      base_type
+      _ -> base_type
     end
   end
 
   # Build `{:refinement, :bitstring, "__value__",
   #   byte_size(__value__) == byte_size(__scrutinee__) - sum}` when every
   # preceding segment has a resolvable byte count; otherwise `nil`.
-  defp build_byte_size_refinement(_name, preceding) do
+  defp build_byte_size_refinement(_name, preceding, seg_meta) do
     case sum_preceding_bytes(preceding, []) do
       {:ok, sum_ast} ->
         line = 1
@@ -430,7 +428,7 @@ defmodule Cure.Types.PatternRefinement do
         Refinement.new(:bitstring, "__value__", pred)
 
       :unknown ->
-        emit_refinement_downgrade_warning()
+        emit_refinement_downgrade_warning(seg_meta)
         nil
     end
   end
@@ -517,13 +515,13 @@ defmodule Cure.Types.PatternRefinement do
 
   # Pipeline warning emitted when a segment's size cannot be linearised;
   # the tail segment stays bound to plain `:bitstring` in that case.
-  defp emit_refinement_downgrade_warning do
+  defp emit_refinement_downgrade_warning(seg_meta) do
     if Code.ensure_loaded?(Cure.Pipeline.Events) do
       Cure.Pipeline.Events.emit(
         :type_checker,
         :refinement_ignored,
         {:binary_size_non_linear, "binary segment size is non-linear; rest::binary refinement downgraded (E037)"},
-        %{}
+        seg_meta
       )
     end
 
