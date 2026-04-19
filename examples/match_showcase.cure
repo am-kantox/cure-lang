@@ -1,0 +1,312 @@
+mod MatchShowcase
+  ###
+  Comprehensive tour of every pattern shape supported by Cure's match
+  engine as of v0.21.0.
+
+  Each section exercises a single destructuring primitive; the later
+  sections combine several primitives at once to demonstrate arbitrary
+  nesting. The same pattern grammar is accepted in four surface
+  positions:
+
+    1. `match` arms
+    2. Multi-clause function heads (`fn f(...) | p1 -> ... | p2 -> ...`)
+    3. `let` bindings (`let <pattern> = expr`)
+    4. Single-clause function heads (`fn f(<pattern>) -> ...`)
+
+  See docs/PATTERNS.md, docs/LANGUAGE_SPEC.md, and docs/BINARIES.md for
+  the authoritative references.
+  ###
+
+  # ---------------------------------------------------------------------------
+  # Supporting declarations
+  # ---------------------------------------------------------------------------
+
+  rec Address
+    city: String
+    zip: Int
+
+  rec Person
+    name: String
+    age: Int
+    address: Address
+
+  type Shape =
+    | Circle(Int)
+    | Square(Int)
+    | Triangle(Int, Int, Int)
+
+  type Event(T) =
+    | Tick
+    | Msg(T)
+    | Quit
+
+  # ---------------------------------------------------------------------------
+  # 1. Literal patterns: integer, negative integer, string, atom, bool, char.
+  #    Negative literals are lowered through the unary-minus rule described
+  #    in docs/PATTERNS.md, so `-1` matches the integer `-1`.
+  # ---------------------------------------------------------------------------
+
+  fn classify_int(n: Int) -> String =
+    match n
+      0   -> "zero"
+      1   -> "one"
+      -1  -> "minus-one"
+      42  -> "the answer"
+      _   -> "other"
+
+  fn describe_atom(a: Atom) -> Int =
+    match a
+      :ok    -> 1
+      :error -> 0
+      _      -> 0 - 1
+
+  fn greet_bool(b: Bool) -> String =
+    match b
+      true  -> "yes"
+      false -> "no"
+
+  fn match_string(s: String) -> Int =
+    match s
+      ""      -> 0
+      "hello" -> 1
+      _       -> 2
+
+  fn letter_code(c: Char) -> Int =
+    match c
+      'a' -> 1
+      'b' -> 2
+      _   -> 0
+
+  # ---------------------------------------------------------------------------
+  # 2. Variables and wildcards.
+  #    `_` discards silently; `_name` binds but suppresses the unused-variable
+  #    warning; a bare identifier binds normally.
+  # ---------------------------------------------------------------------------
+
+  fn tag_anything(x: Int) -> Int =
+    match x
+      _ -> 99
+
+  fn bind_and_use(x: Int) -> Int =
+    match x
+      n -> n + 1
+
+  fn silent_bind(xs: List(Int)) -> Int =
+    match xs
+      [_first, _second | _rest] -> 2
+      _                         -> 0
+
+  # ---------------------------------------------------------------------------
+  # 3. Tuple patterns via the `%[...]` prefix.
+  # ---------------------------------------------------------------------------
+
+  fn tuple_sum(t: Tuple) -> Int =
+    match t
+      %[a, b]    -> a + b
+      %[a, b, c] -> a + b + c
+      _          -> 0
+
+  # ---------------------------------------------------------------------------
+  # 4. List patterns: empty, single-head cons, fixed length, multi-head cons.
+  #    Multi-head cons (`[a, b, c | rest]`) desugars to right-associated cons
+  #    cells; fixed-length patterns (`[a, b]`) only match lists of that exact
+  #    length.
+  # ---------------------------------------------------------------------------
+
+  fn list_shape(xs: List(Int)) -> String =
+    match xs
+      []                -> "empty"
+      [_]               -> "singleton"
+      [_, _]            -> "pair"
+      [_, _, _ | _rest] -> "three-or-more"
+
+  fn take_three_sum(xs: List(Int)) -> Int =
+    match xs
+      [a, b, c | _rest] -> a + b + c
+      [a, b | _rest]    -> a + b
+      [a | _rest]       -> a
+      []                -> 0
+
+  # ---------------------------------------------------------------------------
+  # 5. Map patterns: literal keys, open matching, field-punning shorthand.
+  #    `%{x, y}` desugars to `%{x: x, y: y}`. Keys not listed in the pattern
+  #    are ignored (open matching).
+  # ---------------------------------------------------------------------------
+
+  fn route(request: Map) -> String =
+    match request
+      %{method: "GET",  path: p} -> "fetch "  <> p
+      %{method: "POST", path: p} -> "submit " <> p
+      %{method: m}               -> "other "  <> m
+      _                          -> "malformed"
+
+  fn point_sum(m: Map) -> Int =
+    match m
+      %{x, y} -> x + y
+      _       -> 0
+
+  # ---------------------------------------------------------------------------
+  # 6. Record patterns: field punning, explicit fields, and nested records.
+  #    A bare identifier inside `Person{...}` is shorthand for `name: name`.
+  #    Record patterns compile to map patterns with a `__struct__` guard, so
+  #    they only match values built with the same record type.
+  # ---------------------------------------------------------------------------
+
+  fn person_city(p: Person) -> String =
+    match p
+      Person{address: Address{city}} -> city
+
+  fn adult_or_not(p: Person) -> Bool =
+    match p
+      Person{age: a} when a >= 18 -> true
+      _                           -> false
+
+  fn greet(p: Person) -> String =
+    match p
+      Person{name} -> "Hi " <> name
+
+  # ---------------------------------------------------------------------------
+  # 7. ADT constructors, including nullary (`None()`) and parameterised sums.
+  #    Nullary constructors must use empty parentheses -- a bare `None` would
+  #    bind a fresh variable instead of matching the constructor.
+  # ---------------------------------------------------------------------------
+
+  fn area(s: Shape) -> Int =
+    match s
+      Circle(r)          -> r * r * 3
+      Square(side)       -> side * side
+      Triangle(a, b, _c) -> a * b / 2
+
+  fn unwrap_or(opt: Option(Int), default: Int) -> Int =
+    match opt
+      Some(v) -> v
+      None()  -> default
+
+  fn first_message(events: List(Event(String)), default: String) -> String =
+    match events
+      [Msg(s) | _]     -> s
+      [_       | rest] -> first_message(rest, default)
+      []               -> default
+
+  # Nested ADT constructors decompose in a single arm.
+  fn unwrap_nested(r: Result(Option(Int), String), default: Int) -> Int =
+    match r
+      Ok(Some(v)) -> v
+      Ok(None())  -> default
+      Error(_)    -> default
+
+  # ---------------------------------------------------------------------------
+  # 8. Pin operator `^x`: compares against an already-bound value instead of
+  #    binding a fresh variable.
+  # ---------------------------------------------------------------------------
+
+  fn match_target(actual: Atom, target: Atom) -> Bool =
+    match actual
+      ^target -> true
+      _       -> false
+
+  # ---------------------------------------------------------------------------
+  # 9. Repeated variables: the same name in two positions forces equality.
+  #    The compiler injects a synthetic `=:=` guard for every occurrence after
+  #    the first.
+  # ---------------------------------------------------------------------------
+
+  fn is_diagonal_pair(t: Tuple) -> Bool =
+    match t
+      %[x, x] -> true
+      _       -> false
+
+  # ---------------------------------------------------------------------------
+  # 10. Binary patterns (v0.21.0 segment grammar).
+  #     Every segment can carry type (`integer`, `float`, `utf8`, `binary`,
+  #     ...), `size(expr)`, `unit(n)`, signedness, and endianness.
+  # ---------------------------------------------------------------------------
+
+  fn first_byte(buf: Bitstring) -> Int =
+    match buf
+      <<b, _rest::binary>> -> b
+      <<>>                 -> 0
+
+  fn fixed_header(frame: Bitstring) -> Int =
+    match frame
+      <<len::16, _payload::binary-size(len), _::binary>> -> len
+      _                                                  -> 0
+
+  # Multi-clause function heads can use binary patterns directly.
+  fn parse_leading(buf: Bitstring) -> Int
+    | <<a, _rest::binary>> -> a
+    | <<>>                 -> 0
+
+  # ---------------------------------------------------------------------------
+  # 11. Pattern guards (`when`) attach boolean side-conditions to any arm.
+  # ---------------------------------------------------------------------------
+
+  fn sign(x: Int) -> Int
+    | x when x > 0 -> 1
+    | x when x < 0 -> 0 - 1
+    | _            -> 0
+
+  fn head_if_positive(xs: List(Int)) -> Int =
+    match xs
+      [h | _] when h > 0 -> h
+      _                  -> 0
+
+  # ---------------------------------------------------------------------------
+  # 12. Multi-clause function heads combining literal, variable, and guarded
+  #     patterns in a single definition.
+  # ---------------------------------------------------------------------------
+
+  fn classify_signed(x: Int) -> String
+    | 0            -> "zero"
+    | x when x > 0 -> "positive"
+    | _            -> "negative"
+
+  fn factorial(n: Int) -> Int
+    | 0 -> 1
+    | 1 -> 1
+    | n -> n * factorial(n - 1)
+
+  # ---------------------------------------------------------------------------
+  # 13. `let` destructuring (v0.21.0): the same pattern grammar as `match`.
+  #     Every bound variable carries the narrowed scrutinee type.
+  # ---------------------------------------------------------------------------
+
+  fn let_showcase() -> Int =
+    let Ok(x)                    = Ok(10)
+    let %[a, b]                  = %[3, 4]
+    let [h | _tail]              = [100, 200]
+    let Address{city: _city}     = Address{city: "Madrid", zip: 28001}
+    let <<head_byte, _::binary>> = <<5, 6, 7>>
+    x + a + b + h + head_byte
+
+  # ---------------------------------------------------------------------------
+  # 14. Deeply nested destructuring combining tuples, maps, cons, and ADTs.
+  # ---------------------------------------------------------------------------
+
+  fn deep(value: Tuple) -> Int =
+    match value
+      %[_, %{list: [Ok(head) | _rest]}, _] -> head
+      _                                    -> 0
+
+  # ---------------------------------------------------------------------------
+  # Entry point. Exercises a representative slice of the above so the file
+  # compiles *and* runs to a deterministic integer result.
+  #
+  #   a =   1   Some(1) unwrapped
+  #   b =  12   pi-less area of a circle with radius 2 (2 * 2 * 3)
+  #   c =  60   10 + 20 + 30 from a four-element list
+  #   d =   0   sign(5) + sign(-5) + sign(0)
+  #   e = 120   factorial(5)
+  #   f =   7   first byte of <<7, 8, 9>>
+  #   ----
+  #   200
+  # ---------------------------------------------------------------------------
+
+  fn main() -> Int =
+    let a = unwrap_or(Some(1), 0)
+    let b = area(Circle(2))
+    let c = take_three_sum([10, 20, 30, 40])
+    let d = sign(5) + sign(0 - 5) + sign(0)
+    let e = factorial(5)
+    let f = first_byte(<<7, 8, 9>>)
+    a + b + c + d + e + f

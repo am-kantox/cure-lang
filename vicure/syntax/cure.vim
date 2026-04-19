@@ -11,10 +11,29 @@ endif
 syn case match
 
 " --- Comments ---------------------------------------------------------------
-" Doc comments (##) come before line comments (#) so the longer match wins.
-syn match  cureDocComment "\v##.*$" contains=cureTodo,@Spell
-syn match  cureComment    "\v#.*$"  contains=cureTodo,@Spell
+" Cure has three comment flavours (all lexed as comments by the compiler):
+"
+"   ###        fenced multi-line doc comment (v0.17.0+)
+"   ##         single-line doc comment
+"   #          plain line comment
+"
+" The fenced region MUST be declared before the single-line matches so its
+" start pattern wins over `##.*$`. The single-line matches use a negative
+" lookahead so `###` never matches them by accident.
+syn region cureFencedDoc
+      \ start="###"
+      \ end="###"
+      \ contains=cureTodo,@Spell
+      \ keepend
+
+syn match  cureDocComment "\v##(#)@!.*$" contains=cureTodo,@Spell
+syn match  cureComment    "\v#(#)@!.*$"  contains=cureTodo,@Spell
 syn keyword cureTodo contained TODO FIXME NOTE XXX HACK BUG
+
+" Fenced doc comments can span arbitrarily many lines. Sync from the start
+" of the buffer so the region state is always correct, regardless of where
+" the viewport lands. Cure source files are small enough that this is cheap.
+syntax sync fromstart
 
 " --- Strings ----------------------------------------------------------------
 " Strings support #{...} interpolation and \n \r \t \\ \" escapes.
@@ -36,7 +55,10 @@ syn match cureNumber "\v<\d+>"
 
 " --- Atoms ------------------------------------------------------------------
 syn match  cureAtom       "\v\:[a-z_][a-zA-Z0-9_]*[!?]?"
-syn region cureQuotedAtom start=+'+ skip=+\\.+ end=+'+ contains=cureEscape
+" Char literals are a single character (or escape) in single quotes. A bounded
+" match -- not a region -- avoids a stray apostrophe in prose (e.g. "Cure's")
+" dragging the highlighter forward until the next `'` in the file.
+syn match  cureQuotedAtom "\v'([^'\\]|\\.)'" contains=cureEscape
 
 " --- Keywords ---------------------------------------------------------------
 " Control flow
@@ -144,6 +166,7 @@ syn match cureTypeAnnotation "\v:\s*\zs[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*
 " --- Highlight links --------------------------------------------------------
 hi def link cureComment           Comment
 hi def link cureDocComment        SpecialComment
+hi def link cureFencedDoc         SpecialComment
 hi def link cureTodo              Todo
 
 hi def link cureString            String

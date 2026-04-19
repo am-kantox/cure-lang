@@ -44,6 +44,7 @@ defmodule Mix.Tasks.Cure.Check.Examples do
     "holes_demo" => "0",
     "length_indexed" => "6",
     "list_basics" => "15",
+    "match_showcase" => "200",
     "math" => :compile_only,
     "multi_head_cons" => "6",
     "mutual_recursion" => "1",
