@@ -157,9 +157,8 @@ defmodule Cure.Types.Protocol do
         is_map_guard = {:call, line, {:atom, line, :is_map}, [var_form]}
 
         struct_check =
-          {:op, line, :==,
-           {:call, line, {:atom, line, :map_get},
-            [{:atom, line, :__struct__}, var_form]}, {:atom, line, type_atom}}
+          {:op, line, :==, {:call, line, {:atom, line, :map_get}, [{:atom, line, :__struct__}, var_form]},
+           {:atom, line, type_atom}}
 
         {:op, line, :andalso, is_map_guard, struct_check}
     end
