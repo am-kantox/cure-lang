@@ -135,12 +135,19 @@ Options:
   non-canonical whitespace. Prints a warning before touching
   files.
 
-**`cure repl`** -- Start a minimal interactive Cure session. Each expression
-is compiled via `compile_and_load` and its result printed.
+**`cure repl`** -- Start a readline-grade interactive Cure session.
+Since v0.24.0, the REPL runs on top of a raw-mode line editor with
+live `Makeup`-powered syntax highlighting, persistent history, `Ctrl+R`
+incremental reverse search, Tab completion, a minimal vi mode, and a
+`Marcli`-rendered `:help`. Each submitted expression is compiled via
+`compile_and_load` and its result printed.
 
 ```bash
 cure repl
 ```
+
+See the dedicated [REPL reference page](/repl) for the complete
+key-bindings table and meta-command list.
 
 **`cure explain <code>`** -- Look up a structured error explanation.
 
@@ -150,6 +157,56 @@ cure explain E010
 ```
 
 **`cure help`** -- Show usage information.
+
+## v0.24.0 additions
+
+### Interactive REPL rewrite
+
+**`cure repl`** -- The legacy `IO.gets` loop has been replaced by a
+raw-mode line editor. The whole architecture is split across small,
+single-responsibility modules:
+
+- `Cure.REPL.Terminal` -- raw-mode stdin via `stty`, safe restore on
+  every exit path, decodes arrows, `Home` / `End` / `Delete` /
+  `PgUp` / `PgDn`, `Ctrl+Arrow` word-wise movement, `F1`-`F12`, and
+  bracketed paste.
+- `Cure.REPL.LineEditor` -- a pure-function line buffer. Cursor
+  movement, kill ring + yank + rotate, transpose, case changes,
+  undo / redo, and a minimal vi normal mode.
+- `Cure.REPL.History` -- atomic write-and-rename `~/.cure_history`,
+  consecutive-duplicate dedup, 10,000-entry cap, draft-preserving
+  `Up` / `Down` navigation.
+- `Cure.REPL.Search` -- `Ctrl+R` / `Ctrl+S` incremental reverse and
+  forward search with inverse-video status line and accept-and-edit
+  semantics.
+- `Cure.REPL.Completer` -- Tab completion for meta-commands, file
+  paths (inside `:load` / `:save` / `:edit`), loaded modules (inside
+  `:use` / `:doc`), and Cure keywords.
+- `Cure.REPL.Highlight` + `Cure.REPL.Theme` -- live ANSI syntax
+  highlighting via `Makeup.Lexers.CureLexer` and `Marcli.Formatter`.
+  `:dark` (default), `:light`, and `:mono` presets; `:mono` is forced
+  automatically when `NO_COLOR` is set, when stdout is not a tty, or
+  when `TERM=dumb`.
+
+New meta-commands alongside the existing `:t`, `:type`, `:effects`,
+`:load`, `:reload`, `:use`, `:holes`, `:env`, `:reset`, `:fmt`,
+`:help`, `:quit`:
+
+- `:history [n]`, `:search term`, `:clear`
+- `:save path`, `:edit`
+- `:time expr`, `:bench expr [n]`
+- `:ast expr`
+- `:theme dark|light|mono`, `:mode emacs|vi`, `:color on|off`
+
+Non-tty stdin (CI, pipes) short-circuits to the legacy `IO.gets`
+loop so test automation is unaffected.
+
+The REPL page also documents the three new Hex deps that back it:
+[`makeup`](https://hex.pm/packages/makeup) + [`makeup_cure`](https://hex.pm/packages/makeup_cure)
+for lexing, [`marcli`](https://hex.pm/packages/marcli) for
+Markdown-to-ANSI rendering.
+
+---
 
 ## v0.23.0 additions
 

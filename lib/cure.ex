@@ -36,9 +36,20 @@ defmodule Cure do
 
   alias Cure.Compiler.{Lexer, Parser}
 
+  # Register the top-level `mix.exs` as an external resource so the
+  # compiler re-evaluates this module whenever the version (or any
+  # other project attribute) changes in `mix.exs`. Without this, a
+  # bare `mix compile` after a version bump leaves the old value
+  # baked into `Cure.version/0` until `lib/cure.ex` itself is touched.
+  @external_resource Path.expand("../mix.exs", __DIR__)
   @version Cure.MixProject.project()[:version]
+
   @doc """
   Returns the current Cure version.
+
+  The value is resolved at compile time from the top-level `mix.exs`
+  of the Cure project, so it always tracks the `@version` declared
+  there.
   """
   @spec version :: String.t()
   def version, do: @version

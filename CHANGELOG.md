@@ -4,7 +4,16 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.24.0] -- The REPL You Deserve
+
+v0.24.0 is the release where the interactive cycle catches up with
+the rest of the language. The legacy `IO.gets`-backed REPL, present
+since v0.15.0 and only lightly touched in v0.17.0, has been rewritten
+whole-cloth on top of a raw-mode line editor with live syntax
+highlighting, persistent history, incremental reverse search, Tab
+completion, a minimal vi mode, and a Marcli-rendered `:help`. The
+compiler itself is untouched; every change in this release is on the
+read-eval-print side.
 
 ### Added -- REPL overhaul
 
@@ -57,6 +66,31 @@ raw-mode line editor with live syntax highlighting.
 
 - `docs/REPL.md` -- full key-bindings table, meta-command reference,
   configuration, environment variables, vi-mode subset.
+- `site/priv/pages/repl.md` -- user-facing REPL reference on
+  [cure-lang.org](https://cure-lang.org) with the full key-bindings
+  table and meta-command reference.
+
+### Changed
+
+- `mix.exs` version bumped to `0.24.0`. `Cure.CLI` banner and
+  `cure version` output updated accordingly.
+- `cure repl` defaults to raw-mode when stdin is a tty; the legacy
+  line-mode loop is kept behind `Cure.REPL.start/1` `raw: false` and
+  used automatically when the terminal cannot be put into cbreak mode.
+- `Cure.Stdlib.Preload.preload/1` is invoked from `Cure.REPL.start/1`
+  so expressions can reference `Std.List`, `Std.Math`, etc. without
+  an explicit `:use`.
+
+### Deferred to v0.25.0
+
+- Monomorphisation of polymorphic functions whose call sites all use
+  concrete types.
+- Profile-guided optimisation wiring between `Cure.Profiler` and the
+  inliner / pattern-aware SMT encoder.
+- First-class Helix / Zed configurations and a VS Code extension
+  upgrade to track the current LSP surface.
+- REPL-level hot reload that recompiles-and-rebinds on every file
+  save for long-running REPL sessions.
 
 ## [0.23.0] -- Packaging, Proof, and Polish
 

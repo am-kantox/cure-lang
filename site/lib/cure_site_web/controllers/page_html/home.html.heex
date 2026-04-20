@@ -15,13 +15,13 @@
     </p>
     <p class="mt-2 text-sm text-base-content/50">
       Current release: <span class="font-mono">v{CureSite.cure_version()}</span>
-      -- <em>Packaging, Proof, and Polish</em>. Remote package registry with
-      Ed25519-signed publishes and a Rekor-style transparency log,
-      <code>Std.Json</code> and <code>Std.Http</code> in stdlib,
-      property-based shrinking, <code>cure doctor</code> /
-      <code>cure fix</code> / <code>cure test --cover</code>, a
-      <code>:telemetry</code> bridge, and the <code>cure_brainloop</code>
-      showcase example.
+      -- <em>The REPL You Deserve</em>. A full rewrite of <code>cure repl</code>
+      on top of a raw-mode line editor with live <code>Makeup</code>-powered syntax highlighting, persistent
+      history, <code>Ctrl+R</code>
+      incremental reverse search, Tab
+      completion, a minimal vi mode, and a <code>Marcli</code>-rendered <code>:help</code>. See the new
+      <a href={~p"/repl"} class="underline">REPL reference</a>
+      for the full key-bindings table and meta-command list.
     </p>
   </div>
   <%!-- Quick example --%>
@@ -119,6 +119,16 @@
       <p class="mt-1 text-sm text-base-content/60">
         Every pattern shape: literals, lists, tuples, maps, records, ADTs,
         bitstrings, pins, guards, and nested destructuring.
+      </p>
+    </a>
+    <a
+      href={~p"/repl"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">REPL</h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        The v0.24.0 raw-mode REPL: live syntax highlighting, persistent
+        history, reverse search, Tab completion, and a minimal vi mode.
       </p>
     </a>
     <a

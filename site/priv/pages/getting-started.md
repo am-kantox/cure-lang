@@ -122,7 +122,9 @@ cure deps tree            # Inspect dependency graph
 cure deps update          # Refresh Cure.lock
 cure test --doctests      # Run tests, including doctests
 cure test --cover         # Emit _build/cure/cover/index.html
-cure repl                 # Multi-line REPL with :t, :doc, :holes, ...
+cure repl                 # Raw-mode REPL with syntax highlighting,
+                          # persistent history, Ctrl+R reverse search,
+                          # Tab completion, :history / :bench / :time / :save
 cure watch lib/           # Recompile / check / test on every save
 cure fmt lib/             # Format Cure sources
 cure bench                # Run bench/**/*.cure benchmarks
@@ -216,3 +218,4 @@ module.my_function(args)
 - [Type System](/type-system) -- bidirectional checking, refinement types, SMT verification
 - [Dependent Types](/type-system#dependent-types) -- Sigma, Pi, equality, implicit arguments, holes, totality
 - [Finite State Machines](/finite-state-machines) -- first-class FSMs with compile-time verification
+- [REPL](/repl) -- the v0.24.0 raw-mode REPL: key bindings, meta-commands, themes, history, reverse search

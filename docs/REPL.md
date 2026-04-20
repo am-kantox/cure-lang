@@ -1,5 +1,14 @@
 # Cure REPL
 
+Everything on this page landed in **v0.24.0**. Prior releases shipped an
+`IO.gets`-backed line-mode loop; v0.24.0 replaces it wholesale with a
+raw-mode line editor, live `Makeup`-powered syntax highlighting,
+persistent history, incremental reverse search, Tab completion, a
+minimal vi mode, and a `Marcli`-rendered `:help`. The architecture is
+split across `Cure.REPL.{Terminal, LineEditor, History, Search,
+Highlight, Theme, Completer, Render, Docs, Markdown}` so every piece
+is individually testable.
+
 The interactive REPL (`cure repl`) is a readline-grade environment for
 evaluating Cure expressions, inspecting types and effects, and driving
 ad-hoc experimentation with loaded modules.

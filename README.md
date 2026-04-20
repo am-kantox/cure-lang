@@ -12,7 +12,14 @@ All core milestones complete. The full compilation pipeline is operational:
 lexer, parser, bidirectional type checker with record types, refinement types
 and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
 FSM compilation with structural verification, effect system, documentation
-generator, formatter, REPL, stdlib, CLI, CI, and example programs.
+generator, formatter, stdlib, CLI, CI, and example programs.
+
+v0.24.0 rewrites the interactive REPL on top of a raw-mode line editor
+with live `Makeup`-powered syntax highlighting, persistent history,
+`Ctrl+R` incremental reverse search, Tab completion, a minimal vi mode,
+and a `Marcli`-rendered `:help`. See
+[`docs/REPL.md`](docs/REPL.md) for the on-disk reference and
+[cure-lang.org/repl](https://cure-lang.org/repl) for the web version.
 
 ## Architecture
 
@@ -90,11 +97,12 @@ mix cure.compile path/to/file.cure
 mix cure.compile path/to/dir/ --output-dir _build/cure/ebin
 ```
 
-## Interactive REPL
+## Interactive REPL (v0.24.0)
 
-`cure repl` drops you into a readline-grade loop with live Cure
-syntax highlighting (via `makeup_cure` + `marcli`), persistent
-history, and incremental reverse search:
+`cure repl` drops you into a readline-grade loop backed by a raw-mode
+line editor with live Cure syntax highlighting (via `makeup_cure` +
+`marcli`), persistent history, incremental reverse search, Tab
+completion, and a minimal vi mode:
 
 ```text
 cure(1)> fn add(a: Int, b: Int) -> Int = a + b

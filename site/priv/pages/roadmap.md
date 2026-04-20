@@ -874,13 +874,91 @@ Invalid, Transparency Log Unreachable.
   `mix credo --strict`: 0 issues across 167 source files;
   `mix cure.check.stdlib`: 27/27; `mix cure.check.examples`:
   44/44.
+
+## Implemented: v0.24.0 -- The REPL You Deserve
+v0.24.0 is deliberately single-purpose. The compiler surface is
+untouched; every change lands on the interactive read-eval-print
+side. The legacy `IO.gets` loop (shipped in v0.15.0, barely touched
+since) is replaced wholesale by a raw-mode line editor with live
+syntax highlighting, persistent history, incremental reverse search,
+Tab completion, and a minimal vi mode. See the dedicated
+[REPL reference](/repl) for the full key-bindings table and
+meta-command list.
+### Raw-mode terminal
+- **`Cure.REPL.Terminal`** puts stdin into cbreak/no-echo mode via
+  `stty`, restores it on every exit path (normal `:quit`, EOF on an
+  empty buffer, `Ctrl+C` on a non-empty buffer, uncaught exception,
+  SIGINT / SIGTERM), and decodes raw byte streams into high-level
+  key events: arrows, `Home` / `End` / `Delete` / `PgUp` / `PgDn`,
+  every `Ctrl+<letter>` and `Alt+<char>` shortcut, `Ctrl+Arrow` for
+  word-wise movement, `F1`-`F12`, and bracketed paste.
+- Non-tty stdin (CI, pipes, `|` into `cure repl`, `TERM=dumb`)
+  short-circuits to the legacy `IO.gets` loop so test automation
+  continues to work unchanged.
+### Pure-function line editor
+- **`Cure.REPL.LineEditor`** is a stateless buffer: every key event
+  produces a new `%LineEditor{}` struct. Emacs-mode menu covers one-
+  grapheme and one-word cursor movement, begin / end of line,
+  backspace / delete, `Ctrl+K` / `Ctrl+U` / `Ctrl+W` / `Alt+D` kill
+  variants, yank (`Ctrl+Y`) and kill-ring rotation (`Alt+Y`),
+  transpose chars / words, upcase / downcase / capitalise word,
+  undo / redo (`Ctrl+_` / `Alt+_`), and a minimal vi normal mode
+  (`h` / `j` / `k` / `l`, `w` / `b` / `e`, `0` / `^` / `$`,
+  `i` / `a` / `I` / `A`, `x`, `D`, `C`, `u`).
+### History and reverse search
+- **`Cure.REPL.History`** persists entries to `~/.cure_history` via
+  atomic write-and-rename. Consecutive duplicates are deduplicated,
+  the file is capped at 10,000 entries, and `Up` / `Down` step
+  through history while preserving the current draft.
+- **`Cure.REPL.Search`** implements `Ctrl+R` / `Ctrl+S` incremental
+  reverse and forward search with an inverse-video status line and
+  accept-and-edit semantics (`Tab` / arrow keys pull the match into
+  the main buffer for further editing).
+### Live syntax highlighting
+- **`Cure.REPL.Highlight`** pipes every buffer state through
+  `Makeup.Lexers.CureLexer` and `Marcli.Formatter` for ANSI syntax
+  highlighting on every keystroke. Cached by buffer hash so repeated
+  redraws do not re-tokenise.
+- **`Cure.REPL.Theme`** ships `:dark` (default), `:light`, and
+  `:mono` presets. `:mono` is forced automatically when `NO_COLOR`
+  is set, when stdout is not a tty, or when `TERM=dumb`. Toggle at
+  runtime with `:theme dark|light|mono` or `:color on|off`.
+### Tab completion
+- **`Cure.REPL.Completer`** handles four categories in one pass:
+  meta-commands, file paths (inside `:load` / `:save` / `:edit`),
+  loaded modules (inside `:use` / `:doc`), and theme / mode / colour
+  argument literals plus Cure keywords everywhere else.
+### Meta-commands
+All existing meta-commands (`:t`, `:type`, `:effects`, `:load`,
+`:reload`, `:use`, `:holes`, `:env`, `:reset`, `:fmt`, `:help`,
+`:quit`) are preserved. v0.24.0 adds `:history [n]`, `:search term`,
+`:clear`, `:save path`, `:edit`, `:time expr`, `:bench expr [n]`,
+`:ast expr`, `:theme dark|light|mono`, `:mode emacs|vi`, and
+`:color on|off`. `:help` output is rendered via `Marcli.render/2`
+as ANSI-styled Markdown.
+### Dependencies
+- `{:marcli, "~> 0.3"}` -- Markdown-to-ANSI renderer and Makeup
+  token-to-ANSI formatter.
+- `{:makeup, "~> 1.2"}` -- explicit so `Makeup.Registry` is
+  available at runtime.
+- `{:makeup_cure, "~> 0.1"}` -- Cure language lexer for Makeup.
+### Documentation
+- New [`/repl`](/repl) user-facing reference page on the Cure
+  website alongside the existing
+  [docs/REPL.md](https://github.com/am-kantox/cure-lang/blob/main/docs/REPL.md)
+  on-disk contract.
 ## Future
 These are not scheduled but are on the long-term radar.
-**Type optimizer.** Monomorphization: when a polymorphic function is only
-called with concrete types, generate specialized versions. Profile-guided
-optimization (PGO): use profiler data to prioritize hot paths for
-specialization.
-**Broader IDE support.** VS Code extension with syntax highlighting, snippet
-templates, and integrated diagnostics. Helix and Zed configurations.
-**REPL (advanced).** Stateful REPL with incremental compilation and
-persistent environment across expressions.
+**Monomorphisation.** Specialise polymorphic functions whose call
+sites all use concrete types. Deferred from v0.24.0 now that the
+interactive cycle is done.
+**Profile-guided optimisation (PGO).** Feed `Cure.Profiler` data
+into the inliner and pattern-aware SMT encoder so hot paths get
+specialisation and cold paths stay small.
+**Broader IDE support.** First-class Helix and Zed configurations.
+An upgraded VS Code extension that tracks the current LSP surface
+(inlay hints, signature help, code lenses, semantic tokens,
+workspace symbols).
+**REPL-level hot reload.** Recompile-and-rebind on every file save
+for long-running REPL sessions, closing the loop between editing
+`.cure` files and the running REPL environment.

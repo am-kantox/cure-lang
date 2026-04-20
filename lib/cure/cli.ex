@@ -20,7 +20,11 @@ defmodule Cure.CLI do
       --verbose           Show detailed compilation output
   """
 
-  @version Mix.Project.config()[:version]
+  # Delegate to `Cure.version/0`, which is itself resolved at compile
+  # time from the top-level `mix.exs` and marked as an
+  # `@external_resource` so a version bump in `mix.exs` always reaches
+  # the compiled escript.
+  defp version, do: Cure.version()
 
   @doc "Entry point for escript."
   def main(args) do
@@ -878,12 +882,12 @@ defmodule Cure.CLI do
   # -- version / help ----------------------------------------------------------
 
   defp cmd_version do
-    IO.puts("Cure #{@version}")
+    IO.puts("Cure #{version()}")
   end
 
   defp help do
     IO.puts("""
-    Cure #{@version} -- Dependently-typed language for the BEAM
+    Cure #{version()} -- Dependently-typed language for the BEAM
 
     Usage: cure <command> [options] [arguments]
 

@@ -77,6 +77,7 @@ defmodule CureSiteWeb.Layouts do
             Stdlib
           </a>
           <a href={~p"/tooling"} class={nav_class(@current_path, ~p"/tooling")}>Tooling</a>
+          <a href={~p"/repl"} class={nav_class(@current_path, ~p"/repl")}>REPL</a>
           <a href={~p"/blog"} class={nav_class(@current_path, ~p"/blog")}>Blog</a>
           <.theme_toggle />
         </div>
@@ -123,6 +124,7 @@ defmodule CureSiteWeb.Layouts do
           Standard Library
         </a>
         <a href={~p"/tooling"} class={mobile_nav_class(@current_path, ~p"/tooling")}>Tooling</a>
+        <a href={~p"/repl"} class={mobile_nav_class(@current_path, ~p"/repl")}>REPL</a>
         <a href={~p"/roadmap"} class={mobile_nav_class(@current_path, ~p"/roadmap")}>Roadmap</a>
         <a href={~p"/blog"} class={mobile_nav_class(@current_path, ~p"/blog")}>Blog</a>
       </div>
