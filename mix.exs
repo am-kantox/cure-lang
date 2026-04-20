@@ -61,6 +61,11 @@ defmodule Cure.MixProject do
       # Core -- MetaAST backing
       {:metastatic, "~> 0.18"},
 
+      # REPL -- syntax highlighting and Markdown-to-ANSI rendering
+      {:marcli, "~> 0.3"},
+      {:makeup, "~> 1.2"},
+      {:makeup_cure, "~> 0.1"},
+
       # Observability -- optional, used by Cure.Telemetry when loaded
       {:telemetry, "~> 1.3", optional: true},
 
@@ -121,7 +126,8 @@ defmodule Cure.MixProject do
         "docs/PACKAGE_REGISTRY.md",
         "docs/PUBLISHING.md",
         "docs/FSM_GUIDE.md",
-        "docs/STDLIB.md"
+        "docs/STDLIB.md",
+        "docs/REPL.md"
       ],
       source_url: @source_url,
       source_ref: "v#{@version}",

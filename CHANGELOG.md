@@ -6,6 +6,58 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added -- REPL overhaul
+
+The interactive REPL (`cure repl`) has been rewritten on top of a
+raw-mode line editor with live syntax highlighting.
+
+- `Cure.REPL.Terminal` puts stdin in cbreak/no-echo mode via `stty`,
+  restores it on any exit path, and decodes raw byte streams into
+  high-level key events (arrows, `Home`/`End`/`Delete`, `PgUp`/`PgDn`,
+  `Ctrl+<letter>`, `Alt+<char>`, `Ctrl+Arrow`, F-keys, bracketed
+  paste).
+- `Cure.REPL.LineEditor` is a pure-function line buffer supporting
+  cursor movement, word-wise movement, kill ring, yank, transpose,
+  case changes, undo/redo and a minimal vi normal mode (`h/j/k/l`,
+  `w/b/e`, `0`/`^`/`$`, `i/a/I/A`, `x`, `D`, `C`, `u`).
+- `Cure.REPL.History` adds proper `Up`/`Down` navigation with draft
+  preservation, consecutive-duplicate dedup, a 10,000 entry cap, and
+  atomic write-and-rename persistence.
+- `Cure.REPL.Search` implements `Ctrl+R` / `Ctrl+S` incremental
+  reverse and forward search with an inverse-video status line and
+  accept-and-edit semantics.
+- `Cure.REPL.Completer` offers `Tab` completion for meta-commands,
+  file paths (for `:load`/`:save`/`:edit`), loaded modules (for
+  `:use`/`:doc`), theme / mode / colour argument literals, and Cure
+  keywords.
+- `Cure.REPL.Highlight` pipes input through `Makeup.Lexers.CureLexer`
+  and `Marcli.Formatter` for live ANSI syntax highlighting, cached by
+  buffer hash.
+- `Cure.REPL.Theme` defines `:dark` (default), `:light`, and `:mono`
+  presets; `NO_COLOR`, non-tty output, and `TERM=dumb` automatically
+  drop to `:mono`.
+- New meta-commands: `:history [n]`, `:search term`, `:clear`,
+  `:save path`, `:edit`, `:time expr`, `:bench expr [n]`, `:ast expr`,
+  `:theme dark|light|mono`, `:mode emacs|vi`, `:color on|off`. All
+  existing meta-commands are preserved.
+- `:help` output is rendered via `Marcli.render/2` so the key bindings
+  table arrives as ANSI-styled Markdown.
+- Non-tty stdin (CI, pipes) short-circuits to a legacy `IO.gets` loop
+  so test automation continues to work.
+
+### Added -- Dependencies
+
+- `{:marcli, "~> 0.3"}` -- Markdown-to-ANSI renderer / Makeup ANSI
+  formatter.
+- `{:makeup, "~> 1.2"}` -- explicit dependency so `Makeup.Registry` is
+  available at runtime.
+- `{:makeup_cure, "~> 0.1"}` -- Cure language lexer for Makeup.
+
+### Added -- Documentation
+
+- `docs/REPL.md` -- full key-bindings table, meta-command reference,
+  configuration, environment variables, vi-mode subset.
+
 ## [0.23.0] -- Packaging, Proof, and Polish
 
 v0.23.0 ships the remote package-registry story that has been

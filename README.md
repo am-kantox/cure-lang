@@ -90,6 +90,32 @@ mix cure.compile path/to/file.cure
 mix cure.compile path/to/dir/ --output-dir _build/cure/ebin
 ```
 
+## Interactive REPL
+
+`cure repl` drops you into a readline-grade loop with live Cure
+syntax highlighting (via `makeup_cure` + `marcli`), persistent
+history, and incremental reverse search:
+
+```text
+cure(1)> fn add(a: Int, b: Int) -> Int = a + b
+=> #Function<...>
+cure(2)> :t add(1, 2)
+add(1, 2) : Int
+cure(3)> :bench add(1, 2) 10000
+n=10000  min=1 us  avg=2 us  p95=3 us  max=42 us
+```
+
+Key bindings (emacs mode): `Left`/`Right` cursor, `Up`/`Down` for
+history, `Ctrl+A`/`Ctrl+E` begin/end of line, `Ctrl+W` kill word,
+`Ctrl+K`/`Ctrl+U` kill to end/start, `Ctrl+R` incremental history
+search, `Tab` completion for meta-commands, file paths, loaded
+modules and Cure keywords, `Ctrl+L` clear screen, `Ctrl+C` abort
+line, `Ctrl+D` EOF. A minimal vi mode is available via `:mode vi`.
+Meta-commands include `:t`, `:effects`, `:load`, `:reload`, `:use`,
+`:fmt`, `:holes`, `:env`, `:reset`, `:history`, `:search`, `:save`,
+`:edit`, `:time`, `:bench`, `:ast`, `:theme`, `:mode`, `:color`,
+`:clear`, `:help`, `:quit`. See [`docs/REPL.md`](docs/REPL.md).
+
 From Elixir code:
 
 ```elixir
