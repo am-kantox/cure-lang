@@ -221,14 +221,14 @@ that reports the goal type and the local context at the hole position.
 ### Totality
 
 ```cure
-#[total]
+@total true
 fn factorial(n: Int) -> Int
   | 0 -> 1
   | n -> n * factorial(n - 1)
 ```
 
 `Cure.Types.Totality` classifies every function as `:total`,
-`:partial`, or `:unknown`. Add `#[total]` to upgrade the
+`:partial`, or `:unknown`. Add `@total true` to upgrade the
 classification to a compile-time error.
 
 ## Records

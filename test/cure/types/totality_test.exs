@@ -55,8 +55,13 @@ defmodule Cure.Types.TotalityTest do
   end
 
   describe "total_required?/1" do
-    test "detects #[total] decorator" do
-      meta = [decorators: [{:decorator, [name: "total"], []}]]
+    test "detects @total true decorator" do
+      meta = [decorator: {:total, [{:literal, [subtype: :boolean], true}]}]
+      assert Totality.total_required?(meta)
+    end
+
+    test "detects @total decorator without explicit value" do
+      meta = [decorator: {:total, []}]
       assert Totality.total_required?(meta)
     end
 
@@ -65,7 +70,7 @@ defmodule Cure.Types.TotalityTest do
     end
 
     test "other decorators do not match" do
-      meta = [decorators: [{:decorator, [name: "deprecated"], []}]]
+      meta = [decorator: {:deprecated, []}]
       refute Totality.total_required?(meta)
     end
   end

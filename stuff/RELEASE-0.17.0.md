@@ -36,7 +36,7 @@ day-to-day. Three themes were delivered together.
   type and the local context.
 - **Totality / termination** (`Cure.Types.Totality`) -- coverage +
   structural-recursion analysis. Classifies functions as `:total`,
-  `:partial`, or `:unknown`. The `#[total]` decorator upgrades the
+  `:partial`, or `:unknown`. The `@total true` decorator upgrades the
   classification to a hard requirement.
 - **Refinement upgrades** (`Cure.Types.PathRefinement`, `Std.Refine`)
   -- path-sensitive refinement extracted from `if`/`match` guards;

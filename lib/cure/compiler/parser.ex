@@ -2988,13 +2988,18 @@ defmodule Cure.Compiler.Parser do
     state = advance(state)
     dec_name = to_string(name_token.value)
 
-    # Check if it's a call: @name(args)
+    # Check if it's a call: @name(args) or @name value (bare boolean)
     {args, state} =
       case peek(state) do
         %Token{type: :lparen} ->
           state = advance(state)
           {a, state} = parse_call_args(state)
           {a, state}
+
+        %Token{type: :bool, value: bval} ->
+          state = advance(state)
+          arg = {:literal, [subtype: :boolean], bval}
+          {[arg], state}
 
         _ ->
           {[], state}

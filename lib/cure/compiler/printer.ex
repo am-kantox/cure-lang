@@ -636,10 +636,16 @@ defmodule Cure.Compiler.Printer do
 
   defp maybe_prepend_decorator(result, _extern, {dec_name, args}, depth, indent) do
     args_str =
-      if args != [] do
-        "(#{args_to_string(args, depth, indent)})"
-      else
-        ""
+      case args do
+        [{:literal, [subtype: :boolean], bval}] ->
+          # Single boolean arg: emit as @name true / @name false (no parens)
+          " #{bval}"
+
+        [] ->
+          ""
+
+        _ ->
+          "(#{args_to_string(args, depth, indent)})"
       end
 
     "@#{dec_name}#{args_str}\n#{result}"

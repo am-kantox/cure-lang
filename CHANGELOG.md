@@ -599,7 +599,7 @@ recursion totality, and multi-head cons patterns.
 ### Added -- Totality
 - `Cure.Types.Totality.check_mutual/1` -- Tarjan SCC over a module's
   call graph. Non-trivial cycles are reported as `:ok` (structural
-  decrease proved) or `:suspect` (`E029` for `#[total]` callers).
+  decrease proved) or `:suspect` (`E029` for `@total true` callers).
 
 ### Added -- Packaging
 - `Cure.Project.Version` -- SemVer + constraint parser (`~>`, `>=`,
@@ -768,7 +768,7 @@ UX, and ecosystem groundwork.
 - `Cure.Types.Holes` -- `?name` and `??` placeholders with goal-type
   and local-context reporting via the `:hole_goal` event.
 - `Cure.Types.Totality` -- coverage + structural-recursion analysis;
-  `:total | :partial | :unknown` classification; `#[total]` decorator.
+  `:total | :partial | :unknown` classification; `@total true` decorator.
 - `Cure.Types.PathRefinement` -- path-sensitive refinement flow along
   `if`/`match` guards.
 - `Std.Equal` -- equality combinators (`refl`, `sym`, `trans`, `cong`).

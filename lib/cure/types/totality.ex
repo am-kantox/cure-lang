@@ -6,7 +6,7 @@ defmodule Cure.Types.Totality do
   pattern matching is exhaustive. Total functions are safe to use in
   type-level computation. Partial functions are still allowed (Cure
   is a programming language first), but the user can opt into
-  totality enforcement on a per-function basis with the `#[total]`
+  totality enforcement on a per-function basis with the `@total true`
   decorator.
 
   ## What we check (v0.17.0)
@@ -30,7 +30,7 @@ defmodule Cure.Types.Totality do
   total only when at least one function in the cycle can shrink a
   structural argument on every path through the cycle. The check is
   intentionally conservative: it emits a warning (code `E029`) rather
-  than blocking compilation, and a `#[total]` function caught in a
+  than blocking compilation, and an `@total true` function caught in a
   non-decreasing cycle is reported as a type error upstream.
 
   Functions failing the structural check are classified as
@@ -126,21 +126,13 @@ defmodule Cure.Types.Totality do
   end
 
   @doc """
-  Inspect a function's decorators for `#[total]`.
+  Inspect a function's decorators for `@total true`.
   """
   @spec total_required?(keyword()) :: boolean()
   def total_required?(meta) do
-    case Keyword.get(meta, :decorators, []) do
-      decs when is_list(decs) ->
-        Enum.any?(decs, fn
-          {:decorator, dmeta, _} -> Keyword.get(dmeta, :name) == "total"
-          {:total} -> true
-          :total -> true
-          _ -> false
-        end)
-
-      _ ->
-        false
+    case Keyword.get(meta, :decorator) do
+      {:total, _} -> true
+      _ -> false
     end
   end
 

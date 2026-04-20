@@ -271,7 +271,7 @@ ecosystem groundwork.
 - **`Cure.Types.Holes`** -- `?name` and `??` placeholders with goal-type
   and local-context reporting via `:hole_goal`.
 - **`Cure.Types.Totality`** -- coverage + structural-recursion analysis;
-  `:total | :partial | :unknown` classification; `#[total]` decorator.
+  `:total | :partial | :unknown` classification; `@total true` decorator.
 - **`Cure.Types.PathRefinement`** -- path-sensitive refinement flow along
   `if` / `match` guards.
 - `Std.Equal` -- `refl`, `sym`, `trans`, `cong`.

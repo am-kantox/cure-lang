@@ -3,7 +3,7 @@ mod TotalityEnforcement
   Stress-test for the totality classifier (v0.17.0).
 
   The checker classifies every function as :total, :partial, or
-  :unknown. v0.17.0 reports the classification; `#[total]` will
+  :unknown. v0.17.0 reports the classification; `@total true` will
   elevate it to a compile-time error in a future release.
   ###
 

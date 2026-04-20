@@ -456,7 +456,7 @@ the constraint that failed.
 **E012: Sigma Destructuring Failure** -- pattern attempted to destructure a
 sigma value against shapes that disagree with its declared components.
 
-**E013: Totality Failure** -- a `#[total]`-annotated function is not provably
+**E013: Totality Failure** -- an `@total true`-annotated function is not provably
 total.
 
 **E014: Unfilled Hole** -- a `?name` or `??` placeholder remained unfilled.
@@ -509,7 +509,7 @@ not elaborate to an `Eq(...)` or refinement proof.
 **E028: Record Default Type Mismatch** -- a record field's default value
 does not match the declared field type.
 
-**E029: Mutual Recursion Not Structural** -- a `#[total]` function takes
+**E029: Mutual Recursion Not Structural** -- an `@total true` function takes
 part in a cycle in which no argument shrinks on every path.
 
 **E030: Package Version Conflict** -- the dependency resolver could not find

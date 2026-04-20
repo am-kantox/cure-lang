@@ -155,7 +155,7 @@ See `DEPENDENT_TYPES.md` for the full guide. Brief summary:
 - **Holes** -- `?name` and `??` placeholders. The checker emits a
   `:hole_goal` event with the goal type and local context.
 - **Totality** -- `Cure.Types.Totality.classify/1` returns `:total`,
-  `:partial`, or `:unknown`. The `#[total]` decorator upgrades the
+  `:partial`, or `:unknown`. The `@total true` decorator upgrades the
   classification to a hard requirement.
 - **Type-level reduction** -- `Cure.Types.Reduce.normalize/2` folds
   arithmetic, boolean, and projection operations on closed type-level

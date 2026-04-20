@@ -117,7 +117,7 @@ or `:unknown`:
   argument (`n - 1` of a pattern variable `n`, the tail of a list
   pattern, etc.).
 The default behaviour is to *report* the classification, not reject
-the program. Add `#[total]` above a function to upgrade the report to
+the program. Add `@total true` above a function to upgrade the report to
 a compile-time error if the function is not total.
 v0.17.0 only handles direct recursion. Mutual recursion is deferred to
 v0.18.0.
@@ -140,7 +140,7 @@ The full dependent-typing toolbox:
 | Hide boilerplate type/value parameters | `{T}` implicit + `Unify` |
 | Get type-level integer arithmetic for free | `Reduce` |
 | Sketch a function and ask the checker for help | `?name`, `??`, `:hole_goal` |
-| Confirm a function never gets stuck | `Totality` + `#[total]` |
+| Confirm a function never gets stuck | `Totality` + `@total true` |
 | Constrain values at the type level | refinement types + `Std.Refine` |
 The fingertip rule: **reach for refinements first, Sigma when shape
 matters, Pi when the return type computes from the args, Eq when you

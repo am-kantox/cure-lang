@@ -9,7 +9,7 @@ mod TotalityDemo
   #
   # Functions are *not* rejected for being partial. The classification
   # is informational by default and surfaces in hover/check output.
-  # Add a `#[total]` decorator to opt into a hard error on regressions.
+  # Add an `@total true` decorator to opt into a hard error on regressions.
 
   ## Total: structural recursion on a decreasing argument.
   fn factorial(n: Int) -> Int

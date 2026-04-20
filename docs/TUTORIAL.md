@@ -128,9 +128,9 @@ hole:
 fn safe_head(xs: List(T)) -> T = ?body
 ```
 Compile, and Cure tells you the goal type and the local context.
-Add `#[total]` above a function to require totality:
+Add `@total true` above a function to require totality:
 ```cure
-#[total]
+@total true
 fn factorial(n: Int) -> Int
   | 0 -> 1
   | n -> n * factorial(n - 1)

@@ -284,12 +284,12 @@ defmodule Cure.Compiler.Errors do
     "E013" => """
     E013: Totality Failure
 
-    A function annotated `#[total]` is not provably total. Either
+    A function annotated `@total true` is not provably total. Either
     coverage is incomplete or a recursive call doesn't shrink any
     structural argument.
 
     Fix: add the missing patterns, restructure the recursion to use
-    a smaller sub-term, or remove `#[total]` if partiality is OK.
+    a smaller sub-term, or remove `@total true` if partiality is OK.
     """,
     "E014" => """
     E014: Unfilled Hole
@@ -474,20 +474,20 @@ defmodule Cure.Compiler.Errors do
     "E029" => """
     E029: Mutual Recursion Not Structural
 
-    Two or more functions annotated with `#[total]` call each other
+    Two or more functions annotated with `@total true` call each other
     in a cycle in which no argument shrinks structurally on every
     path through the cycle. The compiler cannot prove termination.
 
     Example:
-      #[total]
+      @total true
       fn a(x: Nat) -> Nat = b(x)
 
-      #[total]
+      @total true
       fn b(x: Nat) -> Nat = a(x)
       # Error: neither clause decreases
 
     Fix: restructure the cycle so some structural argument shrinks
-    on every path, or drop `#[total]` if partiality is acceptable.
+    on every path, or drop `@total true` if partiality is acceptable.
     """,
     "E030" => """
     E030: Package Version Conflict

@@ -200,7 +200,7 @@ Starting with v0.17.0 Cure ships a compact dependent-type core. Types can depend
 - **Propositional equality** `Eq(T, a, b)` with constructor `refl` and eliminator `rewrite`.
 - **Implicit arguments** solved by first-order unification with occurs check.
 - **Holes** `?name` / `??` reporting goal type and local context.
-- **Totality** classification (`:total | :partial | :unknown`) with the optional `#[total]` decorator.
+- **Totality** classification (`:total | :partial | :unknown`) with the optional `@total true` decorator.
 - **Path-sensitive refinement** flowing through `if` and `match` guards.
 
 ### Sigma types (dependent pairs)
@@ -272,10 +272,10 @@ Anonymous `??` holes are numbered `?_1`, `?_2`, ... in source order. Every hole 
 
 ### Totality
 
-A function is **total** when it terminates on every input and its pattern matching is exhaustive. `Cure.Types.Totality` classifies every function as `:total`, `:partial`, or `:unknown`, combining coverage (via `Cure.Types.PatternChecker`) with a structural-recursion check. The default is report-only. Decorating with `#[total]` upgrades the classification to a hard requirement:
+A function is **total** when it terminates on every input and its pattern matching is exhaustive. `Cure.Types.Totality` classifies every function as `:total`, `:partial`, or `:unknown`, combining coverage (via `Cure.Types.PatternChecker`) with a structural-recursion check. The default is report-only. Decorating with `@total true` upgrades the classification to a hard requirement:
 
 ```cure
-#[total]
+@total true
 fn factorial(n: Nat) -> Nat
   | 0 -> 1
   | n -> n * factorial(n - 1)
