@@ -72,6 +72,13 @@ defmodule CureSiteWeb.Layouts do
           >
             FSMs
           </a>
+          <a
+            href={~p"/actors"}
+            class={nav_class(@current_path, ~p"/actors")}
+            title="Typed supervision trees, the Melquiades Operator, actor and sup containers (v0.25.0)"
+          >
+            Actors
+          </a>
           <a href={~p"/protocols"} class={nav_class(@current_path, ~p"/protocols")}>Protocols</a>
           <a href={~p"/standard-library"} class={nav_class(@current_path, ~p"/standard-library")}>
             Stdlib
@@ -113,6 +120,9 @@ defmodule CureSiteWeb.Layouts do
           class={mobile_nav_class(@current_path, ~p"/finite-state-machines")}
         >
           Finite State Machines
+        </a>
+        <a href={~p"/actors"} class={mobile_nav_class(@current_path, ~p"/actors")}>
+          Actors
         </a>
         <a href={~p"/protocols"} class={mobile_nav_class(@current_path, ~p"/protocols")}>
           Protocols

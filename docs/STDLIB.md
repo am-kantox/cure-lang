@@ -159,3 +159,56 @@ Predicates:
 
 - `positive?(n)`, `non_negative?(n)`, `percentage?(p)`,
   `probability?(p)`.
+
+## Std.Actor (8 functions, v0.25.0)
+
+Runtime-facing surface for typed actor modules compiled from `actor`
+containers. Every function delegates to `Cure.Actor.Builtins`, which in
+turn calls `Cure.Actor.Runtime`.
+
+- `spawn(actor_module)` -- start an actor; the spawning process is
+  recorded as its `:caller`.
+- `spawn_with_payload(actor_module, payload)` -- start with an explicit
+  initial payload.
+- `spawn_named(actor_module, name)` -- spawn and register under a
+  string name for later lookup.
+- `stop(pid)` -- stop a running actor.
+- `send(pid, message)` -- cast semantics; counterpart of `pid <-| msg`.
+- `get_state(pid)` -- return the actor's current user-visible payload.
+- `is_alive(pid)` -- whether the actor process is alive.
+- `lookup(name)` -- look up a named actor, returning its pid.
+
+## Std.Process (9 functions, v0.25.0)
+
+Raw BEAM process primitives. Most entries map directly to `:erlang`
+BIFs via `@extern`; `monitor/1` and `trap_exit/1` route through thin
+wrappers in `Cure.Process.Builtins` so the Cure signatures can stay
+idiomatic.
+
+- `link(pid)`, `unlink(pid)` -- toggle bidirectional process linking.
+- `monitor(pid) -> Ref` -- install a process monitor; the caller will
+  later receive `{:DOWN, ref, :process, pid, reason}` on termination.
+- `demonitor(ref)` -- remove a previously installed monitor.
+- `trap_exit(flag) -> Bool` -- toggle `trap_exit` on the caller,
+  returning the previous value.
+- `exit(pid, reason)` -- send an exit signal.
+- `self()` -- return the caller's own pid.
+- `is_alive(pid)` -- whether the pid is alive on this node.
+
+## Std.Supervisor (7 functions, v0.25.0)
+
+Start, stop, and introspect Cure supervisor trees compiled from `sup`
+containers. Each `sup Name` container compiles to a loaded BEAM module
+at `Cure.Sup.<Name>`; these functions delegate to `Cure.Sup.Builtins`,
+which wraps `Cure.Sup.Runtime`.
+
+- `start(sup_module)` -- start a supervisor tree and return its pid.
+- `start_with(sup_module, init)` -- start with an explicit initial
+  argument threaded into the tree's `init/1`.
+- `stop(sup_module)` -- stop a running tree.
+- `which_children(sup_module)` -- return the supervisor's direct
+  children as `%[id, child_pid, type, modules]` tuples.
+- `count_children(sup_module)` -- return a map of `%{type => count}`.
+- `lookup(sup_module)` -- return the pid of a running tree or `nil`.
+- `list()` -- return the list of currently-running supervisor module
+  atoms.

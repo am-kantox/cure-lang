@@ -1,7 +1,7 @@
 %{
   title: "Tooling",
   description: "CLI, Language Server, MCP server, optimizer, profiler, and pipeline events.",
-  order: 7
+  order: 8
 }
 ---
 

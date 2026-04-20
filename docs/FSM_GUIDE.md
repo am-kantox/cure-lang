@@ -1,5 +1,14 @@
 # FSM Programming Guide
 
+FSMs are Cure's first-class shape for *state machines*. When you need a
+long-lived process whose behaviour is a flat message handler rather than
+a state transition graph, reach for [typed actors and supervision
+trees](SUPERVISION.md) instead: `actor` containers compile to loaded
+`GenServer` modules, `sup` containers compile to `Supervisor` behaviour
+modules, and the Melquiades Operator `<-|` sends messages to either.
+FSMs remain the right tool when the state machine itself is the
+primary abstraction.
+
 ## Defining FSMs
 
 FSMs are first-class language constructs in Cure:

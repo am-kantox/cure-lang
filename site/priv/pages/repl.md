@@ -1,7 +1,7 @@
 %{
   title: "REPL",
   description: "The interactive Cure REPL: raw-mode line editor, live syntax highlighting, persistent history, incremental reverse search, Tab completion, and meta-commands.",
-  order: 10
+  order: 11
 }
 ---
 `cure repl` drops you into a readline-grade read-eval-print loop

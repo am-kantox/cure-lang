@@ -108,7 +108,7 @@ Or via the Mix task:
 mix cure.compile_stdlib
 ```
 
-This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 27 modules (~290 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, the dependent-type helpers `Std.Equal` and `Std.Refine`, the v0.18.0 destructuring helpers in `Std.Match`, the v0.19.0 additions `Std.Proof`, `Std.Gen`, and `Std.Iter`, the v0.21.0 `Std.Access` lens kit, and the v0.23.0 additions `Std.Json` (runtime companion to `@derive(JSON)`) and `Std.Http` (thin `:httpc` wrapper returning `Result(Response, HttpError)`).
+This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 30 modules (~320 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, the dependent-type helpers `Std.Equal` and `Std.Refine`, the v0.18.0 destructuring helpers in `Std.Match`, the v0.19.0 additions `Std.Proof`, `Std.Gen`, and `Std.Iter`, the v0.21.0 `Std.Access` lens kit, the v0.23.0 additions `Std.Json` (runtime companion to `@derive(JSON)`) and `Std.Http` (thin `:httpc` wrapper returning `Result(Response, HttpError)`), and the v0.25.0 supervision trio `Std.Actor`, `Std.Process`, and `Std.Supervisor`.
 
 ## Other CLI commands
 
@@ -218,4 +218,5 @@ module.my_function(args)
 - [Type System](/type-system) -- bidirectional checking, refinement types, SMT verification
 - [Dependent Types](/type-system#dependent-types) -- Sigma, Pi, equality, implicit arguments, holes, totality
 - [Finite State Machines](/finite-state-machines) -- first-class FSMs with compile-time verification
-- [REPL](/repl) -- the v0.24.0 raw-mode REPL: key bindings, meta-commands, themes, history, reverse search
+- [Actors](/actors) -- typed supervision trees, the Melquiades Operator, `actor` and `sup` containers (v0.25.0)
+- [REPL](/repl) -- the raw-mode REPL (v0.24.0): key bindings, meta-commands, themes, history, reverse search

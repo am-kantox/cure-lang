@@ -1,7 +1,7 @@
 %{
   title: "Roadmap",
   description: "What's implemented, what's next, and what's planned for the future.",
-  order: 8
+  order: 9
 }
 ---
 
@@ -947,6 +947,96 @@ as ANSI-styled Markdown.
   website alongside the existing
   [docs/REPL.md](https://github.com/am-kantox/cure-lang/blob/main/docs/REPL.md)
   on-disk contract.
+## Implemented: v0.25.0 -- Typed Supervision Trees
+v0.25.0 turns the language into a first-class environment for
+writing OTP-style supervision trees on top of the BEAM. Four pieces
+land together: the Melquiades Operator `<-|` for typed sends, an
+`actor` container that compiles to a loaded `GenServer` module, a
+`sup` container that compiles to a verified `Supervisor` behaviour
+module, and a new stdlib surface exposing the runtime from Cure
+source. See the dedicated [Actors reference](/actors) for the full
+tour.
+### Melquiades Operator
+- `pid <-| message` (ASCII) and `pid ✉ message` (unicode U+2709)
+  are interchangeable spellings of a typed send. Both lower to
+  Erlang's `!` operator in abstract form, return the sent message,
+  and never raise for a dead receiver.
+- Non-associative; binds one notch below `|>` so pipelines feed into
+  sends without extra parentheses.
+- `send target, msg` remains as a synonymous statement form for
+  backward compatibility with `Std.Fsm` clients.
+- Printer preserves the author's spelling through a
+  `:melquiades_form` meta key; round-trips `<-|`, `✉`, and the
+  keyword form faithfully.
+### Typed primitives
+- **`Pid(Inbox)`** -- a typed pid. Bare `Pid` elaborates to
+  `{:pid, :any}`, the top of the covariant family, so existing FFI
+  code remains assignable from narrower typed pids without friction.
+- **`Ref`** -- new primitive type for monitor references.
+- `Cure.Types.Checker.do_infer/2` grows a dedicated clause for
+  `{:send, ...}` that unifies the message type against the receiver's
+  inbox and emits `E046 Inbox Mismatch` on conflict.
+- `Cure.Types.Effects` attracts `:state` for every send.
+### Actors (`actor` container)
+- `actor Name with <init>` declares a typed process. Lifecycle hooks
+  `on_start`, `on_message`, `on_stop` reuse the FSM callback-clause
+  machinery (pattern tuple, optional `when` guard, body).
+- `Cure.Actor.Compiler` emits a loaded `GenServer` module via
+  `Code.compile_string/2`; the codegen dispatcher returns
+  `{:ok, {:actor, module()}}`.
+- `Cure.Actor.Runtime` tracks spawned actors in an ETS registry,
+  monitors each pid, and cleans up on `DOWN`. Supervised by
+  `Cure.Supervisor` alongside `Cure.FSM.Runtime`.
+- `Cure.Actor.State` struct carries `caller`, `meta`, `payload`;
+  `notify/1` inside any clause body resolves the registered caller
+  via the process dictionary.
+- `Cure.Actor.Builtins` bridges `Std.Actor` to the runtime.
+### Supervisors (`sup` container)
+- `sup Name` declares a supervisor module with inline
+  `strategy`, `intensity`, `period` settings plus a `children` block
+  whose entries are `Module as id (restart: ..., shutdown: ...)`.
+- Child module resolution: dotted paths are used verbatim; bare names
+  resolve to `Cure.Actor.<Name>` (worker default) or
+  `Cure.Sup.<Name>` (when prefixed with `sup <Name> as id`).
+- `Cure.Sup.Verifier` rejects invalid strategies, non-positive
+  periods, duplicate child ids, unknown restart / shutdown values,
+  and trivial self-reference cycles. Emits `:sup_verifier` pipeline
+  events.
+- `Cure.Sup.Compiler` emits a `Supervisor`-behaviour module via
+  `Code.compile_string/2`; the codegen dispatcher returns
+  `{:ok, {:supervisor, module()}}`.
+- `Cure.Sup.Runtime` wraps the compiled module with a lazy ETS
+  registry (`start/1,2`, `stop/1`, `lookup/1`, `which_children/1`,
+  `count_children/1`, `list/0`).
+- `sup` is a *contextual* keyword -- it stays an identifier at the
+  lexer level so programs using `sup` as a field or local variable
+  keep compiling; the parser only dispatches `sup <Name>` to
+  `parse_supervisor/1` at statement-prefix position when followed by
+  an identifier.
+### Stdlib additions
+- **`Std.Actor`** -- `spawn/1`, `spawn_with_payload/2`,
+  `spawn_named/2`, `stop/1`, `send/2`, `get_state/1`, `is_alive/1`,
+  `lookup/1`.
+- **`Std.Process`** -- `link/1`, `unlink/1`, `monitor/1`,
+  `demonitor/1`, `trap_exit/1`, `exit/2`, `self/0`, `is_alive/1`.
+  Most entries are direct `:erlang` BIF calls; `monitor/1` and
+  `trap_exit/1` go through thin wrappers in `Cure.Process.Builtins`
+  so the Cure signatures read idiomatically.
+- **`Std.Supervisor`** -- `start/1`, `start_with/2`, `stop/1`,
+  `which_children/1`, `count_children/1`, `lookup/1`, `list/0`.
+### Error catalog
+Six new codes `E045` -- `E050`: Untyped Send, Inbox Mismatch,
+Supervisor Unknown Child, Supervisor Cycle, Actor Handler
+Non-Exhaustive, Invalid Supervisor Strategy. Run `cure explain <code>`
+for the full text.
+### Example
+- `examples/cure_colony/` -- a worker actor, an echo actor, and a
+  `sup Colony` supervisor wiring them under `:one_for_one`. Exercises
+  `actor`, `sup`, and the Melquiades Operator end to end.
+### Numbers
+- 1310 tests pass (up from 1295; 3 doctests + 1307 tests);
+  `mix credo --strict`: 0 issues across 200 source files;
+  `mix cure.check.stdlib`: 30/30 (three new stdlib modules).
 ## Future
 These are not scheduled but are on the long-term radar.
 **Monomorphisation.** Specialise polymorphic functions whose call

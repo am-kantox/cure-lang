@@ -15,13 +15,15 @@
     </p>
     <p class="mt-2 text-sm text-base-content/50">
       Current release: <span class="font-mono">v{CureSite.cure_version()}</span>
-      -- <em>The REPL You Deserve</em>. A full rewrite of <code>cure repl</code>
-      on top of a raw-mode line editor with live <code>Makeup</code>-powered syntax highlighting, persistent
-      history, <code>Ctrl+R</code>
-      incremental reverse search, Tab
-      completion, a minimal vi mode, and a <code>Marcli</code>-rendered <code>:help</code>. See the new
-      <a href={~p"/repl"} class="underline">REPL reference</a>
-      for the full key-bindings table and meta-command list.
+      -- <em>Typed Supervision Trees</em>. The Melquiades Operator <code>&lt;-|</code>
+      (unicode alias <code>&#9993;</code>) for typed sends,
+      an <code>actor</code>
+      container that compiles to a loaded <code>GenServer</code>
+      module, a <code>sup</code>
+      container that compiles to a verified <code>Supervisor</code>
+      behaviour module with compile-time structural checks, and a new stdlib surface (<code>Std.Actor</code>, <code>Std.Process</code>, <code>Std.Supervisor</code>) exposing the runtime from Cure source. See the new
+      <a href={~p"/actors"} class="underline">Actors reference</a>
+      for the tour.
     </p>
   </div>
   <%!-- Quick example --%>
@@ -64,6 +66,16 @@
       modules
       with compile-time verification of reachability and deadlock freedom.
     </p>
+    <p>
+      v0.25.0 extends the process-oriented surface with typed
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">actor</code>
+      containers that compile to loaded
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">GenServer</code>
+      modules and <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">sup</code>
+      containers that compile to verified
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">Supervisor</code>
+      behaviour modules, wired together by the Melquiades Operator <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">&lt;-|</code>.
+    </p>
   </div>
 
   <%!-- Navigation cards --%>
@@ -105,11 +117,23 @@
       </p>
     </a>
     <a
+      href={~p"/actors"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Actors</h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        Typed supervision trees with the Melquiades Operator <code>&lt;-|</code>,
+        <code>actor</code>
+        and <code>sup</code>
+        containers, and stdlib wrappers for links, monitors, and trap_exit.
+      </p>
+    </a>
+    <a
       href={~p"/standard-library"}
       class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
     >
       <h3 class="font-semibold text-primary group-hover:text-accent">Standard Library</h3>
-      <p class="mt-1 text-sm text-base-content/60">27 self-hosted modules, ~290 functions.</p>
+      <p class="mt-1 text-sm text-base-content/60">30 self-hosted modules, ~320 functions.</p>
     </a>
     <a
       href={~p"/match"}
@@ -127,7 +151,7 @@
     >
       <h3 class="font-semibold text-primary group-hover:text-accent">REPL</h3>
       <p class="mt-1 text-sm text-base-content/60">
-        The v0.24.0 raw-mode REPL: live syntax highlighting, persistent
+        The raw-mode REPL (v0.24.0): live syntax highlighting, persistent
         history, reverse search, Tab completion, and a minimal vi mode.
       </p>
     </a>

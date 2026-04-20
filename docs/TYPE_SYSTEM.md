@@ -30,6 +30,12 @@ Functions are checked in two passes:
 - `Atom` -- Erlang atoms (`:ok`, `:error`)
 - `Char` -- single Unicode character
 - `Unit` -- no meaningful value (`nil`)
+- `Pid` -- BEAM process identifier; bare `Pid` elaborates to
+  `{:pid, :any}` (v0.25.0)
+- `Pid(Inbox)` -- typed pid where `Inbox` is the ADT the receiving
+  process accepts (v0.25.0)
+- `Ref` -- monitor reference returned by `Std.Process.monitor/1`
+  (v0.25.0)
 
 ## Subtyping
 
@@ -39,6 +45,10 @@ Functions are checked in two passes:
 - `{x: Int | P(x)} <: Int` (refinement drops constraint)
 - `List(A) <: List(B)` if `A <: B` (covariant)
 - `(A -> B) <: (C -> D)` if `C <: A` and `B <: D` (contravariant params)
+- `Pid(A) <: Pid(B)` if `A <: B` (covariant in the inbox, v0.25.0).
+  In particular, any `Pid(Inbox)` is a subtype of the top `Pid` alias
+  (elaborated as `Pid(:any)`), so untyped APIs remain assignable from
+  narrower typed pids without friction.
 
 ## Refinement Types
 
@@ -138,6 +148,23 @@ Protocols provide ad-hoc polymorphism. The type checker:
 1. Registers protocol method signatures during the first pass
 2. Validates implementation method signatures match the protocol
 3. Checks implementation bodies against declared types
+
+## Typed Sends (v0.25.0)
+
+`Cure.Types.Checker.do_infer/2` grows a dedicated clause for
+`{:send, meta, [target, message]}` nodes emitted by the Melquiades
+Operator `<-|` (and the keyword form `send target, msg`):
+
+1. Infer the target's type. If it is `{:pid, inbox}`, unify the
+   message type against `inbox`.
+2. Emit `E046 Inbox Mismatch` with a concrete diagnostic when the
+   unification fails.
+3. Return the message's type as the expression's type, so
+   `let reply = pid <-| msg` binds `reply` to the value that was sent.
+
+Bare `Pid` elaborates to `{:pid, :any}`; sends against it never fail
+type-checking but attract `E045 Untyped Send` under strict mode.
+Effect inference attracts the `:state` effect for every send.
 
 ## Sigma, Pi, equality, holes, totality (v0.17.0)
 

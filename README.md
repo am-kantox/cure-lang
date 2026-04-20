@@ -14,6 +14,16 @@ and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
 FSM compilation with structural verification, effect system, documentation
 generator, formatter, stdlib, CLI, CI, and example programs.
 
+v0.25.0 lands typed supervision trees on top of OTP. The release
+introduces the Melquiades Operator `<-|` (unicode alias `✉`) for typed
+sends, an `actor` container that compiles to a loaded `GenServer`
+module, a `sup` container that compiles to a verified `Supervisor`
+behaviour module, and a new stdlib surface (`Std.Actor`,
+`Std.Process`, `Std.Supervisor`) that exposes the runtime from Cure
+source. See [`docs/SUPERVISION.md`](docs/SUPERVISION.md) for the
+on-disk reference and [cure-lang.org/actors](https://cure-lang.org/actors)
+for the web version.
+
 v0.24.0 rewrites the interactive REPL on top of a raw-mode line editor
 with live `Makeup`-powered syntax highlighting, persistent history,
 `Ctrl+R` incremental reverse search, Tab completion, a minimal vi mode,
@@ -60,6 +70,16 @@ Metastatic's cross-language analysis tools.
   dual-mode compilation (simple `gen_statem` or callback `GenServer`),
   Finitomata-inspired `!`/`?` event suffixes, inline `on_transition` handlers,
   and lifecycle callbacks (`on_enter`, `on_exit`, `on_failure`, `on_timer`)
+- **Typed actors and supervisors** (v0.25.0) -- `actor Name` containers
+  compile to loaded `GenServer` modules; `sup Name` containers compile
+  to verified `Supervisor` behaviour modules with compile-time checks on
+  strategy / intensity / period / child-id uniqueness / restart /
+  shutdown. `Std.Actor`, `Std.Process`, and `Std.Supervisor` expose the
+  runtime from Cure source
+- **Melquiades Operator** (v0.25.0) -- `pid <-| message` (unicode alias
+  `pid ✉ message`) is a typed send operator that lowers to Erlang's
+  `!`; the type checker unifies the message type against the receiver's
+  inbox ADT
 - **Indentation-structured** -- no closing delimiters, visual layout determines scope
 - **Expression-oriented** -- everything is an expression, the last expression in a block is its value
 - **BEAM-native** -- compiles to standard BEAM bytecode, full OTP interoperability
@@ -176,6 +196,22 @@ module.my_function(args)
   Supports `!` (hard/auto-fire) and `?` (soft/silent) event suffixes,
   lifecycle callbacks (`on_enter`, `on_exit`, `on_failure`, `on_timer`),
   and introspection (`transitions/0`, `allowed?/2`, `responds?/2`)
+- `Cure.Actor.Compiler` -- compiles `actor` containers into loaded
+  `GenServer` modules via `Code.compile_string/2`; returns
+  `{:ok, {:actor, module()}}`
+- `Cure.Actor.Runtime` -- ETS-backed actor registry supervised by
+  `Cure.Supervisor`; spawn / stop / lookup / list / monitor-driven
+  cleanup. `Cure.Actor.State` is the shared runtime struct carrying
+  `caller` / `meta` / `payload`
+- `Cure.Sup.Verifier` -- structural supervisor verification (strategy,
+  intensity, period, child-id uniqueness, restart / shutdown, self-
+  reference cycles); emits `:sup_verifier` events
+- `Cure.Sup.Compiler` -- compiles `sup` containers into loaded
+  `Supervisor`-behaviour modules; returns `{:ok, {:supervisor, module()}}`
+- `Cure.Sup.Runtime` -- lazy ETS-backed registry for running supervisor
+  trees (`start/1,2`, `stop/1`, `lookup/1`, `which_children/1`, `list/0`)
+- `Cure.Process.Builtins` / `Cure.Sup.Builtins` -- FFI bridges wiring
+  `Std.Process` and `Std.Supervisor` to the runtime
 - `Cure.Compiler.Errors` -- structured error formatter with source locations
   for all pipeline stages (lex, parse, type, codegen, FSM verifier)
 - `Cure.Types.Protocol` -- protocol definition and implementation tracking;
@@ -226,6 +262,18 @@ Compile it with `mix cure.compile_stdlib`.
   float_to_string, atom_to_string, print_int, print_float
 - **`Std.System`** (10 functions) -- monotonic_time, system_time, timestamp_ms,
   timestamp_us, self, node, system_info, otp_version, cpu_count, exit
+- **`Std.Actor`** (8 functions, v0.25.0) -- spawn, spawn_with_payload,
+  spawn_named, stop, send, get_state, is_alive, lookup. Cure-facing
+  surface for compiled actor modules; backed by `Cure.Actor.Builtins`
+  and `Cure.Actor.Runtime`
+- **`Std.Process`** (9 functions, v0.25.0) -- link, unlink, monitor,
+  demonitor, trap_exit, exit, self, is_alive. Raw BEAM process
+  primitives; backed by `:erlang` BIFs with thin wrappers in
+  `Cure.Process.Builtins`
+- **`Std.Supervisor`** (7 functions, v0.25.0) -- start, start_with, stop,
+  which_children, count_children, lookup, list. Convenience API over
+  compiled supervisor trees; backed by `Cure.Sup.Builtins` and
+  `Cure.Sup.Runtime`
 
 ## Examples
 
@@ -257,6 +305,11 @@ See the `examples/` directory for sample Cure programs:
   ledger mutations with `Result`-chaining, and a payment transaction FSM
   with hard (`dispatch!`), soft (`retry?`, `cancel?`), wildcard, `on_timer`,
   `on_enter`, and `on_failure` callbacks
+- `cure_colony/` -- v0.25.0 supervision-tree demo: a worker actor,
+  an echo actor, and a `sup Colony` supervisor wiring them under a
+  `:one_for_one` strategy with per-child `restart` and `shutdown`
+  overrides. Exercises `actor`, `sup`, and the Melquiades Operator
+  end to end
 
 Compile and run:
 
@@ -271,7 +324,8 @@ cure check examples/protocols.cure
 - [Language Specification](docs/LANGUAGE_SPEC.md) -- syntax, keywords, operators, all constructs
 - [Type System](docs/TYPE_SYSTEM.md) -- bidirectional checking, refinement types, SMT verification
 - [FSM Guide](docs/FSM_GUIDE.md) -- FSM definition, compilation, runtime, verification
-- [Standard Library](docs/STDLIB.md) -- API reference for all 9 stdlib modules
+- [Supervision](docs/SUPERVISION.md) -- typed actors, `sup` containers, the Melquiades Operator, links and monitors (v0.25.0)
+- [Standard Library](docs/STDLIB.md) -- API reference for the stdlib modules
 
 ## Building
 

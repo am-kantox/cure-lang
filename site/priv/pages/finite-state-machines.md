@@ -8,6 +8,8 @@ FSMs are first-class language constructs in Cure. They are declaratively defined
 
 Cure supports two compilation modes: **simple mode** (compiles to OTP `gen_statem`) and **callback mode** (compiles to a `GenServer` with inline `on_transition` handlers plus a full lifecycle, inspired by [Finitomata](https://hexdocs.pm/finitomata)).
 
+For long-lived processes whose behaviour is a flat message handler rather than a state-transition graph, reach for [typed actors and supervision trees](/actors) instead. FSMs remain the right tool when the state machine itself is the primary abstraction.
+
 ## Defining FSMs
 
 Use `fsm` followed by a name. Each line in the body defines a transition: `SourceState --event--> TargetState`.

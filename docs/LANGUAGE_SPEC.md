@@ -7,10 +7,16 @@ indentation level, not by keywords like `do`/`end` or braces.
 
 ### Keywords
 
-`fn`, `mod`, `rec`, `fsm`, `proto`, `impl`, `type`, `let`, `if`, `then`,
-`else`, `elif`, `match`, `when`, `where`, `local`, `use`, `return`, `throw`,
-`try`, `catch`, `finally`, `for`, `in`, `true`, `false`, `nil`,
-`and`, `or`, `not`
+`fn`, `mod`, `rec`, `fsm`, `actor`, `proto`, `impl`, `type`, `let`, `if`,
+`then`, `else`, `elif`, `match`, `when`, `where`, `local`, `use`, `return`,
+`throw`, `try`, `catch`, `finally`, `for`, `in`, `true`, `false`, `nil`,
+`and`, `or`, `not`, `spawn`, `send`, `receive`, `after`, `proof`, `extern`,
+`end`, `do`
+
+`sup` is a *contextual* soft keyword (v0.25.0): at the lexer level it is
+an ordinary identifier so legacy code that uses it as a field or variable
+name keeps compiling; the parser dispatches `sup <Name>` to the
+supervisor container only at statement-prefix position.
 
 ### Identifiers
 
@@ -38,6 +44,9 @@ events.
 ### Operators (by precedence, low to high)
 
 - `|>` -- pipe (left-assoc)
+- `<-|` / `✉` -- Melquiades send (non-assoc, v0.25.0); binds one notch
+  below `|>` so `x |> encode |> pid <-| _` groups as
+  `pid <-| (x |> encode)`
 - `or` -- boolean or (left-assoc)
 - `and` -- boolean and (left-assoc)
 - `==`, `!=`, `<`, `>`, `<=`, `>=` -- comparison (non-assoc)
@@ -118,7 +127,13 @@ fn abs(x: Int) -> Int
 
 ### Primitive types
 
-`Int`, `Float`, `String`, `Bool`, `Atom`, `Pid`, `Char`
+`Int`, `Float`, `String`, `Bool`, `Atom`, `Char`, `Pid`, `Pid(Inbox)`
+(v0.25.0), `Ref` (v0.25.0).
+
+`Pid` alone elaborates to `{:pid, :any}`, the top of the covariant `Pid`
+family; `Pid(Inbox)` attaches an inbox protocol (an ADT or record
+type) against which the Melquiades Operator type-checks every send.
+`Ref` is the monitor reference returned by `Std.Process.monitor/1`.
 
 ### Composite types
 
@@ -436,6 +451,101 @@ called outside a running FSM process, `notify/1` is a no-op returning
 
 The compiler verifies reachability, deadlock freedom, hard-event
 exclusivity, and terminal-state validity at compile time.
+
+## Actors and Supervisors (v0.25.0)
+
+Typed supervision trees live in two container shapes and a typed send
+operator. See `docs/SUPERVISION.md` for the authoritative reference.
+
+### The Melquiades Operator `<-|` / `✉`
+
+`pid <-| message` sends `message` to `pid` and returns the message. The
+unicode envelope `✉` is an interchangeable alias. Both forms lower to
+Erlang's `!` operator; non-blocking, never raises for a dead receiver.
+The keyword form `send target, msg` is preserved and desugars to the
+same `{:send, ...}` MetaAST node. Binding power is one notch below `|>`,
+non-associative.
+
+```cure
+pid <-| :ping
+pid ✉  :ping
+request
+|> encode()
+|> worker_pid <-| _
+```
+
+### `actor` containers
+
+```cure
+actor Counter with 0
+  on_start
+    (state) -> state
+  on_message
+    (:inc, n)   -> n + 1
+    (:dec, n)   -> n - 1
+    (:get, n) ->
+      notify(%[:value, n])
+      n
+  on_stop
+    (reason, _state) -> notify(%[:stopped, reason])
+```
+
+- `with <expr>` seeds the initial payload.
+- `on_start`, `on_message`, `on_stop` reuse the FSM callback-clause
+  grammar (pattern tuple, optional `when` guard, body).
+- Inside any clause body, `notify(message)` sends to the spawning
+  caller (resolved via the process dictionary).
+- The clause return value is the new payload; returning a full
+  `%Cure.Actor.State{}` struct replaces the whole runtime state.
+- Compiles to a loaded `GenServer` module named `Cure.Actor.<Name>`.
+- Spawned and managed by `Cure.Actor.Runtime` (ETS-backed registry,
+  automatic cleanup on `DOWN`); also reachable from Cure through
+  `Std.Actor`.
+
+### `sup` containers
+
+```cure
+sup App.Root
+  strategy  = :one_for_one
+  intensity = 3
+  period    = 5
+  children
+    Counter       as counter
+    Counter       as counter_b (restart: :transient)
+    App.External  as external  (restart: :permanent, shutdown: 10000)
+    sup Workers   as workers
+```
+
+- `strategy` defaults to `:one_for_one` (also accepts `:one_for_all`,
+  `:rest_for_one`, `:simple_one_for_one`).
+- `intensity` defaults to `3`; `period` defaults to `5`.
+- `children` lists one child spec per line. Each line is
+  `Module as child_id` with an optional parenthesised keyword list of
+  `restart: ...`, `shutdown: ...`.
+- Child module resolution: dotted paths verbatim; bare names resolve
+  to `Cure.Actor.<Name>` (worker default) or `Cure.Sup.<Name>`
+  (with the soft-keyword prefix `sup <Name> as id`).
+- Compile-time verification rejects unknown strategies, invalid
+  `restart`/`shutdown` values, non-positive `period`, duplicate child
+  ids, and trivial self-reference cycles (codes `E047`/`E048`/`E050`).
+- Compiles to a `Supervisor`-behaviour module named `Cure.Sup.<Name>`;
+  managed from Cure via `Std.Supervisor`.
+
+### Links, monitors, trap_exit
+
+`Std.Process` exposes the raw BEAM process primitives (`link/1`,
+`unlink/1`, `monitor/1` returning a `Ref`, `demonitor/1`,
+`trap_exit/1`, `exit/2`, `self/0`, `is_alive/1`). Most calls map
+directly to `:erlang` BIFs; `monitor/1` and `trap_exit/1` route
+through thin wrappers in `Cure.Process.Builtins` so the Cure
+signatures stay idiomatic.
+
+### Typed sends
+
+The type checker has a dedicated clause for `{:send, ...}` that
+unifies the message type against the receiver's declared inbox and
+emits `E046 Inbox Mismatch` on conflict. Bare `Pid` elaborates to
+`{:pid, :any}` so existing FFI code remains compatible.
 
 ## Pattern Matching
 `match` (and `let`) support deep destructuring across every structural
