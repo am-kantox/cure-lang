@@ -31,7 +31,7 @@ defmodule Cure.REPL do
   """
 
   alias Cure.Compiler.Printer
-  alias Cure.REPL.{History, LineEditor, Markdown, Render, Search, Terminal, Theme}
+  alias Cure.REPL.{Docs, History, LineEditor, Markdown, Render, Search, Terminal, Theme}
   alias Cure.Stdlib.Preload
   alias Cure.Types.{Checker, Holes}
 
@@ -68,7 +68,8 @@ defmodule Cure.REPL do
       editor: LineEditor.new(mode: mode),
       theme: theme,
       mode: mode,
-      color: theme.name != :mono
+      color: theme.name != :mono,
+      uses: Docs.default_uses()
     }
 
     cond do
@@ -416,10 +417,25 @@ defmodule Cure.REPL do
   end
 
   defp handle_meta(state, ":env") do
-    if state.uses == [] do
-      render_info(state, "(no imports; no user bindings)")
-    else
-      Enum.each(state.uses, &render_info(state, "  use " <> &1))
+    defaults = MapSet.new(Docs.default_uses())
+    {stdlib, user} = Enum.split_with(state.uses, &MapSet.member?(defaults, &1))
+
+    cond do
+      stdlib == [] and user == [] ->
+        render_info(state, "(no imports)")
+
+      true ->
+        if stdlib != [] do
+          render_info(
+            state,
+            "stdlib imports (#{length(stdlib)}): " <> Enum.join(Enum.sort(stdlib), ", ")
+          )
+        end
+
+        if user != [] do
+          render_info(state, "user imports:")
+          Enum.each(user, &render_info(state, "  use " <> &1))
+        end
     end
 
     state
@@ -427,7 +443,15 @@ defmodule Cure.REPL do
 
   defp handle_meta(state, ":reset") do
     render_info(state, "REPL state reset.")
-    %{state | n: 1, loaded: [], uses: [], holes: [], input_buffer: []}
+
+    %{
+      state
+      | n: 1,
+        loaded: [],
+        uses: Docs.default_uses(),
+        holes: [],
+        input_buffer: []
+    }
   end
 
   defp handle_meta(state, ":holes") do
@@ -512,7 +536,7 @@ defmodule Cure.REPL do
   end
 
   defp cmd_doc(state, name) do
-    render_info(state, "(doc lookup for `#{name}` -- requires a loaded module; not yet implemented)")
+    Docs.render(name, state)
     state
   end
 
@@ -560,9 +584,19 @@ defmodule Cure.REPL do
   end
 
   defp cmd_use(state, mod) do
-    render_info(state, "imported #{mod}")
-    %{state | uses: Enum.uniq([mod | state.uses])}
+    mod = strip_cure_prefix(mod)
+
+    if mod in state.uses do
+      render_info(state, "(already imported: #{mod})")
+      state
+    else
+      render_info(state, "imported #{mod}")
+      %{state | uses: state.uses ++ [mod]}
+    end
   end
+
+  defp strip_cure_prefix("Cure." <> rest), do: rest
+  defp strip_cure_prefix(other), do: other
 
   defp cmd_fmt(state, expr) do
     case Cure.quote(expr) do

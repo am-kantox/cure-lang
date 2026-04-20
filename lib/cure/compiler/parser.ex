@@ -1877,10 +1877,13 @@ defmodule Cure.Compiler.Parser do
     {name, state} = parse_dotted_name(state)
     state = skip_newlines(state)
 
-    # Parse indented body
-    {body_stmts, state} = parse_definition_block(state)
+    # Parse indented body. Leading `##` docs immediately after `mod Name`
+    # describe the *module* itself, not the first definition inside the
+    # body, so pull them back onto the container's `:doc` meta.
+    {body_stmts, leading_doc, state} = parse_definition_block_with_lead_doc(state)
 
     meta = [container_type: :module, name: name, language: :cure, line: token.line, col: token.col]
+    meta = if leading_doc != "", do: Keyword.put(meta, :doc, leading_doc), else: meta
     ast = {:container, meta, body_stmts}
     {ast, state}
   end
@@ -2909,6 +2912,15 @@ defmodule Cure.Compiler.Parser do
   # Now we carry the doc forward to attach to the first definition
   # inside the block (if any).
   defp parse_definition_block(state) do
+    {stmts, leading_doc, state} = parse_definition_block_with_lead_doc(state)
+    {attach_leading_doc(stmts, leading_doc), state}
+  end
+
+  # Variant of `parse_definition_block/1` used by container parsers that
+  # want to interpret the leading `##` block as the container's own doc
+  # (e.g. `mod Name`). Returns the doc separately so the caller can
+  # attach it to the container meta instead of the first body statement.
+  defp parse_definition_block_with_lead_doc(state) do
     {leading_doc, state} = collect_leading_docs(state)
     {leading_comments, state} = collect_leading_line_comments(state)
 
@@ -2918,15 +2930,12 @@ defmodule Cure.Compiler.Parser do
         {stmts, state} = parse_block_body(state)
         state = expect_dedent(state)
 
-        stmts =
-          stmts
-          |> prepend_line_comments(leading_comments)
-          |> attach_leading_doc(leading_doc)
+        stmts = prepend_line_comments(stmts, leading_comments)
 
-        {stmts, state}
+        {stmts, leading_doc, state}
 
       _ ->
-        {[], state}
+        {[], leading_doc, state}
     end
   end
 
