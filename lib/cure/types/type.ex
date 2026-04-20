@@ -356,6 +356,12 @@ defmodule Cure.Types.Type do
   defp resolve_name("Ref"), do: :atom
   defp resolve_name("Nat"), do: :int
   defp resolve_name("Tuple"), do: {:adt, :tuple, []}
+  # Bare `List` (without a type parameter) is the top of the list
+  # lattice, mirroring how `Tuple` collapses to `{:adt, :tuple, []}`.
+  # That way a signature like `fn fmap(container: List, f: A -> B)`
+  # interoperates with `Std.List.map`'s `List(T)` parameter.
+  defp resolve_name("List"), do: {:list, :any}
+  defp resolve_name("Map"), do: {:map, :any, :any}
   # Single-letter uppercase names (T, U, V, E, K, ...) are treated as implicit
   # type parameters. Without explicit `<T>` syntax this is the convention
   # used by the Cure stdlib and user code; resolving them as `{:type_var, T}`

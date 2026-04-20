@@ -94,6 +94,20 @@ defmodule Cure.Types.Unify do
 
   defp do_unify(t, t, subst, trace), do: {:ok, subst, [{t, t, :reflex} | trace]}
 
+  # Refinements are transparent to unification: the predicate narrows a
+  # base type with no structural contribution, so unifying through
+  # `{:refinement, base, ...}` on either side is just unifying `base`.
+  # Strip them eagerly -- before the `{:type_var, _}` clauses -- so a
+  # type variable binds to the cleaner base type rather than carrying
+  # an inapplicable predicate into downstream substitution.
+  defp do_unify({:refinement, base, _, _}, t, subst, trace) do
+    do_unify(base, t, subst, [{:refinement, :lhs, :strip} | trace])
+  end
+
+  defp do_unify(t, {:refinement, base, _, _}, subst, trace) do
+    do_unify(t, base, subst, [{:refinement, :rhs, :strip} | trace])
+  end
+
   defp do_unify({:type_var, name}, t, subst, trace) when is_binary(name) do
     bind(name, t, subst, [{:type_var_l, name, t} | trace])
   end
@@ -140,6 +154,47 @@ defmodule Cure.Types.Unify do
     end)
   end
 
+  defp do_unify({:map, k1, v1}, {:map, k2, v2}, subst, trace) do
+    with {:ok, subst, trace} <- do_unify(k1, k2, subst, [{:map, :key, :recurse} | trace]) do
+      do_unify(v1, v2, subst, [{:map, :value, :recurse} | trace])
+    end
+  end
+
+  # A nominal record/ADT reference and a resolved record/ADT line up when
+  # their lowercased names match; the parameter lists carry no unifiable
+  # information at the named level.
+  defp do_unify({:named, a}, {:named, b}, subst, trace) do
+    if a == b do
+      {:ok, subst, [{:named, a, :match} | trace]}
+    else
+      {:error, "cannot unify named type #{a} with #{b}", trace}
+    end
+  end
+
+  defp do_unify({:named, a}, {:record, key, _fields} = rec, subst, trace) do
+    if String.downcase(a) == Atom.to_string(key) do
+      {:ok, subst, [{:named, a, :record_match} | trace]}
+    else
+      {:error, "cannot unify #{a} with #{display(rec)}", trace}
+    end
+  end
+
+  defp do_unify({:record, _, _} = rec, {:named, _} = named, subst, trace) do
+    do_unify(named, rec, subst, trace)
+  end
+
+  defp do_unify({:named, a}, {:adt, key, _} = adt, subst, trace) do
+    if String.downcase(a) == Atom.to_string(key) do
+      {:ok, subst, [{:named, a, :adt_match} | trace]}
+    else
+      {:error, "cannot unify #{a} with #{display(adt)}", trace}
+    end
+  end
+
+  defp do_unify({:adt, _, _} = adt, {:named, _} = named, subst, trace) do
+    do_unify(named, adt, subst, trace)
+  end
+
   defp do_unify(:int, :float, subst, trace),
     do: {:ok, subst, [{:int, :float, :widening} | trace]}
 
@@ -178,6 +233,8 @@ defmodule Cure.Types.Unify do
     do: Enum.any?(ps, &occurs?(name, &1, subst)) or occurs?(name, r, subst)
 
   defp occurs?(name, {:adt, _n, ps}, subst), do: Enum.any?(ps, &occurs?(name, &1, subst))
+  defp occurs?(name, {:map, k, v}, subst), do: occurs?(name, k, subst) or occurs?(name, v, subst)
+  defp occurs?(name, {:refinement, base, _, _}, subst), do: occurs?(name, base, subst)
   defp occurs?(_name, _type, _subst), do: false
 
   # -- Substitution ------------------------------------------------------------
@@ -195,7 +252,15 @@ defmodule Cure.Types.Unify do
   defp do_apply({:fun, ps, r}, s),
     do: {:fun, Enum.map(ps, &do_apply(&1, s)), do_apply(r, s)}
 
+  defp do_apply({:effun, ps, r, effs}, s),
+    do: {:effun, Enum.map(ps, &do_apply(&1, s)), do_apply(r, s), effs}
+
   defp do_apply({:adt, n, ps}, s), do: {:adt, n, Enum.map(ps, &do_apply(&1, s))}
+  defp do_apply({:map, k, v}, s), do: {:map, do_apply(k, s), do_apply(v, s)}
+
+  defp do_apply({:refinement, base, var, pred}, s),
+    do: {:refinement, do_apply(base, s), var, pred}
+
   defp do_apply(other, _s), do: other
 
   # -- Display -----------------------------------------------------------------

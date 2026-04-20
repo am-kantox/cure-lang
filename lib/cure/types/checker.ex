@@ -39,7 +39,7 @@ defmodule Cure.Types.Checker do
   - `{:type_checker, :type_error, error, meta}`
   """
 
-  alias Cure.Types.{Type, Env, PatternChecker, GuardRefinement, Effects}
+  alias Cure.Types.{Type, Env, PatternChecker, GuardRefinement, Effects, Stdlib, Unify}
   alias Cure.Pipeline.Events
 
   # v0.20.0: `Cure.Types.PatternRefinement` provides the narrowing
@@ -64,7 +64,10 @@ defmodule Cure.Types.Checker do
   def check_module(ast, opts \\ []) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
-    env = Env.new()
+    # Every module starts with every stdlib function addressable by its
+    # fully qualified name (`Std.List.map`). Short-name bindings are
+    # installed later on demand from each `use` statement.
+    env = Env.new() |> Stdlib.install_qualified()
 
     case ast do
       {:container, meta, body} when is_list(meta) ->
@@ -168,12 +171,29 @@ defmodule Cure.Types.Checker do
   """
   @spec infer_expr(tuple()) :: {:ok, term()} | {:error, error()}
   def infer_expr(ast) do
-    env = Env.new()
+    # Installing the stdlib lets callers (tests, the REPL `:t` command,
+    # LSP hover helpers) resolve `Std.Mod.fun(...)` without having to
+    # fabricate a wrapper module; short-name imports are handled by
+    # callers that care.
+    env =
+      Env.new()
+      |> Stdlib.install_qualified()
+      |> install_default_imports()
 
     case infer(env, ast, false, "nofile") do
       {:ok, type, _env} -> {:ok, type}
       {:error, _} = err -> err
     end
+  end
+
+  # Short-name imports used by REPL-style expressions. Mirrors the
+  # default `use`s that the REPL threads into every evaluated
+  # expression so `map([1,2,3], fn ...)` infers the same way as
+  # `Std.List.map(...)`.
+  defp install_default_imports(env) do
+    Enum.reduce(Stdlib.all().short_by_module, env, fn {mod, _}, acc ->
+      Stdlib.install_import(acc, mod)
+    end)
   end
 
   # -- Module Body (two-pass) --------------------------------------------------
@@ -216,6 +236,18 @@ defmodule Cure.Types.Checker do
     Enum.reduce(stmts, env, fn
       {:function_def, meta, _body}, env ->
         register_fn_signature(meta, env)
+
+      # `use Std.Mod` (and later, user modules) -- install the short-name
+      # bindings for this module so unqualified calls like `map(...)` can
+      # still be resolved to a concrete signature.
+      {:import, meta, _}, env when is_list(meta) ->
+        source = Keyword.get(meta, :source)
+
+        if is_binary(source) do
+          Stdlib.install_import(env, source)
+        else
+          env
+        end
 
       # Register protocol method signatures so calling them type-checks,
       # and record field schemas for type-safe field access.
@@ -740,14 +772,12 @@ defmodule Cure.Types.Checker do
       {_field_types, env} = infer_args(env, args)
       {:ok, {:named, name}, env}
     else
-      {arg_types, env} = infer_args(env, args)
-
       case Env.lookup(env, name) do
         {:ok, {:fun, param_types, ret_type}} ->
-          check_fn_call(name, param_types, ret_type, arg_types, line, env)
+          check_fn_call(name, param_types, ret_type, args, line, env)
 
         {:ok, {:constrained_fun, param_types, ret_type, guard_ast, param_names}} ->
-          case check_fn_call(name, param_types, ret_type, arg_types, line, env) do
+          case check_fn_call(name, param_types, ret_type, args, line, env) do
             {:ok, _, _} = ok ->
               # Verify guard constraint via SMT
               verify_call_constraint(name, guard_ast, param_names, args, line, env)
@@ -758,9 +788,11 @@ defmodule Cure.Types.Checker do
           end
 
         {:ok, _other} ->
+          {_, env} = infer_args(env, args)
           {:ok, :any, env}
 
         :error ->
+          {_, env} = infer_args(env, args)
           {:ok, :any, env}
       end
     end
@@ -1009,20 +1041,7 @@ defmodule Cure.Types.Checker do
   # -- Lambda ------------------------------------------------------------------
 
   defp do_infer(env, {:lambda, meta, [body]}) do
-    params = Keyword.get(meta, :params, [])
-
-    lambda_env = Env.push_scope(env)
-
-    {param_types, lambda_env} =
-      Enum.map_reduce(params, lambda_env, fn {:param, _, pname}, e ->
-        e = Env.extend(e, pname, :any)
-        {:any, e}
-      end)
-
-    case do_infer(lambda_env, body) do
-      {:ok, ret_type, _} -> {:ok, {:fun, param_types, ret_type}, env}
-      {:error, _} = err -> err
-    end
+    infer_lambda(env, meta, body, nil)
   end
 
   # -- String Interpolation ----------------------------------------------------
@@ -1274,20 +1293,114 @@ defmodule Cure.Types.Checker do
 
   # -- Constrained Call Helpers ------------------------------------------------
 
-  defp check_fn_call(name, param_types, ret_type, arg_types, line, env) do
-    cond do
-      length(param_types) != length(arg_types) ->
-        {:error,
-         {:arity_mismatch, "function '#{name}' expects #{length(param_types)} arguments, got #{length(arg_types)}",
-          line: line}}
+  # Infer and validate the arguments of a function call, specialising
+  # polymorphic signatures against the concrete argument types.
+  #
+  # The algorithm is a two-pass bidirectional check:
+  #
+  # 1. Infer every argument. Lambdas receive the parameter type as an
+  #    expected type so their parameters are bound to real types rather
+  #    than `:any`.
+  # 2. Unify `(param_types, arg_types)` pairwise. On success, substitute
+  #    the solved type variables through the declared return type; that
+  #    is what turns `List(U)` into `List(Int)` once `U` has been
+  #    pinned to `:int` by the lambda's body.
+  #
+  # If unification fails but the arguments still satisfy the looser
+  # subtyping relation, fall back to returning the declared return type
+  # unchanged. That preserves today's permissive behaviour for calls
+  # where the signature mixes `:any` with concrete types.
+  defp check_fn_call(name, param_types, ret_type, args, line, env) do
+    if length(param_types) != length(args) do
+      {:error,
+       {:arity_mismatch, "function '#{name}' expects #{length(param_types)} arguments, got #{length(args)}", line: line}}
+    else
+      {:ok, subst, arg_types, env} =
+        infer_and_unify_args(env, args, param_types, %{}, [])
 
-      params_match?(param_types, arg_types) ->
-        {:ok, ret_type, env}
-
-      true ->
+      if params_match?(param_types, arg_types) do
+        {:ok, Unify.apply_subst(ret_type, subst), env}
+      else
         {:error, {:type_mismatch, "argument type mismatch in call to '#{name}'", line: line}}
+      end
     end
   end
+
+  # Walk arguments left-to-right, inferring each with an expected type
+  # rebuilt from the running substitution. That way, once `T` is pinned
+  # to `Int` by `[1, 2, 3]`, the lambda in position 2 sees an expected
+  # type of `Int -> U` rather than the bare polymorphic `T -> U`.
+  defp infer_and_unify_args(env, [], [], subst, acc_types) do
+    {:ok, subst, Enum.reverse(acc_types), env}
+  end
+
+  defp infer_and_unify_args(env, [arg | args], [ptype | ptypes], subst, acc_types) do
+    expected = Unify.apply_subst(ptype, subst)
+
+    {arg_type, env} =
+      case infer_arg_with_expected(env, arg, expected) do
+        {:ok, t, e2} -> {t, e2}
+        {:error, _} -> {:any, env}
+      end
+
+    subst =
+      case Unify.unify(expected, arg_type, subst) do
+        {:ok, subst2, _} -> subst2
+        # A concrete mismatch here does not abort the whole call -- the
+        # subtype fallback in `check_fn_call/6` still has a chance to
+        # either accept the arguments or emit a precise error.
+        {:error, _, _} -> subst
+      end
+
+    infer_and_unify_args(env, args, ptypes, subst, [arg_type | acc_types])
+  end
+
+  # When the expected type is a function type and the argument is a
+  # lambda literal, thread the expected parameter types into the lambda
+  # so the body infers against concrete types. For every other shape
+  # we fall back to regular, non-directed inference.
+  defp infer_arg_with_expected(env, {:lambda, meta, [body]}, expected) do
+    case strip_refinement(expected) do
+      {:fun, _, _} = fn_type -> infer_lambda(env, meta, body, fn_type)
+      {:effun, _, _, _} = fn_type -> infer_lambda(env, meta, body, fn_type)
+      _ -> do_infer(env, {:lambda, meta, [body]})
+    end
+  end
+
+  defp infer_arg_with_expected(env, ast, _expected), do: do_infer(env, ast)
+
+  defp strip_refinement({:refinement, base, _, _}), do: strip_refinement(base)
+  defp strip_refinement(t), do: t
+
+  # Infer a lambda either bare or with an expected function type. When an
+  # expected type is available, each lambda parameter is bound to the
+  # corresponding parameter type so the body infers with real types
+  # instead of `:any` placeholders -- the cornerstone of bidirectional
+  # checking.
+  defp infer_lambda(env, meta, body, expected) do
+    params = Keyword.get(meta, :params, [])
+    expected_params = expected_lambda_params(expected, length(params))
+
+    lambda_env = Env.push_scope(env)
+
+    {param_types, lambda_env} =
+      params
+      |> Enum.zip(expected_params)
+      |> Enum.map_reduce(lambda_env, fn {{:param, _, pname}, ptype}, e ->
+        {ptype, Env.extend(e, pname, ptype)}
+      end)
+
+    case do_infer(lambda_env, body) do
+      {:ok, ret_type, _} -> {:ok, {:fun, param_types, ret_type}, env}
+      {:error, _} = err -> err
+    end
+  end
+
+  defp expected_lambda_params({:fun, ps, _}, arity) when length(ps) == arity, do: ps
+  defp expected_lambda_params({:effun, ps, _, _}, arity) when length(ps) == arity, do: ps
+
+  defp expected_lambda_params(_, arity),
+    do: List.duplicate(:any, arity)
 
   defp verify_call_constraint(name, guard_ast, param_names, args, line, _env) do
     bindings =
@@ -1334,9 +1447,23 @@ defmodule Cure.Types.Checker do
     end)
   end
 
+  # Accept an argument/parameter pair if either subtyping or unification
+  # can reconcile them. Subtyping handles numeric widening (`:int` <: `:float`)
+  # and nominal refinements, while unification handles polymorphic shapes
+  # that the `Type.subtype?/2` relation does not yet understand
+  # (e.g. `Result(Int, String)` as an inhabitant of `Result(T, E)`).
   defp params_match?(param_types, arg_types) do
     Enum.zip(param_types, arg_types)
-    |> Enum.all?(fn {p, a} -> Type.subtype?(a, p) or p == :any or a == :any end)
+    |> Enum.all?(fn {p, a} ->
+      p == :any or a == :any or Type.subtype?(a, p) or unifiable?(p, a)
+    end)
+  end
+
+  defp unifiable?(p, a) do
+    case Unify.unify(p, a) do
+      {:ok, _, _} -> true
+      _ -> false
+    end
   end
 
   # Recursively bind all variables introduced by a match arm or `let`

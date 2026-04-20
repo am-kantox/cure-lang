@@ -15,7 +15,7 @@ mod BinaryComprehension
 
   ## Sum the bytes of a binary by running the comprehension into a fold.
   fn byte_sum(buf: Bitstring) -> Int =
-    Std.List.foldl([b for <<b <- buf>>], 0, fn(acc, b) -> acc + b)
+    Std.List.foldl([b for <<b <- buf>>], 0, fn(b) -> fn(acc) -> acc + b)
 
   ## Entry point used by `mix cure.check.examples`.
   fn main() -> Int =

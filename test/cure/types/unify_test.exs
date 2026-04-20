@@ -74,6 +74,40 @@ defmodule Cure.Types.UnifyTest do
       assert {:error, _, _} =
                Unify.unify({:adt, :option, [:int]}, {:adt, :result, [:int]})
     end
+
+    test "maps unify keys and values" do
+      assert {:ok, %{"K" => :atom, "V" => :int}, _} =
+               Unify.unify(
+                 {:map, {:type_var, "K"}, {:type_var, "V"}},
+                 {:map, :atom, :int}
+               )
+    end
+
+    test "named types match by name" do
+      assert {:ok, _, _} = Unify.unify({:named, "Point"}, {:named, "Point"})
+    end
+
+    test "named type matches a resolved record of the same name" do
+      rec = {:record, :point, %{"x" => :int, "y" => :int}}
+      assert {:ok, _, _} = Unify.unify({:named, "Point"}, rec)
+      assert {:ok, _, _} = Unify.unify(rec, {:named, "Point"})
+    end
+
+    test "named type matches a resolved ADT of the same name" do
+      adt = {:adt, :point, [:int, :int]}
+      assert {:ok, _, _} = Unify.unify({:named, "Point"}, adt)
+      assert {:ok, _, _} = Unify.unify(adt, {:named, "Point"})
+    end
+
+    test "refinements are transparent to unification" do
+      refined = {:refinement, :int, "x", nil}
+
+      assert {:ok, %{"T" => :int}, _} =
+               Unify.unify({:type_var, "T"}, refined)
+
+      assert {:ok, %{"T" => :int}, _} =
+               Unify.unify(refined, {:type_var, "T"})
+    end
   end
 
   describe "occurs check" do
@@ -99,6 +133,31 @@ defmodule Cure.Types.UnifyTest do
 
     test "leaves unbound vars alone" do
       assert {:type_var, "X"} = Unify.apply_subst({:type_var, "X"}, %{})
+    end
+
+    test "substitutes through maps" do
+      subst = %{"K" => :atom, "V" => :int}
+
+      assert {:map, :atom, :int} =
+               Unify.apply_subst({:map, {:type_var, "K"}, {:type_var, "V"}}, subst)
+    end
+
+    test "substitutes through refinements" do
+      subst = %{"T" => :int}
+
+      assert {:refinement, :int, "x", nil} =
+               Unify.apply_subst({:refinement, {:type_var, "T"}, "x", nil}, subst)
+    end
+
+    test "substitutes through effect-annotated function types" do
+      subst = %{"A" => :int, "B" => :string}
+      effs = MapSet.new([:io])
+
+      assert {:effun, [:int], :string, ^effs} =
+               Unify.apply_subst(
+                 {:effun, [{:type_var, "A"}], {:type_var, "B"}, effs},
+                 subst
+               )
     end
   end
 

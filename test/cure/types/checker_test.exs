@@ -520,6 +520,76 @@ defmodule Cure.Types.CheckerTest do
   end
 
   # ============================================================================
+  # Polymorphic call specialization (Stdlib + same-module)
+  # ============================================================================
+
+  describe "polymorphic call specialization" do
+    defp infer_src!(src) do
+      {:ok, ast} = Cure.quote(src)
+      Checker.infer_expr(ast)
+    end
+
+    test "Std.List.map with an Int lambda infers List(Int)" do
+      assert {:ok, {:list, :int}} =
+               infer_src!("Std.List.map([1, 2, 3], fn(x) -> x + 1)")
+    end
+
+    test "Std.List.map preserves the element type when it is Float" do
+      assert {:ok, {:list, :float}} =
+               infer_src!("Std.List.map([1.0, 2.0], fn(x) -> x * 2.0)")
+    end
+
+    test "Std.List.filter returns List of the input element type" do
+      assert {:ok, {:list, :int}} =
+               infer_src!("Std.List.filter([1, 2, 3], fn(x) -> x > 1)")
+    end
+
+    test "Std.List.foldl collapses to the accumulator type" do
+      assert {:ok, :int} =
+               infer_src!("Std.List.foldl([1, 2, 3], 0, fn(x) -> fn(acc) -> acc + x)")
+    end
+
+    test "Std.Math.abs infers its concrete return type" do
+      assert {:ok, :int} = infer_src!("Std.Math.abs(-3)")
+    end
+
+    test "Std.String.length returns Int" do
+      assert {:ok, :int} = infer_src!("Std.String.length(\"hi\")")
+    end
+
+    test "same-module polymorphic helper returns its specialised type" do
+      src = """
+      mod PolyMod
+        fn identity(x: T) -> T = x
+        fn main() -> Int = identity(42)
+      """
+
+      assert {:ok, _module} =
+               Cure.Compiler.compile_and_load(src, check_types: true)
+    after
+      :code.purge(:polymod)
+      :code.delete(:polymod)
+    end
+
+    test "unqualified call via `use Std.List` resolves to the stdlib signature" do
+      # Stop at the type-checker rather than running codegen: the
+      # checker is what must resolve `map` against `Std.List.map` when
+      # `use Std.List` is in scope, and this exercise is about the
+      # type-level plumbing, not about linking the call at run time.
+      src = """
+      mod UseListMod
+        use Std.List
+        fn main() -> List(Int) = map([1, 2, 3], fn(x) -> x + 1)
+      """
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(src, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+
+      assert {:ok, _} = Checker.check_module(ast, emit_events: false)
+    end
+  end
+
+  # ============================================================================
   # Fallback warning for unknown AST nodes
   # ============================================================================
 
