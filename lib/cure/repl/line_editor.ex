@@ -229,7 +229,9 @@ defmodule Cure.REPL.LineEditor do
       ed
     else
       ed = snapshot(ed)
-      new_r = String.slice(r, 1..-1//1) || ""
+      # `String.slice/2` with a stepped range always returns a binary;
+      # the historical `|| ""` fallback would never be taken.
+      new_r = String.slice(r, 1..-1//1)
       %{ed | buffer: l <> new_r, redo: []}
     end
   end
@@ -462,7 +464,9 @@ defmodule Cure.REPL.LineEditor do
 
   defp split(%LE{buffer: b, cursor: c}) do
     left = String.slice(b, 0, c)
-    right = String.slice(b, c..-1//1) || ""
+    # Stepped-range `String.slice/2` is total: it returns a binary for
+    # any in-bounds cursor, so the previous `|| ""` guard is dead code.
+    right = String.slice(b, c..-1//1)
     {left, right}
   end
 

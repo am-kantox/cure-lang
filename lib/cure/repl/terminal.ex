@@ -352,13 +352,12 @@ defmodule Cure.REPL.Terminal do
         {:paste, acc}
 
       0x1B ->
-        # Possible paste-end sequence ESC [ 2 0 1 ~
-        tail = read_n(5)
-
-        case tail do
+        # Possible paste-end sequence ESC [ 2 0 1 ~. `read_n/1` always
+        # returns a binary (possibly empty), so two clauses exhaustively
+        # cover the shape of `tail`.
+        case read_n(5) do
           "[201~" -> {:paste, acc}
-          other when is_binary(other) -> read_paste(acc <> <<0x1B>> <> other)
-          _ -> {:paste, acc}
+          other -> read_paste(acc <> <<0x1B>> <> other)
         end
 
       b ->
@@ -534,14 +533,15 @@ defmodule Cure.REPL.Terminal do
     ]
   end
 
+  # `File.read_link/1` (our only caller via `detect_tty_path/0`) always
+  # hands us a binary on its success path, so a non-binary fallback here
+  # would be unreachable dead code.
   defp tty_like?(path) when is_binary(path) do
     String.starts_with?(path, "/dev/pts/") or
       String.starts_with?(path, "/dev/ttys") or
       String.starts_with?(path, "/dev/tty") or
       path == "/dev/console"
   end
-
-  defp tty_like?(_), do: false
 
   defp close_ttys do
     case Process.get(@read_key) do

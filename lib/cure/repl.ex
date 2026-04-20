@@ -251,7 +251,10 @@ defmodule Cure.REPL do
 
   defp apply_common(buffer, cursor, common) do
     left = String.slice(buffer, 0, cursor)
-    right = String.slice(buffer, cursor..-1//1) || ""
+    # `String.slice/2` with an explicit step (introduced in OTP/Elixir
+    # that this project targets) always returns a `String.t()`; the
+    # historical `|| ""` fallback is unreachable and upsets Dialyzer.
+    right = String.slice(buffer, cursor..-1//1)
 
     new_left =
       case Regex.run(~r/^(.*?)([\w:.\/~-]*)$/u, left, capture: :all_but_first) do

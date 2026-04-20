@@ -38,7 +38,10 @@ defmodule Cure.Pipeline.Events do
       Cure.Pipeline.Events.emit(:lexer, :token_produced, token, %{file: "foo.cure", line: 1, timestamp: ...})
   """
 
-  @type stage :: :lexer | :parser | :type_checker | :codegen | :fsm_verifier
+  # `:registry` covers out-of-band lifecycle events from the package
+  # registry and transparency log; every other stage maps to one of the
+  # compilation pipeline phases.
+  @type stage :: :lexer | :parser | :type_checker | :codegen | :fsm_verifier | :registry
   @type event_type :: atom()
   @type metadata :: %{file: String.t(), line: pos_integer(), timestamp: integer()}
 
