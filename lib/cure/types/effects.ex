@@ -128,6 +128,15 @@ defmodule Cure.Types.Effects do
     Enum.reduce(children, acc, fn child, a -> do_infer(child, env, a) end)
   end
 
+  # Melquiades send (`pid <-| msg`, `pid ✉ msg`, or the keyword form
+  # `send pid, msg`) is a message-passing operation: it attracts the
+  # `:state` effect. Children (target and message) are walked as usual
+  # so nested calls contribute their own effects.
+  defp do_infer({:send, _meta, children}, env, acc) do
+    acc = MapSet.put(acc, :state)
+    Enum.reduce(children, acc, fn child, a -> do_infer(child, env, a) end)
+  end
+
   defp do_infer({:throw, _meta, [expr]}, env, acc) do
     acc = MapSet.put(acc, :exception)
     do_infer(expr, env, acc)

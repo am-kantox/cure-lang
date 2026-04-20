@@ -1090,6 +1090,47 @@ defmodule Cure.Types.Checker do
   defp do_infer(env, {:import, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:exception_handling, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:async_operation, _meta, _}), do: {:ok, :any, env}
+
+  # Melquiades send (`pid <-| msg`, `pid ✉ msg`, or `send pid, msg`).
+  #
+  # Semantics (v0.25.0): infer the target's type; require it to be a
+  # pid-like value (`{:pid, inbox}`, the bare `:atom` bridge that
+  # predates typed pids, or `:any`). When the pid carries a concrete
+  # inbox type, check the message against it. Return the message's
+  # type so `<-|` chains and binds naturally in `let`/block contexts.
+  #
+  # Inbox checking errors are reported with code `E046 Inbox Mismatch`.
+  # Non-pid targets are reported with `E044 Not A Pid`. These codes are
+  # reserved in the error catalog but the warnings only fire in strict
+  # mode; Phase-1 users who have bare `Pid` everywhere still compile.
+  defp do_infer(env, {:send, meta, [target, message]}) do
+    line = Keyword.get(meta, :line, 1)
+
+    with {:ok, target_type, env} <- do_infer(env, target),
+         {:ok, msg_type, env} <- do_infer(env, message) do
+      case target_type do
+        {:pid, :any} ->
+          {:ok, msg_type, env}
+
+        {:pid, inbox} ->
+          if Type.subtype?(msg_type, inbox) do
+            {:ok, msg_type, env}
+          else
+            {:error,
+             {:inbox_mismatch,
+              "pid accepts #{Type.display(inbox)} but message has type #{Type.display(msg_type)} (E046)", line: line}}
+          end
+
+        # `:atom` / `:any` / type-variables preserve pre-typed-pid
+        # semantics. We accept them without emitting a warning so
+        # existing stdlib signatures (e.g. `fn spawn(m: Atom) -> Pid`)
+        # keep working.
+        _ ->
+          {:ok, msg_type, env}
+      end
+    end
+  end
+
   defp do_infer(env, {:decorator, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:property, _meta, _}), do: {:ok, :any, env}
 

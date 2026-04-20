@@ -10,7 +10,8 @@ defmodule Cure.Application do
 
     children = [
       {Registry, keys: :duplicate, name: Cure.Pipeline.Events.Registry},
-      Cure.FSM.Runtime
+      Cure.FSM.Runtime,
+      Cure.Actor.Runtime
     ]
 
     opts = [strategy: :one_for_one, name: Cure.Supervisor]

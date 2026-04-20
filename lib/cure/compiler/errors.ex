@@ -677,10 +677,111 @@ defmodule Cure.Compiler.Errors do
           <<head::size(n)-unit(3), rest::binary>> -> ...
                     # warning: non-byte-aligned head size (E037)
 
-    Fix: use byte-aligned sizes (multiples of 8 bits) or explicit
-    literal sizes so the arithmetic can be emitted; otherwise accept
-    that `rest` binds to plain `Bitstring` and let runtime pattern
-    matching enforce the remaining invariants.
+      Fix: use byte-aligned sizes (multiples of 8 bits) or explicit
+      literal sizes so the arithmetic can be emitted; otherwise accept
+      that `rest` binds to plain `Bitstring` and let runtime pattern
+      matching enforce the remaining invariants.
+    """,
+    "E045" => """
+    E045: Untyped Send
+
+    The Melquiades operator `<-|` (or its unicode form `\u2709`) was
+    applied to a bare `Pid` receiver. Untyped sends bypass the
+    per-inbox protocol check and fall back to raw Erlang semantics.
+    The warning only fires under strict mode (`@strict_inbox true`)
+    so existing FFI callers remain undisturbed.
+
+    Example:
+      fn relay(pid: Pid, msg: Atom) -> Atom =
+        pid <-| msg       # warning under @strict_inbox
+
+    Fix: narrow the parameter to `Pid(Inbox)` where `Inbox` is the
+    actor's inbox ADT, or drop `@strict_inbox` for this module.
+    """,
+    "E046" => """
+    E046: Inbox Mismatch
+
+    A message type flowing into `<-|` is not a subtype of the
+    receiver's declared inbox ADT. The send would deliver a value the
+    actor's `on_message` cannot pattern-match.
+
+    Example:
+      actor Counter
+        on_message
+          (:inc, n) -> n + 1
+
+      fn bad(pid: Pid(Counter.Inbox)) -> Atom = pid <-| :reset
+      # Error: :reset is not one of {:inc, _} | {:dec, _}
+
+    Fix: send one of the declared inbox variants, or extend the
+    actor's inbox ADT to include the new message.
+    """,
+    "E047" => """
+    E047: Supervisor Unknown Child
+
+    A `sup` child spec references a module name that doesn't resolve
+    to a compiled actor, supervisor, FSM, or externally declared OTP
+    module. The runtime would crash at `start_link/1` time.
+
+    Example:
+      sup App.Root
+        children
+          Missing as worker   # Error: unknown module `Missing`
+
+    Fix: compile the referenced actor/supervisor first, or declare it
+    as external via the child spec's dotted form (`App.External as e`).
+    """,
+    "E048" => """
+    E048: Supervisor Cycle
+
+    A supervisor tree contains a cycle: either a supervisor lists
+    itself as a child, or two supervisors reference each other
+    transitively. Starting such a tree would recurse forever.
+
+    Example:
+      sup A
+        children
+          sup A as self   # Error: supervisor A lists itself
+
+    Fix: remove the self-reference, or restructure so the shared
+    subtree lives in a third, stand-alone supervisor.
+    """,
+    "E049" => """
+    E049: Actor Handler Non-Exhaustive
+
+    An actor's `on_message` clauses do not cover every variant of
+    the declared inbox ADT. Missing inbox messages would fall through
+    to the runtime's generic `handle_info/2`, leaving the actor in an
+    unexpected state.
+
+    Example:
+      actor Counter
+        inbox = Inc | Dec | Reset
+        on_message
+          Inc -> state(n + 1)
+          Dec -> state(n - 1)
+          # Warning: missing pattern `Reset`
+
+    Fix: add the missing clause, or a wildcard catch-all when falling
+    through is intentional.
+    """,
+    "E050" => """
+    E050: Invalid Supervisor Strategy
+
+    A `sup` container declared a `strategy`, `restart`, or `shutdown`
+    value outside the closed set the supervisor behaviour accepts.
+
+    Valid strategies: `:one_for_one`, `:one_for_all`, `:rest_for_one`,
+    `:simple_one_for_one`.
+    Valid restarts:  `:permanent`, `:transient`, `:temporary`.
+    Valid shutdowns: `:brutal_kill`, `:infinity`, or a positive
+    integer timeout in milliseconds.
+
+    Example:
+      sup App.Bad
+        strategy = :one_for_many   # Error: unknown strategy
+
+    Fix: pick one of the declared values listed above.
     """
   }
 

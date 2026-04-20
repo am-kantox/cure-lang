@@ -59,9 +59,22 @@ defmodule Cure.Compiler.Codegen do
   loaded eagerly, and this function returns `{:ok, {:callback_mode, module}}`
   where `module` is the already-loaded module atom. See
   `Cure.FSM.Compiler.compile/2` for details.
+
+  Typed-actor containers (`actor Name ...`) follow the same pattern:
+  they are compiled and loaded eagerly by `Cure.Actor.Compiler.compile/2`
+  and this function returns `{:ok, {:actor, module}}` where `module` is
+  the already-loaded GenServer module atom.
+
+  Supervisor containers (`sup Name ...`) are compiled by
+  `Cure.Sup.Compiler.compile/2`, which also loads the module eagerly
+  and returns `{:ok, {:supervisor, module}}`.
   """
   @spec compile_module(tuple(), keyword()) ::
-          {:ok, list()} | {:ok, {:callback_mode, module()}} | {:error, term()}
+          {:ok, list()}
+          | {:ok, {:callback_mode, module()}}
+          | {:ok, {:actor, module()}}
+          | {:ok, {:supervisor, module()}}
+          | {:error, term()}
   def compile_module(ast, opts \\ []) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
@@ -119,6 +132,27 @@ defmodule Cure.Compiler.Codegen do
         _ = Verifier.verify(ast, emit_events: emit?, file: file)
         # Compile to gen_statem
         Compiler.compile(ast, emit_events: emit?, file: file)
+
+      :actor ->
+        ast = {:container, meta, body}
+        # Typed actors are compiled to a GenServer module via string
+        # codegen and loaded eagerly, mirroring callback-mode FSMs.
+        Cure.Actor.Compiler.compile(ast, emit_events: emit?, file: file)
+
+      :supervisor ->
+        ast = {:container, meta, body}
+        # Run structural verification first; treat a verification
+        # failure as a codegen error so the compiler orchestrator can
+        # surface it through the usual `{:error, {:codegen_error, _}}`
+        # channel. On success the compiler loads a live Supervisor
+        # behaviour module.
+        case Cure.Sup.Verifier.verify(ast, emit_events: emit?, file: file) do
+          {:ok, _} ->
+            Cure.Sup.Compiler.compile(ast, emit_events: emit?, file: file)
+
+          {:error, errors} ->
+            {:error, {:sup_verification_failed, errors}}
+        end
 
       other ->
         {:error, {:unsupported_container, other}}
@@ -664,6 +698,12 @@ defmodule Cure.Compiler.Codegen do
       # Early return
       {:early_return, meta, [expr]} ->
         compile_early_return(meta, expr, state)
+
+      # Melquiades send: `pid <-| message` or `send pid, message`.
+      # Lowers to Erlang's bang operator (`{:op, Line, '!', Pid, Msg}`)
+      # which matches the semantics of `erlang:send/2`.
+      {:send, meta, [target, message]} ->
+        compile_send(meta, target, message, state)
 
       # Throw
       {:throw, meta, [expr]} ->
@@ -1488,6 +1528,20 @@ defmodule Cure.Compiler.Codegen do
     form =
       {:call, line, {:remote, line, {:atom, line, :lists}, {:atom, line, :seq}}, [from_form, end_form]}
 
+    {form, state}
+  end
+
+  # -- Melquiades Send ---------------------------------------------------------
+
+  # Compile `{:send, meta, [target, message]}` to Erlang's bang operator.
+  # The Erlang abstract format uses `{:op, Line, '!', Lhs, Rhs}`; at the
+  # BEAM level this is the same as `erlang:send/2` and returns the
+  # message, matching the semantics of Erlang's `!`.
+  defp compile_send(meta, target, message, state) do
+    line = Keyword.get(meta, :line, state.line)
+    {target_form, state} = do_compile_expr(target, state)
+    {msg_form, state} = do_compile_expr(message, state)
+    form = {:op, line, :!, target_form, msg_form}
     {form, state}
   end
 

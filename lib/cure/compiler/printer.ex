@@ -328,6 +328,25 @@ defmodule Cure.Compiler.Printer do
     "return #{to_string(expr, depth, indent)}"
   end
 
+  # Melquiades send node. The author's chosen surface form is carried on
+  # meta[:melquiades_form]:
+  #
+  #   :ascii    -> `target <-| message`
+  #   :unicode  -> `target ✉ message`
+  #   :keyword  -> `send target, message` (the statement form)
+  #
+  # Any other value falls back to the ASCII operator form.
+  defp to_string({:send, meta, [target, message]}, depth, indent) do
+    target_str = to_string(target, depth, indent)
+    message_str = to_string(message, depth, indent)
+
+    case Keyword.get(meta, :melquiades_form, :ascii) do
+      :unicode -> "#{target_str} ✉ #{message_str}"
+      :keyword -> "send #{target_str}, #{message_str}"
+      _ -> "#{target_str} <-| #{message_str}"
+    end
+  end
+
   defp to_string({:throw, _meta, [expr]}, depth, indent) do
     "throw #{to_string(expr, depth, indent)}"
   end

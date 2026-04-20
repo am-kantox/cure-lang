@@ -12,6 +12,8 @@ defmodule Cure.Compiler.Parser.Precedence do
 
   | BP | Operators               | Assoc  |
   |----|-------------------------|--------|
+  |  5 | `= += -= *= /=`         | right  |
+  |  8 | `<-|` / `✉` (Melquiades)| none   |
   | 10 | `\\|>`                   | left   |
   | 20 | `or`                    | left   |
   | 30 | `and`                   | left   |
@@ -22,11 +24,19 @@ defmodule Cure.Compiler.Parser.Precedence do
   | 80 | `* / %`                 | left   |
   | 90 | prefix `-`, `not`       |        |
   | 100| `.`                     | left   |
+
+  The Melquiades operator (`<-|` / `✉`) sits below `|>` so that a value
+  built by a pipe chain can be sent in a single expression, and above
+  assignment so `let ref = pid <-| msg` binds the sent message. It is
+  declared non-associative to prevent `a <-| b <-| c` from silently
+  fanning out to two sends.
   """
 
   @doc "Returns `{left_bp, right_bp}` for an infix operator token type, or `:not_infix`."
   @spec infix_bp(atom()) :: {pos_integer(), pos_integer()} | :not_infix
   def infix_bp(:pipe), do: {10, 11}
+  # Melquiades operator -- non-associative, just below pipe.
+  def infix_bp(:melquiades), do: {8, 9}
   def infix_bp(:or_op), do: {20, 21}
   def infix_bp(:and_op), do: {30, 31}
   # Comparison -- non-associative (right = left + 1)
@@ -73,6 +83,7 @@ defmodule Cure.Compiler.Parser.Precedence do
   def operator_category(type) when type in [:range, :range_inclusive], do: :range
   def operator_category(:pipe), do: :pipe
   def operator_category(:dot), do: :access
+  def operator_category(:melquiades), do: :send
   def operator_category(_), do: :unknown
 
   @doc "Returns the operator atom for a given token type."
@@ -96,6 +107,7 @@ defmodule Cure.Compiler.Parser.Precedence do
   def operator_symbol(:range_inclusive), do: :"..="
   def operator_symbol(:pipe), do: :|>
   def operator_symbol(:dot), do: :.
+  def operator_symbol(:melquiades), do: :"<-|"
   def operator_symbol(:assign), do: :=
   def operator_symbol(:plus_assign), do: :"+="
   def operator_symbol(:minus_assign), do: :"-="

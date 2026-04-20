@@ -4,6 +4,107 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.25.0] -- Typed Supervision Trees
+
+v0.25.0 turns Cure into a first-class language for writing OTP-style
+supervision trees. The release introduces a typed send operator --
+the Melquiades Operator `<-|` (unicode alias `✉`) -- a typed `actor`
+container that compiles to a live `GenServer` module, and a `sup`
+container that compiles to a verified `Supervisor` behaviour module.
+A small stdlib surface (`Std.Actor`, `Std.Process`, `Std.Supervisor`)
+exposes the runtime from Cure source.
+
+### Added -- Melquiades Operator
+
+- `pid <-| message` sends `message` to `pid`, returning the message.
+  The unicode form `✉` is interchangeable with the ASCII form; the
+  lexer preserves the author's choice via a `:melquiades_form` meta
+  key so the printer round-trips it faithfully.
+- Non-associative operator binding one notch below `|>` so pipelines
+  feed naturally into sends.
+- `send target, msg` keyword form desugars to the same `{:send, ...}`
+  MetaAST node so one codegen path handles both forms.
+- Codegen lowers to Erlang's `!` operator (`{:op, Line, :!, ...}`).
+- Effect inference: `<-|` attracts the `:state` effect.
+
+### Added -- Typed primitives
+
+- `Pid(Inbox)` is a new compound type constructor. Bare `Pid` in
+  source resolves to `{:pid, :any}`, the top of the covariant family.
+- `Ref` is a new primitive for monitor references.
+- The type checker has a dedicated clause for `{:send, ...}` that
+  unifies the message type against the receiver's declared inbox and
+  emits `E046 Inbox Mismatch` when the types disagree.
+
+### Added -- Actors
+
+- `actor Name with <init>` declares a typed process. Lifecycle hooks
+  `on_start`, `on_message`, `on_stop` reuse the FSM callback-clause
+  machinery (pattern tuple + optional `when` guard + body).
+- `Cure.Actor.Compiler` emits a `GenServer` module loaded eagerly;
+  the codegen dispatcher returns `{:ok, {:actor, module()}}` for
+  actor containers.
+- `Cure.Actor.Runtime` (GenServer) tracks spawned actors in an ETS
+  registry, monitors each pid, and cleans up on `DOWN`. Started by
+  `Cure.Application` alongside `Cure.FSM.Runtime`.
+- `Cure.Actor.State` struct holds `caller`, `meta`, `payload`; exposes
+  `notify/1` / `notify_self/1` for the sugar available inside hook
+  bodies.
+- `Cure.Actor.Builtins` bridges `Std.Actor` to the runtime.
+
+### Added -- Supervisors
+
+- `sup Name` declares a supervisor container. Inline settings
+  (`strategy`, `intensity`, `period`) and a `children` block with
+  per-line child specs (`Module as id (restart: ..., shutdown: ...)`).
+- `Cure.Sup.Verifier` rejects invalid strategies / restarts /
+  shutdowns, non-positive period, duplicate child ids, and trivial
+  cycles. Emits `:sup_verifier` pipeline events.
+- `Cure.Sup.Compiler` emits a `Supervisor`-behaviour module via
+  `Code.compile_string/2`; the compiler returns
+  `{:ok, {:supervisor, module()}}`.
+- `Cure.Sup.Runtime` wraps the compiled module with a lazy ETS
+  registry (`start/1,2`, `stop/1`, `lookup/1`, `which_children/1`,
+  `list/0`).
+- `Cure.Sup.Builtins` bridges `Std.Supervisor` to the runtime.
+- `sup` is a *contextual* keyword: the lexer keeps it as an
+  identifier so existing Cure programs that use `sup` as a field or
+  variable name (for instance the superdiagonal row in a tridiagonal
+  system) keep compiling; the parser dispatches on `sup <Name>` only
+  at statement-prefix position.
+
+### Added -- Standard library
+
+- `lib/std/actor.cure` -- `spawn/1`, `spawn_with_payload/2`,
+  `spawn_named/2`, `stop/1`, `send/2`, `get_state/1`, `is_alive/1`,
+  `lookup/1`.
+- `lib/std/process.cure` -- `link/1`, `unlink/1`, `monitor/1`,
+  `demonitor/1`, `trap_exit/1`, `exit/2`, `self/0`, `is_alive/1`.
+- `lib/std/supervisor.cure` -- `start/1`, `start_with/2`, `stop/1`,
+  `which_children/1`, `count_children/1`, `lookup/1`, `list/0`.
+- New Elixir bridges: `Cure.Process.Builtins` (`proc_monitor/1`,
+  `proc_trap_exit/1`) and `Cure.Sup.Builtins`.
+
+### Added -- Documentation & examples
+
+- `docs/SUPERVISION.md` -- full reference for the new surface.
+- `examples/cure_colony/` -- minimal typed supervision tree demo.
+- Error catalog entries `E045` -- `E050` covering untyped sends,
+  inbox mismatches, unknown children, cycles, non-exhaustive actor
+  handlers, and invalid supervisor strategies.
+
+### Added -- Tests
+
+- `test/cure/compiler/melquiades_lexer_test.exs`,
+  `melquiades_parser_test.exs` -- lexer, parser, printer, effect, and
+  runtime coverage for the Melquiades Operator.
+- `test/cure/types/typed_pid_test.exs` -- `Pid(Inbox)` covariance,
+  inbox mismatch diagnostics.
+- `test/cure/actor/actor_test.exs` -- actor parsing, codegen,
+  spawn/send/stop, notify/1, runtime registry.
+- `test/cure/sup/sup_test.exs` -- supervisor parsing, verifier,
+  compiler, runtime, and actor-child composition.
+
 ## [0.24.0] -- The REPL You Deserve
 
 v0.24.0 is the release where the interactive cycle catches up with

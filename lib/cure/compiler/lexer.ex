@@ -34,11 +34,16 @@ defmodule Cure.Compiler.Lexer do
 
   # -- Keywords (Section 3.3) ------------------------------------------------
 
+  # `sup` is intentionally *not* reserved so existing programs that
+  # use it as a field name or local variable (e.g. the superdiagonal
+  # row of a tridiagonal system) keep compiling. The parser recognises
+  # `sup Name` contextually at block-prefix position.
   @keywords ~w(
     mod fn let type rec proto impl fsm local use as
     match if elif else then for do end
     in try catch finally throw return yield
     spawn send receive after
+    actor
     when where and or not
     true false nil
     extern proof
@@ -153,6 +158,12 @@ defmodule Cure.Compiler.Lexer do
       ?~ -> lex_regex(state)
       # Binary literal << >>
       ?< -> lex_angle_or_op(state)
+      # Melquiades operator (unicode `✉`, U+2709 ENVELOPE): 0xE2 0x9C 0x89.
+      # Detection can't live in a guard (peek_at/2 is a plain function,
+      # not a macro), so we dispatch on the first byte and inspect the
+      # next two inside lex_melquiades_envelope/1. Any other 0xE2-led
+      # sequence falls through to the unexpected-character error.
+      0xE2 -> lex_melquiades_envelope(state)
       # Percent sigils: %[ %{
       ?% -> lex_percent(state)
       # Brackets
@@ -914,27 +925,53 @@ defmodule Cure.Compiler.Lexer do
   defp lex_angle_or_op(state) do
     start_col = state.col
 
-    case {peek(state), peek_at(state, 1)} do
-      {?<, ?<} ->
+    case {peek(state), peek_at(state, 1), peek_at(state, 2)} do
+      {?<, ?<, _} ->
         token = Token.new(:binary_open, "<<", state.line, start_col)
         maybe_emit_event(state, token)
         {:ok, %{state | tokens: [token | state.tokens]} |> advance(2)}
 
-      {?<, ?>} ->
+      {?<, ?>, _} ->
         # String concat operator
         token = Token.new(:string_concat, "<>", state.line, start_col)
         maybe_emit_event(state, token)
         {:ok, %{state | tokens: [token | state.tokens]} |> advance(2)}
 
-      {?<, ?=} ->
+      {?<, ?=, _} ->
         token = Token.new(:lte, "<=", state.line, start_col)
         maybe_emit_event(state, token)
         {:ok, %{state | tokens: [token | state.tokens]} |> advance(2)}
+
+      # Melquiades operator (ASCII form): `<-|` sends a message to the
+      # mailbox on the left. Three bytes: `<`, `-`, `|`.
+      {?<, ?-, ?|} ->
+        token = Token.new(:melquiades, "<-|", state.line, start_col)
+        maybe_emit_event(state, token)
+        {:ok, %{state | tokens: [token | state.tokens]} |> advance(3)}
 
       _ ->
         token = Token.new(:lt, "<", state.line, start_col)
         maybe_emit_event(state, token)
         {:ok, %{state | tokens: [token | state.tokens]} |> advance(1)}
+    end
+  end
+
+  # Unicode `✉` (U+2709 ENVELOPE) is the alternate form of the Melquiades
+  # operator. Encoded as three bytes `0xE2 0x9C 0x89` in UTF-8; the lexer
+  # records the original lexeme on the token so the printer can round-trip
+  # the author's choice between the ASCII and unicode forms. Any other
+  # 0xE2-led sequence is unrecognised at the top level; we surface it as
+  # the same `:unexpected_character` error the plain path would emit.
+  defp lex_melquiades_envelope(state) do
+    case {peek_at(state, 1), peek_at(state, 2)} do
+      {0x9C, 0x89} ->
+        start_col = state.col
+        token = Token.new(:melquiades, "✉", state.line, start_col)
+        maybe_emit_event(state, token)
+        {:ok, %{state | tokens: [token | state.tokens]} |> advance(3)}
+
+      _ ->
+        {:error, {:unexpected_character, 0xE2, state.line, state.col}, state}
     end
   end
 

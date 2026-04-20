@@ -216,6 +216,19 @@ defmodule Cure.Compiler.Parser do
           "assert_type" ->
             parse_assert_type(state, token)
 
+          # Soft keyword: `sup Name ...` at statement-prefix position is
+          # the supervisor container. When `sup` is followed by anything
+          # other than an identifier (`:`, `,`, `}`, `)`, etc.) we treat
+          # it as a plain variable, preserving legacy field/local uses.
+          "sup" ->
+            case peek_at(state, 1) do
+              %Token{type: :identifier} ->
+                parse_supervisor(state)
+
+              _ ->
+                {variable(token), advance(state)}
+            end
+
           _ ->
             {variable(token), advance(state)}
         end
@@ -381,6 +394,17 @@ defmodule Cure.Compiler.Parser do
         ast = desugar_pipe(left, right, token)
         parse_infix(state, ast, min_bp)
 
+      # Melquiades operator: `pid <-| message` or `pid ✉ message`.
+      # Lowers to `{:send, meta, [target, message]}` and carries the
+      # author's choice of ASCII vs unicode form in `:melquiades_form` so
+      # the printer can round-trip it.
+      :melquiades ->
+        {right, state} = parse_expr(state, right_bp)
+        form = melquiades_form(token.value)
+        meta = [line: token.line, col: token.col, melquiades_form: form]
+        ast = {:send, meta, [left, right]}
+        parse_infix(state, ast, min_bp)
+
       # Dot access: obj.field -> {:attribute_access, ...}
       :dot ->
         field_token = peek(state)
@@ -423,6 +447,12 @@ defmodule Cure.Compiler.Parser do
   defp augmented_op(:minus_assign), do: :-
   defp augmented_op(:star_assign), do: :*
   defp augmented_op(:slash_assign), do: :/
+
+  # `<-|` -> :ascii, `✉` -> :unicode. Any other lexeme (unlikely, but
+  # we guard anyway) falls back to :ascii.
+  defp melquiades_form("<-|"), do: :ascii
+  defp melquiades_form("✉"), do: :unicode
+  defp melquiades_form(_), do: :ascii
 
   # -- Pipe Desugaring -------------------------------------------------------
 
@@ -1154,6 +1184,9 @@ defmodule Cure.Compiler.Parser do
 
       :fsm ->
         parse_fsm(state)
+
+      :actor ->
+        parse_actor(state)
 
       :use ->
         parse_use(state)
@@ -2672,6 +2705,300 @@ defmodule Cure.Compiler.Parser do
     {expr, state}
   end
 
+  # -- Actor container  actor Name [with InitExpr] --------------------------
+  #
+  # An `actor` introduces a typed process. The minimal grammar is:
+  #
+  #     actor Counter
+  #       on_start
+  #         (state) -> notify(:ready); state
+  #       on_message
+  #         (:inc, n) -> n + 1
+  #         (:dec, n) -> n - 1
+  #         (:get, n) -> notify(n); n
+  #       on_stop
+  #         (reason, state) -> ok
+  #
+  # Callback blocks are parsed with the existing `parse_fsm_callback/1`
+  # machinery so patterns, guards, and bodies behave exactly as they do
+  # for FSM lifecycle hooks. `@initial` (or `with Expr` after the
+  # header) selects the initial payload. The Cure.Actor.Compiler
+  # translates this container into a GenServer via string-template
+  # codegen, mirroring the FSM callback-mode path.
+  defp parse_actor(state) do
+    token = peek(state)
+    state = advance(state)
+
+    name_token = peek(state)
+    name = to_string(name_token.value)
+    state = advance(state)
+
+    # Optional initial payload: `with expr`.
+    {init, state} =
+      case peek(state) do
+        %Token{type: :identifier, value: "with"} ->
+          state = advance(state)
+          parse_expr(state, 0)
+
+        _ ->
+          {nil, state}
+      end
+
+    state = skip_newlines(state)
+    {body, meta_additions, state} = parse_actor_block(state)
+
+    meta =
+      [container_type: :actor, name: name, line: token.line, col: token.col] ++ meta_additions
+
+    meta = if init, do: Keyword.put(meta, :init, init), else: meta
+    ast = {:container, meta, body}
+    {ast, state}
+  end
+
+  @actor_callback_names ~w(on_message on_start on_stop)
+
+  defp parse_actor_block(state) do
+    case peek(state) do
+      %Token{type: :indent} ->
+        state = advance(state)
+        {items, meta_acc, state} = parse_actor_items(state, [], [])
+        state = expect_dedent(state)
+        {items, meta_acc, state}
+
+      _ ->
+        {[], [], state}
+    end
+  end
+
+  defp parse_actor_items(state, items_acc, meta_acc) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: type} when type in [:dedent, :eof] ->
+        {Enum.reverse(items_acc), meta_acc, state}
+
+      %Token{type: :at} ->
+        # `@initial expr` and the same annotations an FSM supports.
+        {new_meta, state} = parse_fsm_annotation(state)
+        state = skip_newlines(state)
+        parse_actor_items(state, items_acc, meta_acc ++ new_meta)
+
+      %Token{type: :identifier, value: cb_name} when cb_name in @actor_callback_names ->
+        {new_meta, state} = parse_fsm_callback(state)
+        state = skip_newlines(state)
+        parse_actor_items(state, items_acc, meta_acc ++ new_meta)
+
+      _ ->
+        # Tolerate unknown top-level lines by consuming a single expression
+        # and discarding it. This keeps the parser forward-compatible
+        # with future actor directives (e.g. `inbox = A | B`, `state: T`).
+        {_expr, state} = parse_expr(state, 0)
+        state = skip_newlines(state)
+        parse_actor_items(state, items_acc, meta_acc)
+    end
+  end
+
+  # -- Supervisor container  sup Name ---------------------------------------
+  #
+  # Declares a supervisor module. The minimal grammar is:
+  #
+  #     sup MyApp.Root
+  #       strategy = :one_for_one
+  #       intensity = 3
+  #       period = 5
+  #       children
+  #         Counter as counter
+  #         Gateway as gateway (restart: :transient)
+  #         sup Workers as workers
+  #
+  # `strategy`, `intensity`, `period` are parsed as `name = value` lines
+  # and hoisted onto the container meta. The `children` block contains
+  # one `child_spec` node per line, each emitted as
+  # `{:child_spec, [module:, id:, restart:, shutdown:, ...], []}`.
+  defp parse_supervisor(state) do
+    token = peek(state)
+    state = advance(state)
+
+    {name, state} = parse_dotted_name(state)
+    state = skip_newlines(state)
+    {body, meta_additions, state} = parse_sup_block(state)
+
+    meta =
+      [container_type: :supervisor, name: name, line: token.line, col: token.col] ++
+        meta_additions
+
+    ast = {:container, meta, body}
+    {ast, state}
+  end
+
+  defp parse_sup_block(state) do
+    case peek(state) do
+      %Token{type: :indent} ->
+        state = advance(state)
+        {items, meta_acc, state} = parse_sup_items(state, [], [])
+        state = expect_dedent(state)
+        {items, meta_acc, state}
+
+      _ ->
+        {[], [], state}
+    end
+  end
+
+  @sup_settings ~w(strategy intensity period)
+
+  defp parse_sup_items(state, items_acc, meta_acc) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: type} when type in [:dedent, :eof] ->
+        {Enum.reverse(items_acc), meta_acc, state}
+
+      %Token{type: :identifier, value: setting} when setting in @sup_settings ->
+        {new_meta, state} = parse_sup_setting(state, setting)
+        state = skip_newlines(state)
+        parse_sup_items(state, items_acc, meta_acc ++ new_meta)
+
+      %Token{type: :identifier, value: "children"} ->
+        state = advance(state)
+        state = skip_newlines(state)
+        {specs, state} = parse_sup_children_block(state)
+        state = skip_newlines(state)
+        parse_sup_items(state, Enum.reverse(specs) ++ items_acc, meta_acc)
+
+      _ ->
+        # Unknown leading token inside a supervisor body -- skip one
+        # expression and keep going so we don't deadlock.
+        {_, state} = parse_expr(state, 0)
+        state = skip_newlines(state)
+        parse_sup_items(state, items_acc, meta_acc)
+    end
+  end
+
+  defp parse_sup_setting(state, name) do
+    # Consume the identifier and the `=`.
+    state = advance(state)
+    state = expect(state, :assign)
+    state = skip_newlines(state)
+    {value, state} = parse_expr(state, 0)
+    {[{String.to_atom(name), value}], state}
+  end
+
+  defp parse_sup_children_block(state) do
+    case peek(state) do
+      %Token{type: :indent} ->
+        state = advance(state)
+        {specs, state} = parse_sup_child_specs(state, [])
+        state = expect_dedent(state)
+        {specs, state}
+
+      _ ->
+        {[], state}
+    end
+  end
+
+  defp parse_sup_child_specs(state, acc) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: type} when type in [:dedent, :eof] ->
+        {Enum.reverse(acc), state}
+
+      _ ->
+        {spec, state} = parse_sup_child_spec(state)
+        state = skip_newlines(state)
+        parse_sup_child_specs(state, [spec | acc])
+    end
+  end
+
+  # A child spec line takes one of the forms:
+  #
+  #     Counter as counter
+  #     Counter as counter (restart: :transient, shutdown: 5000)
+  #     sup Workers as workers
+  #
+  # Emits `{:child_spec, meta, []}` where `meta` carries the child's
+  # `:module`, `:id`, and any options parsed from the trailing
+  # parenthesised keyword list.
+  defp parse_sup_child_spec(state) do
+    token = peek(state)
+
+    {module_kind, state} =
+      case token do
+        %Token{type: :identifier, value: "sup"} ->
+          {:supervisor, advance(state)}
+
+        _ ->
+          {:worker, state}
+      end
+
+    {module_path, state} = parse_dotted_name(state)
+
+    # Expect `as child_id`.
+    state = expect(state, :keyword)
+    # ^ consumes the `as` keyword
+    id_token = peek(state)
+    id_name = to_string(id_token.value)
+    state = advance(state)
+
+    # Optional options: `(restart: :transient, shutdown: 5000)`.
+    {opts, state} =
+      case peek(state) do
+        %Token{type: :lparen} ->
+          state = advance(state)
+          {pairs, state} = parse_sup_child_opts(state)
+          state = expect(state, :rparen)
+          {pairs, state}
+
+        _ ->
+          {[], state}
+      end
+
+    meta =
+      [
+        module: module_path,
+        id: id_name,
+        kind: module_kind,
+        line: token.line,
+        col: token.col
+      ] ++ opts
+
+    {{:child_spec, meta, []}, state}
+  end
+
+  defp parse_sup_child_opts(state) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :rparen} ->
+        {[], state}
+
+      _ ->
+        {pair, state} = parse_sup_child_opt(state)
+        state = skip_newlines(state)
+
+        case peek(state) do
+          %Token{type: :comma} ->
+            state = advance(state)
+            state = skip_newlines(state)
+            {rest, state} = parse_sup_child_opts(state)
+            {[pair | rest], state}
+
+          _ ->
+            {[pair], state}
+        end
+    end
+  end
+
+  defp parse_sup_child_opt(state) do
+    name_token = peek(state)
+    name = to_string(name_token.value)
+    state = advance(state)
+    state = expect(state, :colon)
+    state = skip_newlines(state)
+    {value, state} = parse_expr(state, 0)
+    {{String.to_atom(name), value}, state}
+  end
+
   # -- Enhanced Type Expression Parser ----------------------------------------
 
   # Replaces the simple version from Milestone 2.
@@ -3130,13 +3457,19 @@ defmodule Cure.Compiler.Parser do
 
   # -- Send ------------------------------------------------------------------
 
+  # The keyword statement form `send target, message` desugars to the
+  # same `{:send, meta, [target, message]}` node emitted by the
+  # Melquiades operator so downstream stages (type checker, codegen,
+  # effects) have a single shape to reason about. `:melquiades_form` is
+  # set to `:keyword` to let the printer round-trip the statement form.
   defp parse_send(state) do
     token = peek(state)
     state = advance(state)
     {target, state} = parse_expr(state, 0)
     state = expect(state, :comma)
     {message, state} = parse_expr(state, 0)
-    ast = {:function_call, [name: "send", line: token.line, col: token.col], [target, message]}
+    meta = [line: token.line, col: token.col, melquiades_form: :keyword]
+    ast = {:send, meta, [target, message]}
     {ast, state}
   end
 

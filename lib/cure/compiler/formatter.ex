@@ -300,6 +300,11 @@ defmodule Cure.Compiler.Formatter do
   # `:context_binary` (space only when heuristics decide the occurrence
   # is binary rather than unary/variadic/etc).
   @operator_table [
+    # Melquiades operator (always binary). `<-|` is three bytes, so it
+    # must come before the two-byte `<` entries to match first. The
+    # unicode `✉` (U+2709 ENVELOPE) encodes to three bytes in UTF-8.
+    {"<-|", :always_binary},
+    {"✉", :always_binary},
     # compound assignments (always binary, unambiguous)
     {"+=", :always_binary},
     {"-=", :always_binary},

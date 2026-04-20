@@ -508,8 +508,13 @@ defmodule Cure.FSM.Compiler do
   # blocks, assignments, function calls (bare, module-qualified, and
   # common Elixir kernel calls like `send`), conditionals (`if/then/else`),
   # pattern matches, and attribute access.
-
-  defp cure_ast_to_elixir(ast) do
+  #
+  # Public so `Cure.Actor.Compiler` (and future callback-mode containers
+  # like `sup`) can reuse the translator without cloning 200 lines of
+  # AST walking. The translator is intentionally narrow -- it only
+  # covers shapes produced by callback clause parsing.
+  @doc false
+  def cure_ast_to_elixir(ast) do
     case ast do
       # Function calls: bare, module-qualified, `tuple(...)` constructor,
       # or Elixir Kernel.send/2 (which the parser emits as name = "send").

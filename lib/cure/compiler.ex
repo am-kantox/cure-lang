@@ -77,10 +77,18 @@ defmodule Cure.Compiler do
          {:ok, _} <- maybe_check(ast, file, emit?, check?),
          {:ok, ast} <- maybe_optimize(ast, optimize?),
          {:ok, forms} <- codegen(ast, file, emit?) do
-      # Callback mode FSMs are already compiled and loaded by the codegen step;
-      # in that case `forms` is a `{:callback_mode, module}` marker.
+      # Callback-mode FSMs, typed actors, and supervisors are already
+      # compiled and loaded by the codegen step; in that case `forms`
+      # is one of the `{:callback_mode, module}`, `{:actor, module}`,
+      # or `{:supervisor, module}` markers.
       case forms do
         {:callback_mode, mod_atom} ->
+          {:ok, mod_atom, []}
+
+        {:actor, mod_atom} ->
+          {:ok, mod_atom, []}
+
+        {:supervisor, mod_atom} ->
           {:ok, mod_atom, []}
 
         forms when is_list(forms) ->
@@ -129,6 +137,12 @@ defmodule Cure.Compiler do
          {:ok, forms} <- codegen(ast, file, emit?) do
       case forms do
         {:callback_mode, mod_atom} ->
+          {:ok, mod_atom}
+
+        {:actor, mod_atom} ->
+          {:ok, mod_atom}
+
+        {:supervisor, mod_atom} ->
           {:ok, mod_atom}
 
         forms when is_list(forms) ->

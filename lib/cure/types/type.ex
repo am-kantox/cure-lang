@@ -51,7 +51,7 @@ defmodule Cure.Types.Type do
 
   # -- Primitive Predicates ----------------------------------------------------
 
-  @primitives [:int, :float, :string, :bool, :atom, :unit, :any, :never, :char, :regex]
+  @primitives [:int, :float, :string, :bool, :atom, :unit, :any, :never, :char, :regex, :ref]
 
   @effect_kinds [:io, :state, :exception, :spawn, :extern]
 
@@ -111,6 +111,16 @@ defmodule Cure.Types.Type do
   def subtype?(t, t), do: true
   def subtype?(:int, :float), do: true
   def subtype?({:list, a}, {:list, b}), do: subtype?(a, b)
+
+  # Typed Pid subtyping: covariant in the inbox. A pid that accepts a
+  # narrower inbox can always be used where one that accepts a wider
+  # inbox is expected (Liskov). `Pid` without a parameter resolves to
+  # `{:pid, :any}` which acts as the top of the pid lattice.
+  def subtype?({:pid, a}, {:pid, b}), do: subtype?(a, b)
+  # Bridge to the pre-typed-pid world: legacy code that declared `Pid`
+  # as a primitive `:atom` still interoperates with the new typed pid.
+  def subtype?({:pid, _}, :atom), do: true
+  def subtype?(:atom, {:pid, _}), do: true
 
   def subtype?({:tuple, as}, {:tuple, bs}) when length(as) == length(bs) do
     Enum.zip(as, bs) |> Enum.all?(fn {a, b} -> subtype?(a, b) end)
@@ -281,6 +291,13 @@ defmodule Cure.Types.Type do
       name == "Set" and length(params) == 1 ->
         {:list, resolve(hd(params))}
 
+      # Typed pid: `Pid(Inbox)` resolves to `{:pid, resolved_inbox}`.
+      # The parameter is any type expression; an actor module name is
+      # resolved via `resolve_name/1` to a `{:named, _}` reference and
+      # resolved to its registered inbox ADT in the type checker.
+      name == "Pid" and length(params) == 1 ->
+        {:pid, resolve(hd(params))}
+
       name in ["Sigma", "DPair"] ->
         case Cure.Types.Sigma.from_function_call(meta, params) do
           :not_sigma ->
@@ -352,8 +369,14 @@ defmodule Cure.Types.Type do
   defp resolve_name("Never"), do: :never
   defp resolve_name("Char"), do: :char
   defp resolve_name("Binary"), do: :string
-  defp resolve_name("Pid"), do: :atom
-  defp resolve_name("Ref"), do: :atom
+  # Bare `Pid` without a type parameter is the top of the typed-pid
+  # lattice: `{:pid, :any}` accepts any inbox protocol. Typed pids are
+  # produced by `Pid(InboxAdt)` via the `:function_call` branch above.
+  defp resolve_name("Pid"), do: {:pid, :any}
+  # Monitor/process reference. Now a dedicated primitive rather than
+  # an atom alias, so `Ref` type-checks as its own kind and cannot be
+  # accidentally unified with e.g. `:my_atom`.
+  defp resolve_name("Ref"), do: :ref
   defp resolve_name("Nat"), do: :int
   defp resolve_name("Tuple"), do: {:adt, :tuple, []}
   # Bare `List` (without a type parameter) is the top of the list
@@ -384,6 +407,9 @@ defmodule Cure.Types.Type do
   def display(:never), do: "Never"
   def display(:char), do: "Char"
   def display(:regex), do: "Regex"
+  def display(:ref), do: "Ref"
+  def display({:pid, :any}), do: "Pid"
+  def display({:pid, inbox}), do: "Pid(#{display(inbox)})"
   def display({:list, t}), do: "List(#{display(t)})"
   def display({:tuple, ts}), do: "%[#{Enum.map_join(ts, ", ", &display/1)}]"
   def display({:map, k, v}), do: "Map(#{display(k)}, #{display(v)})"

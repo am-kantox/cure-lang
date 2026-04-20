@@ -1,0 +1,37 @@
+mod Std.Actor
+  ## Typed-actor runtime operations: spawn, stop, send, introspect.
+  # Spawn a new actor instance from a compiled actor module atom.
+  # The spawning process is recorded as the actor's caller automatically;
+  # lifecycle hooks can reach it via Std.Actor.notify/1.
+  @extern(Elixir.Cure.Actor.Builtins, :actor_spawn, 1)
+  fn spawn(actor_module: Atom) -> Pid
+
+  # Spawn an actor with an explicit initial payload.
+  @extern(Elixir.Cure.Actor.Builtins, :actor_spawn_with_payload, 2)
+  fn spawn_with_payload(actor_module: Atom, payload: Any) -> Pid
+
+  # Spawn a named actor.
+  @extern(Elixir.Cure.Actor.Builtins, :actor_spawn_named, 2)
+  fn spawn_named(actor_module: Atom, name: String) -> Pid
+
+  # Stop a running actor instance.
+  @extern(Elixir.Cure.Actor.Builtins, :actor_stop, 1)
+  fn stop(pid: Pid) -> Atom
+
+  # Send a message to an actor (cast semantics: fire-and-forget).
+  # This is the runtime counterpart of the Melquiades operator `<-|`;
+  # both lower to Erlang's `!` and return the sent message.
+  @extern(Elixir.Cure.Actor.Builtins, :actor_send, 2)
+  fn send(pid: Pid, message: Any) -> Any
+
+  # Fetch the actor's current user-visible payload.
+  @extern(Elixir.Cure.Actor.Builtins, :actor_get_state, 1)
+  fn get_state(pid: Pid) -> Any
+
+  # Is the actor pid still alive?
+  @extern(Elixir.Cure.Actor.Builtins, :actor_is_alive, 1)
+  fn is_alive(pid: Pid) -> Bool
+
+  # Look up an actor by its registered name.
+  @extern(Elixir.Cure.Actor.Builtins, :actor_lookup, 1)
+  fn lookup(name: String) -> Pid
