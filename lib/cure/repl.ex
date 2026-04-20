@@ -212,7 +212,7 @@ defmodule Cure.REPL do
 
     case History.prev(state.history, draft) do
       {:ok, entry, history} ->
-        %{state | history: history, editor: LineEditor.set_buffer(state.editor, entry)}
+        %{state | history: history, editor: set_buffer_flat(state.editor, entry)}
 
       :at_top ->
         state
@@ -222,7 +222,7 @@ defmodule Cure.REPL do
   defp history_next(state) do
     case History.next(state.history) do
       {:ok, entry, history} ->
-        %{state | history: history, editor: LineEditor.set_buffer(state.editor, entry)}
+        %{state | history: history, editor: set_buffer_flat(state.editor, entry)}
 
       :at_bottom ->
         state
@@ -275,26 +275,27 @@ defmodule Cure.REPL do
 
   defp search_loop(state, s, prompt) do
     Render.redraw(state.editor, state.n, state.theme, prompt: prompt)
-    Render.draw_search_status(Search.status(s, state.theme), state.theme)
+    cursor_col = Render.ansi_length(prompt) + state.editor.cursor
+    Render.draw_search_status(Search.status(s, state.theme), state.theme, cursor_col)
 
     case Terminal.read_key() do
       :eof ->
-        Render.clear_helpers()
-        %{state | editor: LineEditor.set_buffer(state.editor, s.original)}
+        Render.clear_helpers(cursor_col)
+        %{state | editor: set_buffer_flat(state.editor, s.original)}
 
       key ->
         case Search.handle(s, key, state.history) do
           {:continue, s2} ->
-            ed2 = LineEditor.set_buffer(state.editor, s2.match || s2.needle)
+            ed2 = set_buffer_flat(state.editor, s2.match || s2.needle)
             search_loop(%{state | editor: ed2}, s2, prompt)
 
           {:accept, text} ->
-            Render.clear_helpers()
-            %{state | editor: LineEditor.set_buffer(state.editor, text)}
+            Render.clear_helpers(cursor_col)
+            %{state | editor: set_buffer_flat(state.editor, text)}
 
           {:accept_and_key, text, key} ->
-            Render.clear_helpers()
-            ed = LineEditor.set_buffer(state.editor, text)
+            Render.clear_helpers(cursor_col)
+            ed = set_buffer_flat(state.editor, text)
 
             case LineEditor.handle(ed, key) do
               {:cont, ed2} -> %{state | editor: ed2}
@@ -302,10 +303,27 @@ defmodule Cure.REPL do
             end
 
           {:cancel, text} ->
-            Render.clear_helpers()
-            %{state | editor: LineEditor.set_buffer(state.editor, text)}
+            Render.clear_helpers(cursor_col)
+            %{state | editor: set_buffer_flat(state.editor, text)}
         end
     end
+  end
+
+  # The editor is single-line by construction, so any `\n` present in a
+  # history entry (multi-line submission, joined with `\n` by
+  # `dispatch_buffer/1`) would desync the logical and visible cursor
+  # positions when rendered. We replace each newline with a visible U+23CE
+  # RETURN SYMBOL so the buffer stays on one row; the user can recover the
+  # original multi-line layout by re-submitting with `;;` or editing it
+  # via `:edit`.
+  defp set_buffer_flat(%LineEditor{} = ed, text) when is_binary(text) do
+    LineEditor.set_buffer(ed, flatten_newlines(text))
+  end
+
+  defp flatten_newlines(text) when is_binary(text) do
+    text
+    |> String.replace("\r\n", "\n")
+    |> String.replace("\n", " \u23ce ")
   end
 
   # -- Submission -----------------------------------------------------------

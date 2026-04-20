@@ -77,29 +77,61 @@ defmodule Cure.REPL.Render do
   @doc """
   Redraw a status line below the prompt (for Ctrl+R incremental search).
   Returns the cursor to the main input row afterwards.
+
+  `cursor_col` is the absolute column (1-based, counted in printable
+  graphemes) the caller wants the cursor restored to on the prompt row.
+  It is typically `ansi_length(prompt) + editor.cursor`.
+
+  The implementation uses only **relative** cursor motion. `\e7` /
+  `\e8` (DECSC/DECRC) save and restore an absolute screen coordinate:
+  if writing the descent `\n` scrolls the viewport (cursor was on the
+  last row), the saved coordinate would point one line below the
+  prompt after the scroll. `\e[1A` goes up one *physical* row, which
+  is always the prompt row regardless of whether the descent scrolled.
   """
-  @spec draw_search_status(String.t(), Theme.t()) :: :ok
-  def draw_search_status(status, %Theme{} = theme) do
-    # Save cursor, move to next row, clear it, write status, restore cursor.
-    output = [
-      "\e7",
-      "\n",
+  @spec draw_search_status(String.t(), Theme.t(), non_neg_integer()) :: :ok
+  def draw_search_status(status, %Theme{} = theme, cursor_col)
+      when is_integer(cursor_col) and cursor_col >= 0 do
+    Terminal.write(IO.iodata_to_binary(encode_search_status(status, theme, cursor_col)))
+    :ok
+  end
+
+  @doc false
+  # Pure iodata builder for `draw_search_status/3`, exposed for tests.
+  @spec encode_search_status(String.t(), Theme.t(), non_neg_integer()) :: iodata()
+  def encode_search_status(status, %Theme{} = theme, cursor_col)
+      when is_integer(cursor_col) and cursor_col >= 0 do
+    [
+      "\r\n",
       @clear_line,
       theme.status,
       status,
       theme.reset,
-      "\e8"
+      "\e[1A",
+      move_cursor_to_column(cursor_col)
     ]
+  end
 
-    Terminal.write(IO.iodata_to_binary(output))
+  @doc """
+  Clear any helper rows drawn below the input (completions, search)
+  and return the cursor to `cursor_col` on the prompt row.
+
+  Mirrors `draw_search_status/3`: relative motion only, so a descent
+  that scrolls the viewport still ascends back to the prompt row.
+  """
+  @spec clear_helpers(non_neg_integer()) :: :ok
+  def clear_helpers(cursor_col \\ 0)
+      when is_integer(cursor_col) and cursor_col >= 0 do
+    Terminal.write(IO.iodata_to_binary(encode_clear_helpers(cursor_col)))
     :ok
   end
 
-  @doc "Clear any helper rows drawn below the input (completions, search)."
-  @spec clear_helpers() :: :ok
-  def clear_helpers do
-    Terminal.write(["\e7", "\n", @clear_line, "\e8"])
-    :ok
+  @doc false
+  # Pure iodata builder for `clear_helpers/1`, exposed for tests.
+  @spec encode_clear_helpers(non_neg_integer()) :: iodata()
+  def encode_clear_helpers(cursor_col)
+      when is_integer(cursor_col) and cursor_col >= 0 do
+    ["\r\n", @clear_line, "\e[1A", move_cursor_to_column(cursor_col)]
   end
 
   @doc """
@@ -145,6 +177,14 @@ defmodule Cure.REPL.Render do
     |> String.length()
   end
 
-  # Move cursor to absolute column on the current row (1-based).
-  defp move_cursor_to_column(col) when col >= 0, do: "\r\e[#{col}C"
+  # Move cursor to column `col` on the current row.
+  #
+  # `\e[0C` (CUF with an explicit zero) is defined by ECMA-48 as a
+  # one-column move on common terminals (xterm, iTerm2, Linux console),
+  # which would leave the cursor off by one. We therefore emit just
+  # `\r` for `col == 0` and the full escape only when it is meaningful.
+  @doc false
+  @spec move_cursor_to_column(non_neg_integer()) :: iodata()
+  def move_cursor_to_column(0), do: "\r"
+  def move_cursor_to_column(col) when is_integer(col) and col > 0, do: "\r\e[#{col}C"
 end

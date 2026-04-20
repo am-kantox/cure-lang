@@ -23,5 +23,6 @@
   {"lib/cure/types/env.ex", :call_without_opaque},
   {"lib/cure/types/env.ex", :contract_with_opaque},
   {"lib/cure/types/pattern_checker.ex", :call_without_opaque},
-  {"lib/cure/types/totality.ex", :call_without_opaque}
+  {"lib/cure/types/totality.ex", :call_without_opaque},
+  {"lib/cure/repl.ex",  :call_without_opaque}
 ]
