@@ -39,9 +39,17 @@ defmodule Cure.Pipeline.Events do
   """
 
   # `:registry` covers out-of-band lifecycle events from the package
-  # registry and transparency log; every other stage maps to one of the
-  # compilation pipeline phases.
-  @type stage :: :lexer | :parser | :type_checker | :codegen | :fsm_verifier | :registry
+  # registry and transparency log; `:sup_verifier` covers the structural
+  # verification pass for `sup` containers. Every other stage maps to
+  # one of the compilation pipeline phases.
+  @type stage ::
+          :lexer
+          | :parser
+          | :type_checker
+          | :codegen
+          | :fsm_verifier
+          | :sup_verifier
+          | :registry
   @type event_type :: atom()
   @type metadata :: %{file: String.t(), line: pos_integer(), timestamp: integer()}
 
