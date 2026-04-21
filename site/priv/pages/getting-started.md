@@ -18,7 +18,7 @@ Clone the repository and fetch dependencies:
 
 ```bash
 git clone https://github.com/am-kantox/cure-lang.git
-cd cure
+cd cure-lang
 mix deps.get
 mix compile
 ```
