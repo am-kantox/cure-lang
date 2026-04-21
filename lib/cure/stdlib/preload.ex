@@ -25,7 +25,7 @@ defmodule Cure.Stdlib.Preload do
 
   @std_modules ~w(Core List Pair Math String Io System Show Option Result
                   Eq Ord Functor Map Set Test Vector Equal Refine Fsm
-                  Match Proof Gen Iter Access)
+                  Match Proof Gen Iter Access Time Regex CRDT)
 
   @default_stdlib_ebin "_build/cure/ebin"
   @default_examples_ebin "_build/cure/ex_ebin"

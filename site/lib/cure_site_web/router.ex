@@ -25,6 +25,7 @@ defmodule CureSiteWeb.Router do
     get "/", PageController, :home
     get "/blog", BlogController, :index
     get "/blog/:id", BlogController, :show
+    live "/playground", PlaygroundLive, :index
     get "/:id", PageController, :show
   end
 

@@ -1,0 +1,10 @@
+[project]
+name          = "cure_atelier"
+version       = "0.1.0"
+source_paths  = ["cure_src"]
+
+[dependencies]
+
+[compiler]
+type_check = false
+optimize   = false

@@ -1,0 +1,21 @@
+## Curator actor for the Cure atelier showcase.
+##
+## The Curator role receives `SubmitPiece` messages from the Painter
+## and responds with `Accept` or `Reject` based on the submission.
+## In this minimal showcase the curator always accepts, so the session
+## type check passes cleanly. A deliberately-broken variant in the
+## test suite flips the response pattern to demonstrate `E056`.
+
+actor Curator with %[:waiting, 0]
+  on_start
+    (state) -> state
+  on_message
+    (%[:accept, _title], %[_phase, n]) ->
+      %[:accepted, n + 1]
+    (%[:reject, _title, _reason], %[_phase, n]) ->
+      %[:rejected, n]
+    (:reset, _state) ->
+      %[:waiting, 0]
+    (:get, state) ->
+      notify(%[:curator_state, state])
+      state

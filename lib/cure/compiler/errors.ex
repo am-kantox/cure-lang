@@ -1075,10 +1075,15 @@ defmodule Cure.Compiler.Errors do
 
   defp format_diagnostic(severity, category, file, line, message) do
     location =
-      if line > 0 do
-        " --> #{file}:#{line}"
-      else
-        " --> #{file}"
+      cond do
+        line > 0 ->
+          " --> " <> Cure.Term.Hyperlink.file_line_link(file, line)
+
+        file in ["", "nofile", nil] ->
+          " --> #{file}"
+
+        true ->
+          " --> " <> Cure.Term.Hyperlink.file_link(file)
       end
 
     """

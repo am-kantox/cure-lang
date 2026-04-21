@@ -14,7 +14,24 @@ and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
 FSM compilation with structural verification, effect system, documentation
 generator, formatter, stdlib, CLI, CI, and example programs.
 
-v0.26.0 promotes the supervision surface into a full OTP application
+v0.27.0 themes itself "See Your System Breathe" and adds the
+observability and verification surface around v0.26.0's OTP
+applications. It ships `Cure.OTel` (OpenTelemetry-compatible span
+bridge), `cure top` (snapshot-based runtime observer), `cure trace`
+(typed :dbg wrapper), `Cure.Temporal` (LTL-style bounded model
+checker over FSMs), `Cure.Protocol` (session-typed binary protocols
+between actors), `Cure.Types.Synth` (typed-hole suggestions via
+`cure synth`), three new stdlib modules (`Std.Time`, `Std.Regex`,
+`Std.CRDT`), and OSC 8 clickable-filepath error messages via
+`Cure.Term.Hyperlink`. A LiveView Playground lands on
+[cure-lang.org/playground](https://cure-lang.org/playground) and
+`examples/cure_atelier/` exercises every new surface end to end. See
+[`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md),
+[`docs/TEMPORAL.md`](docs/TEMPORAL.md),
+[`docs/PROTOCOL.md`](docs/PROTOCOL.md), and
+[`docs/PLAYGROUND.md`](docs/PLAYGROUND.md) for the on-disk references.
+
+v0.26.0 promoted the supervision surface into a full OTP application
 lifecycle. A new `app` container declares the project's OTP application
 in Cure source; it compiles to a loaded `Application` callback module,
 emits an `<name>.app` OTP resource file, and is buildable as a

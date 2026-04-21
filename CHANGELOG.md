@@ -4,6 +4,131 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.27.0] -- See Your System Breathe
+
+v0.27.0 is the observability-and-verification release. It turns the
+v0.26.0 OTP application surface into something users can *watch*
+running (`cure top`, `cure trace`, `Cure.OTel` spans), *reason
+about* (`Cure.Temporal` LTL properties over FSMs,
+`Cure.Protocol` session types between actors), and *fill in by hand*
+(`cure synth` typed-hole suggestions). Three new stdlib modules
+(`Std.CRDT`, `Std.Time`, `Std.Regex`) round out the practical
+toolbox, and compiler errors now carry OSC 8 terminal hyperlinks so
+file paths are clickable in WezTerm, Kitty, iTerm2, VTE, and Warp.
+A companion LiveView Playground ships at
+[`cure-lang.org/playground`](https://cure-lang.org/playground).
+
+### Added -- Observability
+
+- `Cure.OTel` -- OpenTelemetry-compatible span bridge on top of
+  `Cure.Pipeline.Events`. Manual span helper `span/3`, cross-process
+  context injection via `inject_ctx/1` + `extract_ctx/1`, pluggable
+  exporter, configurable service name and sample ratio.
+- `Cure.OTel.MemoryExporter` -- bundled in-memory ETS exporter for
+  tests and the showcase example; exposes `all/0`, `flush/0`,
+  `count/0`, `reset/0`.
+- `Cure.Observe.Top` -- snapshot-based supervisor/actor/FSM reader
+  with a text renderer. `Mix.Tasks.Cure.Top` exposes the output as
+  `mix cure.top` (also `cure top`).
+- `Cure.Observe.Trace` -- typed tracer wrapper over `:dbg` with
+  per-function signature lookup from the new
+  `Cure.Observe.Trace.Registry` ETS table. CLI surface via
+  `mix cure.trace Module.fun/arity --duration N`.
+
+### Added -- Verification
+
+- `Cure.Temporal.Formula` -- LTL formula ADT with smart
+  constructors and a pretty-printer.
+- `Cure.Temporal.Parser` -- hand-written recursive-descent parser
+  for the temporal DSL (`always`, `eventually`, `never`, `next`,
+  `and`, `or`, `->`, `until`, `!`; multi-property scripts separated
+  by `;` or newlines; parentheses for grouping).
+- `Cure.Temporal.Checker` -- bounded model checker with explicit
+  safety, liveness, `next`, and `until` semantics; produces
+  concrete counterexample traces on violations.
+- `Cure.Protocol` -- session-typed binary protocols between actor
+  roles. Parser (`Cure.Protocol.Parser`), ADT
+  (`Cure.Protocol.Script`), structural verifier
+  (`Cure.Protocol.Verifier`) surfacing `E056`, and
+  `participant_trace/2` that plugs into `Cure.Temporal.Checker`.
+
+### Added -- Typed holes synthesis
+
+- `Cure.Types.Synth` -- depth-budgeted enumeration of well-typed
+  candidates for a given goal type and local context. Seeded with a
+  hand-maintained subset of `Std.Core`, `Std.Option`, `Std.Result`,
+  `Std.List`, `Std.Math`, `Std.String`, and `Std.Io`. Candidates are
+  ranked by cost, filtered by a declared effect budget, and emitted
+  through the new `:synthesis` pipeline stage.
+- `Mix.Tasks.Cure.Synth` -- `mix cure.synth --goal T --ctx var=T`
+  CLI driver that prints the top-`N` candidates.
+
+### Added -- Stdlib
+
+- `Std.Time` (14 functions) -- `Instant`, `Duration`, ISO 8601
+  parsing/formatting, arithmetic, Unix conversions, smart duration
+  constructors. Runtime: `:cure_std_time`.
+- `Std.Regex` (7 functions) -- `compile`, `compile_bang`,
+  `is_match`, `run`, `scan`, `replace`, `split` on top of `:re`.
+  Invalid patterns surface as `E060 Regex Invalid`. Runtime:
+  `:cure_std_regex`.
+- `Std.CRDT` (5 CRDTs × 4 ops + `pn_decrement`) -- `GCounter`,
+  `PNCounter`, `ORSet`, `LWWRegister`, `MVRegister` with
+  commutative / associative / idempotent `*_merge/2`. Runtime:
+  `:cure_std_crdt`.
+- `Cure.Stdlib.Preload` updated to load the three new modules.
+
+### Added -- Developer UX
+
+- `Cure.Term.Hyperlink` -- OSC 8 terminal-hyperlink helper with a
+  `TERM`-based allowlist (`wezterm`, `xterm-kitty`, `iterm`,
+  `iterm2`, `vte`, `warp`) plus `NO_COLOR` and `CURE_HYPERLINKS`
+  environment overrides. Wired into
+  `Cure.Compiler.Errors.format_diagnostic/5` so every error location
+  emits clickable links when the terminal supports them.
+- `Cure.Doc.Mermaid` -- emits Mermaid source for FSM / sup / app
+  containers ready to embed in `cure doc` HTML output.
+
+### Added -- Playground
+
+- `CureSiteWeb.PlaygroundLive` on the Cure website serves a
+  two-pane LiveView editor with live Makeup-driven syntax
+  highlighting at `/playground`.
+- `site/priv/pages/playground.md` documents the current surface and
+  what lands in v0.28 (type-check + sandboxed evaluator +
+  WASM target).
+
+### Added -- Documentation and examples
+
+- `docs/OBSERVABILITY.md`, `docs/PROTOCOL.md`, `docs/TEMPORAL.md`,
+  `docs/PLAYGROUND.md`.
+- `docs/STDLIB.md` extended with `Std.Time`, `Std.Regex`,
+  `Std.CRDT`.
+- `examples/cure_atelier/` -- showcase project that exercises
+  every v0.27.0 surface in a single compact test suite:
+  `Std.CRDT.ORSet`, `Std.Time.Instant`, `Std.Regex`,
+  `Cure.Protocol`, `Cure.Temporal`, `Cure.OTel`, `Cure.Types.Synth`,
+  `Cure.Term.Hyperlink`.
+
+### Added -- Error catalog
+
+- **E056 Protocol Violation** -- role / reachability / projection
+  failures inside a `protocol` declaration.
+- **E059 Temporal Property Violated** -- with a minimal
+  counterexample trace.
+- **E060 Regex Invalid** -- bad pattern surfaced at compile or call
+  time.
+- **E061 Synthesis Budget Exhausted** -- warning emitted when
+  `Cure.Types.Synth` runs out of depth without finding a candidate.
+- **E062 Temporal Target Unknown** -- temporal formula references a
+  state absent from the model.
+
+### Changed
+
+- `mix.exs` version bumped to `0.27.0`.
+- `extra_applications` grew `:runtime_tools` so `:dbg` is visible
+  to `Cure.Observe.Trace` without a separate load step.
+
 ## [0.26.0] -- Applications and Releases
 
 v0.26.0 promotes the supervision surface from v0.25.0 into a full OTP

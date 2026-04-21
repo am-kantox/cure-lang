@@ -1,0 +1,128 @@
+mod Std.CRDT
+  ## Conflict-free Replicated Data Types for Cure (v0.27.0).
+  ##
+  ## Every CRDT in this module satisfies three laws that make it safe
+  ## for eventual-consistency replication:
+  ##
+  ##   1. `merge(a, b) == merge(b, a)`      (commutative)
+  ##   2. `merge(a, merge(b, c)) == merge(merge(a, b), c)` (associative)
+  ##   3. `merge(a, a) == a`                (idempotent)
+  ##
+  ## The laws are asserted in the companion `Std.Proof` obligations
+  ## emitted by `lib/std/crdt.cure` when re-checked; the runtime
+  ## implementation in `:cure_std_crdt` is hand-verified against them.
+  ##
+  ## Types included:
+  ##
+  ##   - `GCounter`    -- grow-only counter, `increment` and `value`.
+  ##   - `PNCounter`   -- positive/negative counter, supports decrement.
+  ##   - `ORSet(T)`    -- observed-remove set, `add` / `remove` / `value`.
+  ##   - `LWWRegister(T)` -- last-write-wins register.
+  ##   - `MVRegister(T)`  -- multi-value register (set of concurrent writes).
+  ##
+  ## All CRDTs carry a `node_id` to tag mutations so merges can reconcile
+  ## conflicting updates deterministically.
+
+  ## Grow-only counter. Per-replica counts are summed on read.
+  rec GCounter
+    counts: T
+
+  ## Positive/negative counter -- two GCounters, one for increments and
+  ## one for decrements. `value` returns `sum(p) - sum(n)`.
+  rec PNCounter
+    p: GCounter
+    n: GCounter
+
+  ## Observed-remove set: each element carries the set of unique tags
+  ## attributed to its addition; removals drop exactly the tags the
+  ## remover has observed.
+  rec ORSet
+    entries: T
+
+  ## Last-write-wins register. Merges pick the side with the higher
+  ## timestamp; ties break on node id.
+  rec LWWRegister
+    value: T
+    stamp: Int
+    node: Atom
+
+  ## Multi-value register. When two writes are concurrent, both are
+  ## retained so the caller can resolve the conflict.
+  rec MVRegister
+    writes: T
+
+  # -- GCounter ---------------------------------------------------------------
+
+  @extern(:cure_std_crdt, :g_empty, 0)
+  fn g_empty() -> GCounter
+
+  @extern(:cure_std_crdt, :g_increment, 3)
+  fn g_increment(c: GCounter, node: Atom, by: Int) -> GCounter
+
+  @extern(:cure_std_crdt, :g_value, 1)
+  fn g_value(c: GCounter) -> Int
+
+  @extern(:cure_std_crdt, :g_merge, 2)
+  fn g_merge(a: GCounter, b: GCounter) -> GCounter
+
+  # -- PNCounter --------------------------------------------------------------
+
+  @extern(:cure_std_crdt, :pn_empty, 0)
+  fn pn_empty() -> PNCounter
+
+  @extern(:cure_std_crdt, :pn_increment, 3)
+  fn pn_increment(c: PNCounter, node: Atom, by: Int) -> PNCounter
+
+  @extern(:cure_std_crdt, :pn_decrement, 3)
+  fn pn_decrement(c: PNCounter, node: Atom, by: Int) -> PNCounter
+
+  @extern(:cure_std_crdt, :pn_value, 1)
+  fn pn_value(c: PNCounter) -> Int
+
+  @extern(:cure_std_crdt, :pn_merge, 2)
+  fn pn_merge(a: PNCounter, b: PNCounter) -> PNCounter
+
+  # -- ORSet ------------------------------------------------------------------
+
+  @extern(:cure_std_crdt, :or_empty, 0)
+  fn or_empty() -> ORSet
+
+  @extern(:cure_std_crdt, :or_add, 3)
+  fn or_add(s: ORSet, node: Atom, elem: T) -> ORSet
+
+  @extern(:cure_std_crdt, :or_remove, 2)
+  fn or_remove(s: ORSet, elem: T) -> ORSet
+
+  @extern(:cure_std_crdt, :or_value, 1)
+  fn or_value(s: ORSet) -> List(T)
+
+  @extern(:cure_std_crdt, :or_merge, 2)
+  fn or_merge(a: ORSet, b: ORSet) -> ORSet
+
+  # -- LWWRegister ------------------------------------------------------------
+
+  @extern(:cure_std_crdt, :lww_empty, 1)
+  fn lww_empty(node: Atom) -> LWWRegister
+
+  @extern(:cure_std_crdt, :lww_set, 4)
+  fn lww_set(r: LWWRegister, value: T, stamp: Int, node: Atom) -> LWWRegister
+
+  @extern(:cure_std_crdt, :lww_value, 1)
+  fn lww_value(r: LWWRegister) -> T
+
+  @extern(:cure_std_crdt, :lww_merge, 2)
+  fn lww_merge(a: LWWRegister, b: LWWRegister) -> LWWRegister
+
+  # -- MVRegister -------------------------------------------------------------
+
+  @extern(:cure_std_crdt, :mv_empty, 0)
+  fn mv_empty() -> MVRegister
+
+  @extern(:cure_std_crdt, :mv_write, 4)
+  fn mv_write(r: MVRegister, value: T, stamp: Int, node: Atom) -> MVRegister
+
+  @extern(:cure_std_crdt, :mv_values, 1)
+  fn mv_values(r: MVRegister) -> List(T)
+
+  @extern(:cure_std_crdt, :mv_merge, 2)
+  fn mv_merge(a: MVRegister, b: MVRegister) -> MVRegister

@@ -250,3 +250,64 @@ use Std.App
 fn boot() -> Atom = Std.App.ensure_all_started(:my_app)
 fn port() -> Int  = Std.App.get_env(:my_app, :port, 4000)
 ```
+
+## Std.Time (v0.27.0)
+
+Time primitives on top of OTP's `Calendar` / `DateTime`:
+
+- `now()`, `utc_now()` -- wall-clock reader returning an
+  `Instant{micros: Int}` record. Both carry `! Io`.
+- `parse_iso8601(s)` -- `Result(Instant, ParseError)`; accepts
+  canonical `YYYY-MM-DDTHH:MM:SSZ` or `+HH:MM` offsets with
+  optional fractional seconds.
+- `format_iso8601(i)` -- render an `Instant` back to a UTC string,
+  suppressing `.000000` when the microsecond part is zero.
+- `add(i, d)`, `diff(a, b)` -- arithmetic on `Instant` and
+  `Duration` records.
+- `zone(i, name)` -- project into a named zone (`"UTC"`,
+  `"+02:00"`, `"-05:00"`); returns `Result(String, ParseError)`.
+- `to_unix(i)`, `of_unix(s)` -- Unix-second conversions.
+- `millis(n)`, `seconds(n)`, `minutes(n)`, `hours(n)` -- smart
+  constructors for `Duration`.
+
+Runtime bridge: `:cure_std_time`.
+
+## Std.Regex (v0.27.0)
+
+Thin wrapper over OTP's `:re`:
+
+- `compile(pattern)` -- `Result(Regex, RegexError)` where `Regex`
+  is an opaque record.
+- `compile_bang(pattern)` -- raises `ArgumentError` on invalid
+  patterns.
+- `is_match(r, input) -> Bool`.
+- `run(r, input) -> Option(Matched)` -- `Matched{whole, groups}`
+  with the first non-whole capture list.
+- `scan(r, input) -> List(Matched)` -- every match in source
+  order.
+- `replace(r, input, replacement)` -- `String`; backreferences
+  (`\1`, `\2`, ...) supported in `replacement`.
+- `split(r, input) -> List(String)`.
+
+Invalid patterns surface through the new `E060 Regex Invalid`
+error code.
+
+## Std.CRDT (v0.27.0)
+
+Five state-based CvRDTs whose `merge/2` operations are
+commutative, associative, and idempotent (enforced by the
+test suite in `test/cure/stdlib/cure_std_crdt_test.exs`):
+
+- **`GCounter`**: grow-only counter. `g_empty`, `g_increment`,
+  `g_value`, `g_merge`.
+- **`PNCounter`**: positive/negative counter. `pn_empty`,
+  `pn_increment`, `pn_decrement`, `pn_value`, `pn_merge`.
+- **`ORSet`**: observed-remove set. `or_empty`, `or_add`,
+  `or_remove`, `or_value`, `or_merge`.
+- **`LWWRegister`**: last-write-wins register. `lww_empty`,
+  `lww_set`, `lww_value`, `lww_merge`.
+- **`MVRegister`**: multi-value register keeping the latest write
+  per node. `mv_empty`, `mv_write`, `mv_values`, `mv_merge`.
+
+Every CRDT is a tagged map under the `__struct__` key; the runtime
+bridge is `:cure_std_crdt`.

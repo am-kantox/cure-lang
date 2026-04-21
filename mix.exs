@@ -2,7 +2,7 @@ defmodule Cure.MixProject do
   use Mix.Project
 
   @app :cure
-  @version "0.26.0"
+  @version "0.27.0"
   @source_url "https://github.com/am-kantox/cure-lang"
 
   def project do
@@ -39,7 +39,7 @@ defmodule Cure.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :inets, :ssl, :crypto, :public_key, :tools, :sasl],
+      extra_applications: [:logger, :inets, :ssl, :crypto, :public_key, :tools, :sasl, :runtime_tools],
       mod: {Cure.Application, []}
     ]
   end
@@ -129,7 +129,11 @@ defmodule Cure.MixProject do
         "docs/SUPERVISION.md",
         "docs/APP.md",
         "docs/STDLIB.md",
-        "docs/REPL.md"
+        "docs/REPL.md",
+        "docs/OBSERVABILITY.md",
+        "docs/PROTOCOL.md",
+        "docs/TEMPORAL.md",
+        "docs/PLAYGROUND.md"
       ],
       source_url: @source_url,
       source_ref: "v#{@version}",

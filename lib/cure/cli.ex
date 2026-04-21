@@ -39,6 +39,13 @@ defmodule Cure.CLI do
           optimize: :boolean,
           verbose: :boolean,
           help: :boolean,
+          goal: :string,
+          ctx: :string,
+          effects: :string,
+          max: :integer,
+          depth: :integer,
+          duration: :integer,
+          width: :integer,
           action: :string,
           template: :string,
           lib: :boolean,
@@ -97,11 +104,112 @@ defmodule Cure.CLI do
         ["keys", "generate", handle] -> cmd_keys_generate(handle)
         ["keys", "list"] -> cmd_keys_list()
         ["release" | rest] -> cmd_release(rest, opts)
+        ["top"] -> cmd_top(opts)
+        ["trace" | rest] -> cmd_trace(rest, opts)
+        ["synth" | rest] -> cmd_synth(rest, opts)
         ["help"] -> help()
         [] -> help()
         [unknown | _] -> error("Unknown command: #{unknown}. Run 'cure help' for usage.")
       end
     end
+  end
+
+  # -- top / trace / synth (v0.27.0) -------------------------------------------
+
+  defp cmd_top(opts) do
+    width = Keyword.get(opts, :output_dir, nil) |> then(fn _ -> Keyword.get(opts, :width, 80) end)
+    snapshot = Cure.Observe.Top.snapshot()
+    IO.puts(Cure.Observe.Top.render(snapshot, width: width))
+  end
+
+  defp cmd_trace([], _opts), do: error("Usage: cure trace Module.fun/arity")
+
+  defp cmd_trace([target | _], opts) do
+    duration = Keyword.get(opts, :duration, 10) * 1000
+
+    case parse_mfa(target) do
+      {:ok, mfa} ->
+        info("Tracing #{target} for #{div(duration, 1000)}s...")
+        Cure.Observe.Trace.start(mfa)
+        :timer.sleep(duration)
+        Cure.Observe.Trace.stop()
+        info("Trace stopped.")
+
+      {:error, _} ->
+        error("Cannot parse #{inspect(target)}; expected Module.fun/arity")
+        exit({:shutdown, 1})
+    end
+  end
+
+  defp cmd_synth([], _opts), do: error("Usage: cure synth --goal T --ctx name=T[,...]")
+
+  defp cmd_synth(_rest, opts) do
+    goal = Keyword.get(opts, :goal) || (error("--goal is required") && exit({:shutdown, 1}))
+    ctx = parse_synth_ctx(Keyword.get(opts, :ctx, ""))
+    effects = parse_synth_effects(Keyword.get(opts, :effects, ""))
+    max_results = Keyword.get(opts, :max, 3)
+    depth = Keyword.get(opts, :depth, 3)
+
+    info("goal: #{goal}")
+    info("ctx:  #{inspect(ctx, pretty: true)}")
+
+    candidates =
+      Cure.Types.Synth.synthesise(goal, ctx, %{},
+        effects: effects,
+        max: max_results,
+        depth: depth
+      )
+
+    case candidates do
+      [] ->
+        info("No candidates found within the budget (E061).")
+
+      _ ->
+        info("\nCandidates:")
+
+        candidates
+        |> Enum.with_index(1)
+        |> Enum.each(fn {c, i} ->
+          tag =
+            if c.effects == [], do: "pure", else: "! " <> Enum.map_join(c.effects, ",", &to_string/1)
+
+          info("  #{i}. #{c.expr}  (cost #{c.cost}, #{tag})")
+        end)
+    end
+  end
+
+  defp parse_mfa(target) when is_binary(target) do
+    case Regex.run(~r/^([\w\.]+)\.(\w+)\/(\d+)$/, target) do
+      [_, mod, fun, arity] ->
+        mod_atom = Module.concat([mod])
+        {:ok, {mod_atom, String.to_atom(fun), String.to_integer(arity)}}
+
+      _ ->
+        {:error, :bad_mfa}
+    end
+  end
+
+  defp parse_synth_ctx(""), do: %{}
+
+  defp parse_synth_ctx(str) do
+    str
+    |> String.split(",", trim: true)
+    |> Enum.flat_map(fn binding ->
+      case String.split(binding, "=", parts: 2) do
+        [name, type] -> [{String.trim(name), String.trim(type)}]
+        _ -> []
+      end
+    end)
+    |> Map.new()
+  end
+
+  defp parse_synth_effects(""), do: []
+
+  defp parse_synth_effects(str) do
+    str
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(&String.to_atom/1)
   end
 
   # -- compile -----------------------------------------------------------------
@@ -951,6 +1059,9 @@ defmodule Cure.CLI do
       keys generate <h>    Generate an Ed25519 signing keypair
       keys list            List trusted publisher keys
       release              Build a BEAM release (requires `app`)
+      top                  Print a runtime snapshot (supervisors / actors / FSMs)
+      trace <M.f/a>        Typed tracer over :dbg (--duration N)
+      synth                Synthesise typed-hole candidates (--goal T --ctx x=T)
       version              Show version
       help                 Show this help
 
