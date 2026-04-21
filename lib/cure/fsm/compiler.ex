@@ -17,6 +17,7 @@ defmodule Cure.FSM.Compiler do
   `get_state/1`, plus `transitions/0` and `allowed?/2` for introspection.
   """
 
+  alias Cure.Compiler.BeamWriter
   alias Cure.Pipeline.Events
 
   @doc """
@@ -28,8 +29,11 @@ defmodule Cure.FSM.Compiler do
   For **callback-mode** FSMs (when the container carries an `:on_transition`
   metadata key) the module is generated, compiled and loaded eagerly as a
   side-effect, and the function returns `{:ok, {:callback_mode, module}}`
-  where `module` is the loaded module atom. In that case there are no forms
-  to write to disk -- the caller should not invoke `:compile.forms/2`.
+  where `module` is the loaded module atom. When the caller provides
+  `:output_dir` in `opts`, the compiler also writes the generated
+  bytecode to `<output_dir>/<module>.beam`, matching the behaviour of
+  simple-mode FSMs and plain modules. Without `:output_dir` the module
+  only lives in the VM and is not persisted to disk.
   """
   @spec compile(tuple(), keyword()) ::
           {:ok, list()} | {:ok, {:callback_mode, module()}}
@@ -104,6 +108,7 @@ defmodule Cure.FSM.Compiler do
   defp compile_callback_mode(ast, opts) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
+    output_dir = Keyword.get(opts, :output_dir)
 
     {:container, meta, transition_nodes} = ast
     name = Keyword.get(meta, :name, "unnamed")
@@ -168,6 +173,10 @@ defmodule Cure.FSM.Compiler do
     # Load the module
     :code.purge(mod_atom)
     {:module, ^mod_atom} = :code.load_binary(mod_atom, ~c"#{file}", bytecode)
+
+    if is_binary(output_dir) do
+      :ok = BeamWriter.write_beam(mod_atom, bytecode, output_dir, emit_events: emit?, file: file)
+    end
 
     if emit? do
       Events.emit(:codegen, :module_assembled, mod_atom, Events.meta(file, line))

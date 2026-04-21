@@ -68,6 +68,13 @@ defmodule Cure.Compiler.Codegen do
   Supervisor containers (`sup Name ...`) are compiled by
   `Cure.Sup.Compiler.compile/2`, which also loads the module eagerly
   and returns `{:ok, {:supervisor, module}}`.
+
+  All three eager-load paths accept an `:output_dir` option; when
+  present, they additionally write the compiled bytecode to
+  `<output_dir>/<module>.beam` via `Cure.Compiler.BeamWriter.write_beam/4`
+  so every Cure container -- `mod`, `proof`, `fsm`, `actor`, `sup` --
+  leaves a `.beam` file on disk, matching the behaviour of plain
+  modules.
   """
   @spec compile_module(tuple(), keyword()) ::
           {:ok, list()}
@@ -78,10 +85,11 @@ defmodule Cure.Compiler.Codegen do
   def compile_module(ast, opts \\ []) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
+    output_dir = Keyword.get(opts, :output_dir)
 
     case ast do
       {:container, meta, body} when is_list(meta) ->
-        dispatch_container(meta, body, emit?, file)
+        dispatch_container(meta, body, emit?, file, output_dir)
 
       # If the AST is a block, find the first container (module/fsm) inside it
       # and merge any sibling definitions into its body (the parser may place
@@ -90,7 +98,7 @@ defmodule Cure.Compiler.Codegen do
         case find_container(children) do
           {:container, meta, body} ->
             merged_body = merge_sibling_defs(body, children)
-            dispatch_container(meta, merged_body, emit?, file)
+            dispatch_container(meta, merged_body, emit?, file, output_dir)
 
           nil ->
             {:error, {:expected_module, ast}}
@@ -115,7 +123,9 @@ defmodule Cure.Compiler.Codegen do
 
   # -- Container Dispatch ------------------------------------------------------
 
-  defp dispatch_container(meta, body, emit?, file) do
+  defp dispatch_container(meta, body, emit?, file, output_dir) do
+    common = [emit_events: emit?, file: file, output_dir: output_dir]
+
     case Keyword.get(meta, :container_type) do
       :module ->
         compile_module_container(meta, body, emit?, file)
@@ -130,14 +140,15 @@ defmodule Cure.Compiler.Codegen do
         ast = {:container, meta, body}
         # Run verification first
         _ = Verifier.verify(ast, emit_events: emit?, file: file)
-        # Compile to gen_statem
-        Compiler.compile(ast, emit_events: emit?, file: file)
+        # Compile to gen_statem (forms), or to a loaded GenServer when
+        # the FSM is in callback mode.
+        Compiler.compile(ast, common)
 
       :actor ->
         ast = {:container, meta, body}
         # Typed actors are compiled to a GenServer module via string
         # codegen and loaded eagerly, mirroring callback-mode FSMs.
-        Cure.Actor.Compiler.compile(ast, emit_events: emit?, file: file)
+        Cure.Actor.Compiler.compile(ast, common)
 
       :supervisor ->
         ast = {:container, meta, body}
@@ -148,7 +159,7 @@ defmodule Cure.Compiler.Codegen do
         # behaviour module.
         case Cure.Sup.Verifier.verify(ast, emit_events: emit?, file: file) do
           {:ok, _} ->
-            Cure.Sup.Compiler.compile(ast, emit_events: emit?, file: file)
+            Cure.Sup.Compiler.compile(ast, common)
 
           {:error, errors} ->
             {:error, {:sup_verification_failed, errors}}
@@ -726,7 +737,11 @@ defmodule Cure.Compiler.Codegen do
       {:container, meta, body} when is_list(meta) ->
         line = Keyword.get(meta, :line, 1)
 
-        case dispatch_container(meta, body, state.emit_events, state.file) do
+        # Nested containers inherit the enclosing compilation's
+        # `emit_events` / `file` context; they are not persisted to
+        # disk (no `output_dir`) because their byte code lives in the
+        # VM alongside the enclosing module's forms.
+        case dispatch_container(meta, body, state.emit_events, state.file, nil) do
           {:ok, forms} ->
             # Load the module into the VM at compile time
             case Cure.Compiler.BeamWriter.compile_and_load(forms) do

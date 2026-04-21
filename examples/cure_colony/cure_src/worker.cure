@@ -1,0 +1,17 @@
+## Worker actor for the Cure colony supervision tree.
+##
+## Owns a single integer payload. Understands three messages:
+##   * `:inc`   -- increment the payload.
+##   * `:reset` -- set the payload back to zero.
+##   * `:get`   -- send the current payload to the spawning caller as
+##                 `%[:value, n]` and leave the payload untouched.
+
+actor Worker with 0
+  on_start
+    (state) -> state
+  on_message
+    (:inc, n) -> n + 1
+    (:reset, _n) -> 0
+    (:get, n) ->
+      notify(%[:value, n])
+      n

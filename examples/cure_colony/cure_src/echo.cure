@@ -1,0 +1,10 @@
+## Echo actor for the Cure colony supervision tree.
+##
+## Stores the last message it received as its payload and also sends
+## `%[:echo, msg]` back to the spawning caller for every message.
+
+actor Echo with nil
+  on_message
+    (msg, _payload) ->
+      notify(%[:echo, msg])
+      msg

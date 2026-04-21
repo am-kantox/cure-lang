@@ -27,6 +27,7 @@ defmodule Cure.Sup.Compiler do
   eagerly; the call returns `{:ok, {:supervisor, module_atom}}`.
   """
 
+  alias Cure.Compiler.BeamWriter
   alias Cure.Pipeline.Events
 
   @default_strategy :one_for_one
@@ -37,11 +38,21 @@ defmodule Cure.Sup.Compiler do
   @doc """
   Compile a `{:container, [container_type: :supervisor, ...], child_specs}`
   node. Returns `{:ok, {:supervisor, module_atom}}` on success.
+
+  ## Options
+    * `:emit_events` -- whether to emit pipeline events (default `true`).
+    * `:file`        -- filename used for diagnostics (default `"nofile"`).
+    * `:output_dir`  -- when set, the compiled supervisor bytecode is
+      also written to `<output_dir>/<module_atom>.beam` so the
+      supervisor module becomes available to subsequent cold starts
+      exactly like plain Cure modules. Writing is skipped when this
+      option is absent or `nil`.
   """
   @spec compile(tuple(), keyword()) :: {:ok, {:supervisor, module()}}
   def compile({:container, meta, child_specs} = _ast, opts \\ []) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
+    output_dir = Keyword.get(opts, :output_dir)
 
     name = Keyword.get(meta, :name, "unnamed")
     mod_atom = sup_module_atom(name)
@@ -62,6 +73,10 @@ defmodule Cure.Sup.Compiler do
     [{^mod_atom, bytecode}] = result
     :code.purge(mod_atom)
     {:module, ^mod_atom} = :code.load_binary(mod_atom, ~c"#{file}", bytecode)
+
+    if is_binary(output_dir) do
+      :ok = BeamWriter.write_beam(mod_atom, bytecode, output_dir, emit_events: emit?, file: file)
+    end
 
     if emit? do
       Events.emit(:codegen, :module_assembled, mod_atom, Events.meta(file, line))

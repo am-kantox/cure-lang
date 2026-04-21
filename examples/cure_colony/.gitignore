@@ -1,0 +1,19 @@
+# Build / dependency artefacts.
+/_build/
+/cover/
+/deps/
+
+# Dialyzer cache.
+/.dialyzer/
+
+# Mix scratch pad.
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+
+# Erlang shell history.
+/.erl.history/
+
+# Local overrides.
+mix.lock

@@ -1,31 +1,13 @@
-## Cure colony: a tiny typed supervision tree.
+## Colony supervisor for the Cure colony example.
 ##
-## The colony demonstrates the three new concurrency primitives
-## shipped in Cure 0.25.0:
+## Supervises two `Worker` instances (`worker_a` and `worker_b`, the
+## latter with a `:transient` restart so normal shutdowns are not
+## restarted) and a single `Echo` instance (`:permanent`, 2 s shutdown).
 ##
-##   1. The Melquiades Operator `<-|` for sending messages.
-##   2. An `actor` container for writing typed workers.
-##   3. A `sup` container that supervises one or more actors.
-##
-## The workers are trivially a counter and an echo service, chosen
-## so the example fits on a screen without obscuring the operator
-## wiring.
-
-actor Worker with 0
-  on_start
-    (state) -> state
-  on_message
-    (:inc, n) -> n + 1
-    (:reset, _n) -> 0
-    (:get, n) ->
-      notify(%[:value, n])
-      n
-
-actor Echo with nil
-  on_message
-    (msg, _payload) ->
-      notify(%[:echo, msg])
-      msg
+## The bare names `Worker` and `Echo` in the children block resolve to
+## the compiled actor modules `Cure.Actor.Worker` and `Cure.Actor.Echo`
+## -- the convention `Cure.Actor.<Name>` for undotted child names --
+## loaded from `worker.cure` and `echo.cure` respectively.
 
 sup Colony
   strategy  = :one_for_one

@@ -26,17 +26,27 @@ defmodule Cure.Actor.Compiler do
   module is already loaded in the VM.
   """
 
+  alias Cure.Compiler.BeamWriter
   alias Cure.Pipeline.Events
 
   @doc """
   Compile an `{:container, [container_type: :actor, ...], body}` node.
 
   Returns `{:ok, {:actor, module_atom}}` on success.
+
+  ## Options
+    * `:emit_events` -- whether to emit pipeline events (default `true`).
+    * `:file`        -- filename used for diagnostics (default `"nofile"`).
+    * `:output_dir`  -- when set, the compiled bytecode is also written
+      to `<output_dir>/<module_atom>.beam` so the actor module becomes
+      available to subsequent cold starts exactly like plain Cure
+      modules. Writing is skipped when this option is absent or `nil`.
   """
   @spec compile(tuple(), keyword()) :: {:ok, {:actor, module()}}
   def compile(ast, opts \\ []) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
+    output_dir = Keyword.get(opts, :output_dir)
 
     {:container, meta, _body} = ast
     name = Keyword.get(meta, :name, "unnamed")
@@ -65,6 +75,10 @@ defmodule Cure.Actor.Compiler do
     [{^mod_atom, bytecode}] = result
     :code.purge(mod_atom)
     {:module, ^mod_atom} = :code.load_binary(mod_atom, ~c"#{file}", bytecode)
+
+    if is_binary(output_dir) do
+      :ok = BeamWriter.write_beam(mod_atom, bytecode, output_dir, emit_events: emit?, file: file)
+    end
 
     if emit? do
       Events.emit(:codegen, :module_assembled, mod_atom, Events.meta(file, line))
