@@ -1,6 +1,12 @@
 defmodule Cure.Stdlib.PbtTest do
   use ExUnit.Case, async: false
 
+  # `Cure.Std.Gen` and `Cure.Std.Test` are loaded dynamically by
+  # `Cure.Stdlib.Preload` in `setup_all` below; Elixir's compile-time
+  # checker doesn't see them, so silence the otherwise correct "module
+  # not available" warnings.
+  @compile {:no_warn_undefined, [:"Cure.Std.Gen", :"Cure.Std.Test"]}
+
   setup_all do
     Cure.Stdlib.Preload.preload(examples: false)
     :ok

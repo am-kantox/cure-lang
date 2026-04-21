@@ -203,9 +203,12 @@ defmodule Cure.Types.ProtocolTest do
       assert Protocol.type_guard(var, "String", 1) == {:call, 1, {:atom, 1, :is_binary}, [var]}
       assert Protocol.type_guard(var, "Bool", 1) == {:call, 1, {:atom, 1, :is_boolean}, [var]}
       assert Protocol.type_guard(var, "List", 1) == {:call, 1, {:atom, 1, :is_list}, [var]}
-      # User-defined types now get a struct guard instead of nil
+      # User-defined types now get a struct guard instead of nil. The
+      # pattern match below would already fail on a nil return, so an
+      # extra `guard != nil` assertion would be redundant -- and
+      # Elixir 1.20's type checker flags it as a comparison between
+      # disjoint types (`{:op, ...}` vs `nil`). Pattern-match directly.
       guard = Protocol.type_guard(var, "Person", 1)
-      assert guard != nil
       assert {:op, 1, :andalso, {:call, 1, {:atom, 1, :is_map}, [^var]}, _struct_check} = guard
     end
 

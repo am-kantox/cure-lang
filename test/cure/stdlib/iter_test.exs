@@ -1,6 +1,11 @@
 defmodule Cure.Stdlib.IterTest do
   use ExUnit.Case, async: false
 
+  # `Cure.Std.Iter` is loaded dynamically by `Cure.Stdlib.Preload` in
+  # `setup_all` below; Elixir's compile-time checker doesn't see it,
+  # so silence the otherwise correct "module not available" warnings.
+  @compile {:no_warn_undefined, :"Cure.Std.Iter"}
+
   setup_all do
     Cure.Stdlib.Preload.preload(examples: false)
     :ok

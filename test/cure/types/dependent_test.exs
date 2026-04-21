@@ -146,6 +146,18 @@ defmodule Cure.Types.DependentTest do
   end
 
   describe "Std.Vector" do
+    # The `Cure.Std.Vector` BEAM module is produced by compiling
+    # `lib/std/vector.cure` at test setup time (below), long after the
+    # Elixir compiler has finished checking this file. Every `m.<fun>`
+    # call in the tests resolves through a variable-bound module atom;
+    # Elixir 1.20's compile-time checker still treats those as remote
+    # calls against a known module and warns that the module is not
+    # available. We load the module dynamically, so silence the otherwise
+    # correct "module not available" warnings here, matching the pattern
+    # used in `examples/cure_spline/lib/cure_spline.ex` and
+    # `examples/cure_moneta/lib/cure_moneta.ex`.
+    @compile {:no_warn_undefined, :"Cure.Std.Vector"}
+
     setup do
       # Load all stdlib dependencies first
       for name <- ~w(core list pair math string io) do
