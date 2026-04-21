@@ -1,0 +1,35 @@
+## Metrics actor for the Cure forge supervision tree.
+##
+## Keeps two monotonic counters in a single map payload:
+##
+##   * `requests` -- incremented whenever `Pool` finishes a task.
+##   * `errors`   -- incremented whenever `Pool` reports a failure.
+##
+## Messages understood:
+##   * `:inc_requests`            -- bump `requests` by 1.
+##   * `:inc_errors`              -- bump `errors`   by 1.
+##   * `:get`                     -- notify the spawning caller with
+##                                   the current counters and leave
+##                                   the payload untouched.
+##   * `%[:observe, ok_or_error]` -- single-point ingestion for the
+##                                   pool. `:ok` bumps `requests`,
+##                                   anything else bumps `errors`.
+##   * `:reset`                   -- zero both counters.
+
+actor Metrics with %{requests: 0, errors: 0}
+  on_start
+    (state) -> state
+  on_message
+    (:inc_requests, state) ->
+      %{state | requests: state.requests + 1}
+    (:inc_errors, state) ->
+      %{state | errors: state.errors + 1}
+    (%[:observe, :ok], state) ->
+      %{state | requests: state.requests + 1}
+    (%[:observe, _other], state) ->
+      %{state | errors: state.errors + 1}
+    (:reset, _state) ->
+      %{requests: 0, errors: 0}
+    (:get, state) ->
+      notify(%[:metrics, state])
+      state

@@ -1,7 +1,7 @@
 %{
   title: "Standard Library",
   description: "Self-hosted stdlib written in Cure itself: 30 modules, ~320 functions.",
-  order: 7
+  order: 8
 }
 ---
 

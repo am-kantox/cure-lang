@@ -1,0 +1,30 @@
+[project]
+name          = "cure_forge"
+version       = "0.1.0"
+source_paths  = ["cure_src"]
+
+[dependencies]
+
+[compiler]
+type_check = false
+optimize   = false
+
+[application]
+name                  = "cure_forge"
+vsn                   = "0.1.0"
+description           = "Cure forge showcase: a typed OTP application on top of a supervision tree"
+applications          = ["logger"]
+included_applications = []
+registered            = []
+start_phases          = ["warm_cache"]
+
+[application.env]
+greeting        = "forge ready"
+idle_timeout_ms = 5000
+max_log_lines   = 16
+
+[release]
+name         = "cure_forge"
+vsn          = "0.1.0"
+include_erts = false
+applications = []

@@ -18,6 +18,10 @@ an ordinary identifier so legacy code that uses it as a field or variable
 name keeps compiling; the parser dispatches `sup <Name>` to the
 supervisor container only at statement-prefix position.
 
+`app` is a *contextual* soft keyword (v0.26.0) with the same treatment:
+`app <Name>` at statement-prefix position opens an application
+container; every other use of `app` remains a plain identifier.
+
 ### Identifiers
 
 Identifiers may carry a trailing `?` to signal a predicate (Elixir
@@ -546,6 +550,58 @@ The type checker has a dedicated clause for `{:send, ...}` that
 unifies the message type against the receiver's declared inbox and
 emits `E046 Inbox Mismatch` on conflict. Bare `Pid` elaborates to
 `{:pid, :any}` so existing FFI code remains compatible.
+
+## Applications (v0.26.0)
+
+The `app` container wraps an entire supervision tree into a first-class
+OTP application. See `docs/APP.md` for the authoritative reference.
+
+```cure
+app MyApp
+  vsn          = "0.1.0"
+  description  = "My humble application"
+  root         = sup MyApp.Root
+  applications = [:logger, :crypto]
+  env          = %{port: 4000}
+  on_start
+    (start_kind, args) -> do_start(start_kind, args)
+  on_stop
+    (state) -> cleanup(state)
+  on_phase :warm_cache
+    (_args, _kind, _start_args) -> Std.Cache.warm()
+```
+
+- `vsn`, `description`, `root`, `applications`, `included_applications`,
+  `env`, and `registered` are top-level assignments inside the `app`
+  body. They override the corresponding values in the
+  `[application]` table of `Cure.toml` (with `applications` merged
+  instead of replaced).
+- `on_start` / `on_stop` reuse the actor / FSM callback-clause grammar
+  and produce the generated module's `start/2` and `stop/1` bodies.
+- Each `on_phase :name` block introduces one 3-argument clause
+  `(phase_args, start_kind, start_args)` feeding the generated
+  `start_phase/3` callback. Phase names must agree with
+  `[application].start_phases` in `Cure.toml` (code `E053`).
+- `root = ...` accepts four forms: `sup Name`, `Name`,
+  `App.Sub.Root`, and an atom literal (`:my_app_sup`). The first two
+  resolve to `:"Cure.Sup.<Name>"`; dotted paths and atoms are used
+  verbatim. A phase-only app may omit `root` entirely. Unresolved
+  roots surface as `E054`.
+- The container compiles to `:"Cure.App.<Name>"` (a loaded
+  `Application`-behaviour module). With `--output-dir`, the bytecode
+  and an OTP `<name>.app` resource file are persisted alongside every
+  other Cure module.
+- `Cure.Project.compile_project/2` enforces at most one `app`
+  container per project and cross-checks its name against
+  `[application].name` (code `E051`).
+
+`cure release` (also `mix cure.release`) packages the compiled
+application as a bootable BEAM release under
+`_build/cure/rel/<name>/`; failure modes surface as `E052` (missing
+`app`) or `E055` (release-build failure). From Cure source,
+`Std.App` offers `ensure_all_started`, `start`, `stop`, `get_env`,
+`put_env`, `which_applications`, `loaded_applications`, and
+`start_phase` as thin wrappers over `:application`.
 
 ## Pattern Matching
 `match` (and `let`) support deep destructuring across every structural

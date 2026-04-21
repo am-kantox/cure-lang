@@ -15,15 +15,15 @@
     </p>
     <p class="mt-2 text-sm text-base-content/50">
       Current release: <span class="font-mono">v{CureSite.cure_version()}</span>
-      -- <em>Typed Supervision Trees</em>. The Melquiades Operator <code>&lt;-|</code>
-      (unicode alias <code>&#9993;</code>) for typed sends,
-      an <code>actor</code>
-      container that compiles to a loaded <code>GenServer</code>
-      module, a <code>sup</code>
-      container that compiles to a verified <code>Supervisor</code>
-      behaviour module with compile-time structural checks, and a new stdlib surface (<code>Std.Actor</code>, <code>Std.Process</code>, <code>Std.Supervisor</code>) exposing the runtime from Cure source. See the new
-      <a href={~p"/actors"} class="underline">Actors reference</a>
-      for the tour.
+      -- <em>Applications and Releases</em>. An <code>app</code>
+      container wraps an entire supervision tree into a first-class OTP application declared in Cure source; the same compiler cycle emits the
+      <code>&lt;name&gt;.app</code>
+      OTP resource file and a loaded <code>Application</code>-behaviour module, and the new
+      <code>cure release</code>
+      subcommand packages the whole thing as a bootable BEAM release. See the new
+      <a href={~p"/applications"} class="underline">Applications reference</a>
+      for the tour, or the <a href={~p"/actors"} class="underline">Actors reference</a>
+      for the typed supervision primitives underneath.
     </p>
   </div>
   <%!-- Quick example --%>
@@ -76,6 +76,17 @@
       <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">Supervisor</code>
       behaviour modules, wired together by the Melquiades Operator <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">&lt;-|</code>.
     </p>
+    <p>
+      v0.26.0 wraps the supervision tree into a first-class OTP application: an
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">app</code>
+      container compiles to an
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">Application</code>
+      callback module, emits an OTP
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">&lt;name&gt;.app</code>
+      resource file, and is packaged by
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">cure release</code>
+      as a bootable BEAM release.
+    </p>
   </div>
 
   <%!-- Navigation cards --%>
@@ -126,6 +137,19 @@
         <code>actor</code>
         and <code>sup</code>
         containers, and stdlib wrappers for links, monitors, and trap_exit.
+      </p>
+    </a>
+    <a
+      href={~p"/applications"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Applications</h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        First-class OTP applications and BEAM releases: the <code>app</code>
+        container, <code>Cure.toml</code> <code>[application]</code>
+        and <code>[release]</code>
+        sections, and the <code>cure release</code>
+        subcommand.
       </p>
     </a>
     <a

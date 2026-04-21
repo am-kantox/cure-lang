@@ -4,6 +4,130 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.26.0] -- Applications and Releases
+
+v0.26.0 promotes the supervision surface from v0.25.0 into a full OTP
+application lifecycle. A new `app` container declares the project's
+OTP application directly in Cure source, cross-checked against
+`Cure.toml`'s new `[application]` and `[release]` tables. The same
+compiler cycle emits the `<name>.app` OTP resource file and a
+`:"Cure.App.<Name>"` `Application`-behaviour module; a new
+`cure release` subcommand (also available as `mix cure.release`)
+packages the whole thing as a bootable BEAM release.
+
+### Added -- `app` container
+
+- `app Name` containers declare an OTP application with
+  `vsn`, `description`, `root`, `applications`,
+  `included_applications`, `registered`, `env` assignments and
+  `on_start`, `on_stop`, `on_phase :name` lifecycle clauses. The
+  clause grammar is shared with `actor` / `sup` (pattern tuple +
+  optional `when` guard + body).
+- `app` is a *contextual* soft keyword, treated the same way as
+  `sup`: the lexer keeps it as an identifier so existing Cure
+  programs that use `app` as a field or variable name keep
+  compiling; the parser dispatches `app <Name>` to the application
+  container parser only at statement-prefix position.
+- `Cure.App.Compiler` emits a loaded `Application`-behaviour
+  module via `Code.compile_string/2`; the codegen dispatcher returns
+  `{:ok, {:app, module()}}`. When `:output_dir` is provided, the
+  bytecode and an OTP `<name>.app` resource file are persisted
+  alongside every other Cure module.
+- `Cure.App.Verifier` enforces exactly one `app` container per
+  project, matches its name against `[application].name` in
+  `Cure.toml` (both sides are normalised through
+  `Macro.underscore/1`), cross-checks start-phase names, and
+  validates that `root = ...` resolves to a known module atom.
+- `Cure.App.Resource` emits the OTP `<name>.app` resource file from
+  the container's metadata merged with `[application]`.
+- `Cure.App.Builtins` bridges `Std.App` to `:application` with
+  plain-atom returns.
+
+### Added -- Release builder
+
+- `Cure.Release` assembles a bootable BEAM release under
+  `_build/cure/rel/<name>/`:
+  `lib/<app>-<vsn>/ebin/*.{beam,app}`, `releases/<vsn>/<name>.rel`,
+  `releases/<vsn>/start.boot`, `releases/<vsn>/start.script`,
+  `releases/<vsn>/sys.config`, `releases/<vsn>/vm.args`, and a
+  POSIX `bin/<name>` runner script.
+- The boot script seeds its application closure with `:kernel`,
+  `:stdlib`, `:compiler`, `:elixir`, the project's own application
+  atom, and every entry in `[release].applications`; out-of-tree
+  dependencies are loaded from the live code path.
+- `--include-erts` (or `[release].include_erts = true`) bundles the
+  running ERTS into the release directory.
+- The runner script uses `${ERL:-erl}` so the release can be tested
+  against any Erlang VM on `PATH`.
+- `Mix.Tasks.Cure.Release` exposes the subcommand as
+  `mix cure.release`.
+
+### Added -- `Cure.toml` sections
+
+- `[application]` -- `name`, `vsn`, `description`, `applications`,
+  `included_applications`, `registered`, `start_phases`, plus nested
+  `[application.env]`. `name` is the source of truth for the emitted
+  `<name>.app`; `applications` is merged with the container's own
+  list; `start_phases` is authoritative and every entry must have a
+  matching `on_phase :name` clause.
+- `[release]` -- `name`, `vsn`, `include_erts`, `applications`,
+  `vm_args`, `sys_config`. `Cure.Release` threads these values into
+  release assembly.
+- The TOML parser accepts a minimal subset: scalar string / integer /
+  bool / array-of-strings values, plus nested tables for
+  `[application.env]`.
+
+### Added -- Standard library
+
+- `lib/std/app.cure` -- `Std.App`: `ensure_all_started/1`,
+  `start/1`, `stop/1`, `get_env/2`, `get_env/3`, `put_env/3`,
+  `which_applications/0`, `loaded_applications/0`,
+  `start_phase/3`. Thin wrappers over `:application` that return
+  plain atoms and values rather than OTP's tagged-tuple shapes.
+
+### Added -- Documentation and examples
+
+- `docs/APP.md` -- full reference for the `app` container,
+  `Cure.toml` `[application]` / `[release]` sections, `cure release`
+  subcommand, `Std.App`, and error codes.
+- `docs/TUTORIAL.md` -- new Chapter 13 "Applications" covering the
+  whole lifecycle end to end.
+- `docs/LANGUAGE_SPEC.md` -- new "Applications (v0.26.0)" section and
+  `app` soft-keyword note.
+- `docs/STDLIB.md` -- new `Std.App` section.
+- `docs/SUPERVISION.md` -- cross-references to `docs/APP.md` and
+  `examples/cure_forge/`.
+- `examples/cure_forge/` -- fully-fledged showcase: an
+  `app CureForge` container with `vsn`, `description`, `env`,
+  `applications`, `on_start`, `on_stop`, and a `:warm_cache` start
+  phase; a `sup Forge.Root` supervision tree; a metrics actor, a
+  logger actor, a queue actor, and a pool actor cooperating through
+  the Melquiades Operator `<-|`.
+- `site/priv/pages/applications.md` -- user-facing reference on the
+  Cure website.
+- `site/priv/posts/2026/04-21-cure-v0.26.0.md` -- release blog post.
+
+### Added -- Error catalog
+
+- **E051 Duplicate Application** -- more than one `app` container in
+  a project, or a name mismatch against `[application].name`.
+- **E052 Missing Application** -- `cure release` invoked with no
+  `app` declared.
+- **E053 Start Phase Mismatch** -- TOML and container disagree on
+  phase names.
+- **E054 Unresolved Root Supervisor** -- `root = ...` does not
+  resolve to a known module reference.
+- **E055 Release Build Failed** -- wraps `:systools.make_script/2`
+  or release-write I/O errors.
+
+### Changed
+
+- `mix.exs` version bumped to `0.26.0`. `Cure.CLI` banner and
+  `cure version` output updated accordingly.
+- `cure new --app` scaffolds a project with a minimal `app`
+  container, a `sup` root, and the matching `[application]` /
+  `[release]` sections in `Cure.toml`.
+
 ## [0.25.0] -- Typed Supervision Trees
 
 v0.25.0 turns Cure into a first-class language for writing OTP-style

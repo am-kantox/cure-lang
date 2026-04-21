@@ -79,6 +79,13 @@ defmodule CureSiteWeb.Layouts do
           >
             Actors
           </a>
+          <a
+            href={~p"/applications"}
+            class={nav_class(@current_path, ~p"/applications")}
+            title="First-class OTP applications and BEAM releases, the app container, cure release (v0.26.0)"
+          >
+            Apps
+          </a>
           <a href={~p"/protocols"} class={nav_class(@current_path, ~p"/protocols")}>Protocols</a>
           <a href={~p"/standard-library"} class={nav_class(@current_path, ~p"/standard-library")}>
             Stdlib
@@ -123,6 +130,9 @@ defmodule CureSiteWeb.Layouts do
         </a>
         <a href={~p"/actors"} class={mobile_nav_class(@current_path, ~p"/actors")}>
           Actors
+        </a>
+        <a href={~p"/applications"} class={mobile_nav_class(@current_path, ~p"/applications")}>
+          Applications
         </a>
         <a href={~p"/protocols"} class={mobile_nav_class(@current_path, ~p"/protocols")}>
           Protocols

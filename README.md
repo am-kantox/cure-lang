@@ -14,6 +14,19 @@ and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
 FSM compilation with structural verification, effect system, documentation
 generator, formatter, stdlib, CLI, CI, and example programs.
 
+v0.26.0 promotes the supervision surface into a full OTP application
+lifecycle. A new `app` container declares the project's OTP application
+in Cure source; it compiles to a loaded `Application` callback module,
+emits an `<name>.app` OTP resource file, and is buildable as a
+self-contained BEAM release with `cure release` (or `mix cure.release`).
+The release introduces `[application]` and `[release]` sections in
+`Cure.toml`, adds `Std.App` to the stdlib (a thin wrapper around
+`:application`), catalogues five new error codes (`E051`-`E055`), and
+ships `examples/cure_forge/` as the canonical end-to-end showcase.
+See [`docs/APP.md`](docs/APP.md) for the on-disk reference and
+[cure-lang.org/applications](https://cure-lang.org/applications) for
+the web version.
+
 v0.25.0 lands typed supervision trees on top of OTP. The release
 introduces the Melquiades Operator `<-|` (unicode alias `✉`) for typed
 sends, an `actor` container that compiles to a loaded `GenServer`
@@ -76,6 +89,17 @@ Metastatic's cross-language analysis tools.
   strategy / intensity / period / child-id uniqueness / restart /
   shutdown. `Std.Actor`, `Std.Process`, and `Std.Supervisor` expose the
   runtime from Cure source
+- **Applications and releases** (v0.26.0) -- an `app Name` container
+  declares the project's OTP `Application` callback in Cure source with
+  `vsn`, `description`, `root`, `applications`, `env`, `on_start`,
+  `on_stop`, and `on_phase :name` clauses. The compiler rejects
+  projects with more than one `app` container and cross-checks its
+  name and start phases against `[application]` in `Cure.toml`. The
+  `cure release` subcommand (also `mix cure.release`) packages the
+  compiler output as a bootable BEAM release under
+  `_build/cure/rel/<name>/`. `Std.App` exposes `ensure_all_started`,
+  `start`, `stop`, `get_env`, `put_env`, `which_applications`,
+  `loaded_applications`, and `start_phase` from Cure source
 - **Melquiades Operator** (v0.25.0) -- `pid <-| message` (unicode alias
   `pid ✉ message`) is a typed send operator that lowers to Erlang's
   `!`; the type checker unifies the message type against the receiver's
@@ -212,6 +236,26 @@ module.my_function(args)
   trees (`start/1,2`, `stop/1`, `lookup/1`, `which_children/1`, `list/0`)
 - `Cure.Process.Builtins` / `Cure.Sup.Builtins` -- FFI bridges wiring
   `Std.Process` and `Std.Supervisor` to the runtime
+- `Cure.App.Verifier` -- structural verification for `app` containers:
+  duplicate declaration check, single-`app`-per-project enforcement,
+  `app` vs `[application].name` name match, start-phase consistency,
+  root-supervisor resolvability (emits `:app_verifier` events,
+  surfaces `E051` / `E053` / `E054`)
+- `Cure.App.Compiler` -- compiles `app` containers into loaded
+  `Application`-behaviour modules via `Code.compile_string/2`;
+  generates `start/2`, `stop/1`, and (when declared)
+  `start_phase/3`; returns `{:ok, {:app, module()}}`
+- `Cure.App.Resource` -- emits the OTP `<name>.app` resource file
+  into the output directory; threads metadata from the container
+  and `[application]` (`vsn`, `applications`, `included_applications`,
+  `registered`, `env`, `start_phases`)
+- `Cure.App.Builtins` -- FFI bridge wiring `Std.App` to
+  `:application` with plain-atom return shapes
+- `Cure.Release` -- builds a bootable BEAM release under
+  `_build/cure/rel/<name>/`: `.rel`/`start.boot`/`start.script`
+  assembly via `:systools`, `sys.config` / `vm.args` copying, and
+  the POSIX `bin/<name>` runner script (emits `:release` events,
+  surfaces `E052` / `E055`)
 - `Cure.Compiler.Errors` -- structured error formatter with source locations
   for all pipeline stages (lex, parse, type, codegen, FSM verifier)
 - `Cure.Types.Protocol` -- protocol definition and implementation tracking;
@@ -229,6 +273,8 @@ module.my_function(args)
   integrated into type checker as warnings
 - `Mix.Tasks.Cure.Compile` -- `mix cure.compile` task with formatted error output
 - `Mix.Tasks.Cure.CompileStdlib` -- `mix cure.compile_stdlib` compiles the standard library
+- `Mix.Tasks.Cure.Release` -- `mix cure.release` builds a bootable BEAM
+  release for the project's `app` container (v0.26.0)
 
 ## Standard Library
 
@@ -274,6 +320,11 @@ Compile it with `mix cure.compile_stdlib`.
   which_children, count_children, lookup, list. Convenience API over
   compiled supervisor trees; backed by `Cure.Sup.Builtins` and
   `Cure.Sup.Runtime`
+- **`Std.App`** (9 functions, v0.26.0) -- ensure_all_started, start,
+  stop, get_env, get_env with default, put_env, which_applications,
+  loaded_applications, start_phase. Cure-facing surface for the
+  generated `Cure.App.<Name>` application module; backed by
+  `Cure.App.Builtins` (thin wrappers over `:application`)
 
 ## Examples
 
@@ -310,6 +361,14 @@ See the `examples/` directory for sample Cure programs:
   `:one_for_one` strategy with per-child `restart` and `shutdown`
   overrides. Exercises `actor`, `sup`, and the Melquiades Operator
   end to end
+- `cure_forge/` -- v0.26.0 fully-fledged application demo: a metrics
+  actor, a logger actor, a queue actor, and a pool actor, wired under
+  a `sup Forge.Root` tree that is itself the `root` of an
+  `app CureForge` container. Exercises `app` (with `vsn`,
+  `description`, `env`, `applications`, `on_start`, `on_stop`, and
+  `on_phase :warm_cache`), end-to-end message passing between actors
+  through the Melquiades Operator `<-|`, `Std.App` environment reads,
+  and `cure release` packaging
 
 Compile and run:
 
@@ -325,6 +384,7 @@ cure check examples/protocols.cure
 - [Type System](docs/TYPE_SYSTEM.md) -- bidirectional checking, refinement types, SMT verification
 - [FSM Guide](docs/FSM_GUIDE.md) -- FSM definition, compilation, runtime, verification
 - [Supervision](docs/SUPERVISION.md) -- typed actors, `sup` containers, the Melquiades Operator, links and monitors (v0.25.0)
+- [Applications](docs/APP.md) -- `app` containers, `Cure.toml` `[application]` / `[release]` sections, the `cure release` subcommand, and `Std.App` (v0.26.0)
 - [Standard Library](docs/STDLIB.md) -- API reference for the stdlib modules
 
 ## Building

@@ -1,7 +1,7 @@
 %{
   title: "Roadmap",
   description: "What's implemented, what's next, and what's planned for the future.",
-  order: 9
+  order: 10
 }
 ---
 
@@ -1037,6 +1037,93 @@ for the full text.
 - 1310 tests pass (up from 1295; 3 doctests + 1307 tests);
   `mix credo --strict`: 0 issues across 200 source files;
   `mix cure.check.stdlib`: 30/30 (three new stdlib modules).
+## Implemented: v0.26.0 -- Applications and Releases
+v0.26.0 promotes the v0.25.0 supervision surface into a full OTP
+application lifecycle. A new `app` container declares the project's
+OTP application directly in Cure source, cross-checked against
+`Cure.toml`'s new `[application]` and `[release]` tables. The same
+compiler cycle emits the `<name>.app` resource file and a
+`:"Cure.App.<Name>"` `Application`-behaviour module; a new
+`cure release` subcommand (also available as `mix cure.release`)
+packages the whole thing as a bootable BEAM release. See the
+dedicated [Applications reference](/applications) for the full tour.
+### `app` container
+- `app Name` containers declare an OTP application with `vsn`,
+  `description`, `root`, `applications`, `included_applications`,
+  `registered`, `env` assignments, plus `on_start` / `on_stop` /
+  `on_phase :name` lifecycle clauses. The clause grammar is shared
+  with `actor` and `sup` (pattern tuple + optional `when` guard +
+  body).
+- `app` is a *contextual* soft keyword, treated the same way as
+  `sup`: the lexer keeps it as an identifier so programs that use
+  `app` as a field or variable name keep compiling; the parser
+  dispatches `app <Name>` to the application-container parser only
+  at statement-prefix position.
+- `Cure.App.Verifier` enforces exactly one `app` container per
+  project, matches its name against `[application].name` in
+  `Cure.toml` (both sides normalised through `Macro.underscore/1`),
+  cross-checks start-phase names, and validates that `root = ...`
+  resolves to a known module atom.
+- `Cure.App.Compiler` emits a loaded `Application`-behaviour module
+  via `Code.compile_string/2`; the codegen dispatcher returns
+  `{:ok, {:app, module()}}`. When `--output-dir` is given the
+  bytecode and an OTP `<name>.app` resource file are persisted
+  alongside every other Cure module.
+### Release builder
+- `Cure.Release` assembles a bootable BEAM release under
+  `_build/cure/rel/<name>/`:
+  `lib/<app>-<vsn>/ebin/*.{beam,app}`, `releases/<vsn>/<name>.rel`,
+  `releases/<vsn>/start.boot`, `releases/<vsn>/start.script`,
+  `releases/<vsn>/sys.config`, `releases/<vsn>/vm.args`, and a
+  POSIX `bin/<name>` runner script.
+- `--include-erts` (or `[release].include_erts = true`) bundles the
+  running ERTS into the release directory.
+- `Mix.Tasks.Cure.Release` exposes the subcommand as
+  `mix cure.release`.
+### `Cure.toml` extensions
+- `[application]` -- `name`, `vsn`, `description`, `applications`,
+  `included_applications`, `registered`, `start_phases`, plus nested
+  `[application.env]`. `name` is authoritative for the emitted
+  `<name>.app`; `applications` is merged with the container's own
+  list; `start_phases` must agree with the container's `on_phase`
+  clauses.
+- `[release]` -- `name`, `vsn`, `include_erts`, `applications`,
+  `vm_args`, `sys_config`. `Cure.Release` threads these into the
+  release assembly.
+### Standard library additions
+- **`Std.App`** (9 functions) -- `ensure_all_started/1`,
+  `start/1`, `stop/1`, `get_env/2`, `get_env/3`, `put_env/3`,
+  `which_applications/0`, `loaded_applications/0`,
+  `start_phase/3`. Thin wrappers over `:application` with
+  plain-atom return shapes.
+### Error catalog
+Five new codes `E051` -- `E055`:
+- `E051 Duplicate Application` -- more than one `app` container in
+  a project (or a name mismatch with `[application].name`).
+- `E052 Missing Application` -- `cure release` invoked with no
+  `app` declared.
+- `E053 Start Phase Mismatch` -- TOML and container disagree on
+  phase names.
+- `E054 Unresolved Root Supervisor` -- `root = ...` does not
+  resolve to a known module reference.
+- `E055 Release Build Failed` -- wraps `:systools.make_script/2`
+  or release-write I/O errors.
+### Example
+- `examples/cure_forge/` -- fully-fledged OTP application showcase.
+  An `app CureForge` container with `vsn`, `description`, `env`,
+  `applications`, `on_start`, `on_stop`, and a `:warm_cache` start
+  phase; a `sup Forge.Root` supervision tree; and four actors
+  (metrics, logger, queue, pool) cooperating through the Melquiades
+  Operator `<-|`.
+### Documentation
+- `docs/APP.md` -- full on-disk reference for the `app` container,
+  `Cure.toml` `[application]` / `[release]` sections, the
+  `cure release` subcommand, `Std.App`, and error codes.
+- `docs/TUTORIAL.md` -- new Chapter 13 "Applications".
+- `docs/LANGUAGE_SPEC.md` -- new "Applications (v0.26.0)" section.
+- `docs/STDLIB.md` -- new `Std.App` entry.
+- `site/priv/pages/applications.md` -- user-facing reference on the
+  Cure website.
 ## Future
 These are not scheduled but are on the long-term radar.
 **Monomorphisation.** Specialise polymorphic functions whose call

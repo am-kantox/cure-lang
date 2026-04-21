@@ -117,11 +117,17 @@ cure version              # Show the Cure version
 cure help                 # Show usage information
 cure explain E011         # Show a detailed explanation for an error code
 cure new myproject --lib  # Scaffold a new library project
+cure new myapp --app      # Scaffold a new OTP app (v0.26.0): app + sup
+                          # root, matching [application] / [release] in
+                          # Cure.toml
 cure deps                 # List dependencies
 cure deps tree            # Inspect dependency graph
 cure deps update          # Refresh Cure.lock
 cure test --doctests      # Run tests, including doctests
 cure test --cover         # Emit _build/cure/cover/index.html
+cure release              # Build a bootable BEAM release under
+                          # _build/cure/rel/<name>/ (v0.26.0)
+cure release --include-erts # Bundle ERTS into the release
 cure repl                 # Raw-mode REPL with syntax highlighting,
                           # persistent history, Ctrl+R reverse search,
                           # Tab completion, :history / :bench / :time / :save
@@ -219,4 +225,5 @@ module.my_function(args)
 - [Dependent Types](/type-system#dependent-types) -- Sigma, Pi, equality, implicit arguments, holes, totality
 - [Finite State Machines](/finite-state-machines) -- first-class FSMs with compile-time verification
 - [Actors](/actors) -- typed supervision trees, the Melquiades Operator, `actor` and `sup` containers (v0.25.0)
+- [Applications](/applications) -- first-class OTP applications and BEAM releases, the `app` container, `Cure.toml` `[application]` / `[release]` sections, `cure release`, `Std.App` (v0.26.0)
 - [REPL](/repl) -- the raw-mode REPL (v0.24.0): key bindings, meta-commands, themes, history, reverse search

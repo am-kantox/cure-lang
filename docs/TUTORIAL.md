@@ -1,8 +1,9 @@
 # Cure Tutorial
-A guided tour of Cure for newcomers. Twelve short chapters take you
+A guided tour of Cure for newcomers. Thirteen short chapters take you
 from an empty directory to a working project that uses dependent
-types, deep destructuring, binary parsing, FSMs, the REPL, and the
-type checker as a writing tool.
+types, deep destructuring, binary parsing, FSMs, a typed supervision
+tree, a full OTP application, the REPL, and the type checker as a
+writing tool.
 ## 1. Hello, Cure
 Install Cure (from the repo root):
 ```bash
@@ -188,5 +189,9 @@ runnable `gen_statem` (or `GenServer` in callback mode) BEAM module.
 - `docs/TYPE_SYSTEM.md` -- type checker details.
 - `docs/DEPENDENT_TYPES.md` -- the v0.17.0 dependent-typing layer.
 - `docs/FSM_GUIDE.md` -- FSM mechanics in depth.
+- `docs/SUPERVISION.md` -- typed actors, `sup` containers, the
+  Melquiades Operator `<-|` (v0.25.0).
+- `docs/APP.md` -- `app` containers, `Cure.toml` `[application]` /
+  `[release]` sections, and the `cure release` subcommand (v0.26.0).
 - `docs/STDLIB.md` -- standard library API.
 - `docs/PACKAGE_REGISTRY.md` -- design notes for the eventual Cure registry.

@@ -1,0 +1,39 @@
+## Pool actor for the Cure forge supervision tree.
+##
+## A single-threaded worker that accepts tasks and reports their
+## outcome. The payload tracks the number of completed tasks and the
+## number of observed failures:
+##
+##   payload = %{done: Int, failed: Int}
+##
+## Messages understood:
+##   * `%[:task, :ok]`           -- successful task: bump `done`,
+##                                  notify the caller with `:ok`.
+##   * `%[:task, %[:fail, why]]` -- failing task: bump `failed`,
+##                                  notify the caller with
+##                                  `%[:fail, why]`.
+##   * `:get`                    -- notify the caller with the full
+##                                  `%{done:, failed:}` state.
+##   * `:reset`                  -- reset the counters.
+##
+## The `%[:task, outcome]` clause bodies both end with `notify(...)`,
+## which reaches the spawning caller (the Elixir facade or the test
+## harness). That is where the facade then forwards an `:observe`
+## message to `Metrics`, closing the loop between the `Pool` and the
+## `Metrics` actors.
+
+actor Pool with %{done: 0, failed: 0}
+  on_start
+    (state) -> state
+  on_message
+    (%[:task, :ok], state) ->
+      notify(%[:done, :ok])
+      %{state | done: state.done + 1}
+    (%[:task, %[:fail, why]], state) ->
+      notify(%[:done, %[:fail, why]])
+      %{state | failed: state.failed + 1}
+    (:reset, _state) ->
+      %{done: 0, failed: 0}
+    (:get, state) ->
+      notify(%[:pool, state])
+      state

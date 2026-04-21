@@ -217,3 +217,7 @@ sup Colony
 ```
 
 See the on-disk reference [`docs/SUPERVISION.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/SUPERVISION.md) for the full prose companion to this page.
+
+## See also
+
+With Cure 0.26.0 the `app` container wraps an entire supervision tree into a first-class OTP application, and `cure release` packages it as a bootable BEAM release. Read the [Applications](/applications) page for the tour, or go straight to the on-disk reference [`docs/APP.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/APP.md). The canonical end-to-end example is [`examples/cure_forge/`](https://github.com/am-kantox/cure-lang/blob/main/examples/cure_forge): an `app CureForge` container, a `sup Forge.Root` tree, four cooperating actors, and a start-phase-driven cache warm-up.

@@ -212,3 +212,41 @@ which wraps `Cure.Sup.Runtime`.
 - `lookup(sup_module)` -- return the pid of a running tree or `nil`.
 - `list()` -- return the list of currently-running supervisor module
   atoms.
+
+## Std.App (9 functions, v0.26.0)
+
+Cure-facing surface for the OTP application lifecycle. Each Cure
+`app` container compiles to a loaded `:"Cure.App.<Name>"` module that
+implements the `:application` behaviour (`start/2`, `stop/1`, and,
+when `on_phase :name` clauses are present, `start_phase/3`). This
+module delegates to `Cure.App.Builtins`, which wraps the Erlang
+`:application` BIFs and returns plain atoms / values instead of the
+OTP `{:ok, _}` tuples.
+
+- `ensure_all_started(name)` -- start the application and every
+  dependency in its closure. Returns `:ok` whether or not the
+  application was already running.
+- `start(name)` -- start an already-loaded application; idempotent.
+- `stop(name)` -- stop a running application; idempotent.
+- `get_env(name, key)` -- read an application-env value; `nil` when
+  unset.
+- `get_env(name, key, default)` -- read an application-env value
+  with a user-supplied fallback.
+- `put_env(name, key, value)` -- write an application-env value.
+- `which_applications()` -- return `[%[name, description, vsn], ...]`
+  tuples for every running application.
+- `loaded_applications()` -- return the list of loaded application
+  name atoms.
+- `start_phase(name, phase, phase_args)` -- manually invoke a
+  start-phase callback. Normally the OTP boot script calls this
+  while the release boots; the entry exists for tests and scripted
+  scenarios.
+
+Example -- boot the app and read its `port` env:
+
+```cure
+use Std.App
+
+fn boot() -> Atom = Std.App.ensure_all_started(:my_app)
+fn port() -> Int  = Std.App.get_env(:my_app, :port, 4000)
+```

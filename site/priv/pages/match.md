@@ -1,7 +1,7 @@
 %{
   title: "Pattern Matching",
   description: "Every pattern shape Cure supports: literals, variables, lists, tuples, maps, records, ADTs, bitstrings, pins, repeated variables, guards, nested destructuring, exhaustiveness, and flow-typing.",
-  order: 10
+  order: 11
 }
 ---
 Pattern matching is the primary way Cure programs decompose data and

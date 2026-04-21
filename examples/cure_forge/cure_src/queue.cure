@@ -1,0 +1,34 @@
+## Queue actor for the Cure forge supervision tree.
+##
+## A tiny FIFO used by the forge facade to feed the `Pool` worker.
+## The payload is a plain list (head = oldest, last = newest). The
+## actor itself does not dispatch to `Pool`; the Elixir facade pulls
+## tasks from here via `:dequeue` and forwards them through the
+## Melquiades Operator `<-|`.
+##
+## Messages understood:
+##   * `%[:enqueue, task]` -- append `task` at the tail.
+##   * `:dequeue`          -- pop the head of the queue. Notifies the
+##                            caller with `%[:task, task]` when a task
+##                            is available or `:empty` otherwise. The
+##                            new payload is the tail.
+##   * `:size`             -- notify with the queue length.
+##   * `:clear`            -- reset the queue to `[]`.
+
+actor Queue with []
+  on_start
+    (state) -> state
+  on_message
+    (%[:enqueue, task], items) ->
+      Std.List.append(items, [task])
+    (:dequeue, []) ->
+      notify(:empty)
+      []
+    (:dequeue, [head | tail]) ->
+      notify(%[:task, head])
+      tail
+    (:size, items) ->
+      notify(%[:size, Std.List.length(items)])
+      items
+    (:clear, _items) ->
+      []

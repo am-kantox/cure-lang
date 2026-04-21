@@ -1,0 +1,35 @@
+## Logger actor for the Cure forge supervision tree.
+##
+## Buffers log lines in a bounded list (oldest first). The buffer
+## cap defaults to 16 entries, matching `[application.env].max_log_lines`
+## in `Cure.toml`; the Elixir facade reads it from `Std.App.get_env`
+## at boot time and wires it into the actor's initial payload.
+##
+## Messages understood:
+##   * `%[:log, line]` -- prepend `line` to the buffer (no cap here;
+##                        the facade trims to `max_log_lines` before
+##                        round-tripping).
+##   * `:drain`        -- notify the spawning caller with the current
+##                        buffer and reset it to `[]`.
+##   * `:size`         -- notify with the buffer length; leave the
+##                        buffer untouched.
+##   * `:clear`        -- reset the buffer to `[]`.
+##   * `:get`          -- notify with the current buffer (read-only).
+
+actor Logger with []
+  on_start
+    (state) -> state
+  on_message
+    (%[:log, line], buffer) ->
+      [line | buffer]
+    (:drain, buffer) ->
+      notify(%[:lines, buffer])
+      []
+    (:size, buffer) ->
+      notify(%[:size, Std.List.length(buffer)])
+      buffer
+    (:clear, _buffer) ->
+      []
+    (:get, buffer) ->
+      notify(%[:lines, buffer])
+      buffer

@@ -1,7 +1,7 @@
 %{
   title: "Protocols",
   description: "Ad-hoc polymorphism via proto/impl with guard-based dispatch.",
-  order: 6
+  order: 7
 }
 ---
 

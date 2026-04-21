@@ -199,11 +199,19 @@ The new codes are catalogued in `Cure.Compiler.Errors`:
 Run `cure explain E048` (or any code) for the full catalog text.
 
 ## Example
-See `examples/cure_colony/` for a working supervision tree: a root
-supervisor, a gateway actor, and a pair of worker actors that
-exchange messages through `<-|`.
+See `examples/cure_colony/` for a minimal supervision tree: a root
+supervisor, a worker actor, and an echo actor that exchange messages
+through `<-|`. For a fully-fledged OTP application built on the same
+primitives -- a root supervisor wrapped by an `app` container, four
+actors cooperating through typed sends, start-phase-driven cache
+warm-up, and a buildable BEAM release -- see
+`examples/cure_forge/`.
+
 ## See also
 With Cure 0.26.0 the `app` container ties an entire supervision tree
 to a single OTP application, and `cure release` packages it as a
-bootable BEAM release. See `docs/APP.md` for the full surface
-(grammar, TOML sections, error codes, runner script).
+bootable BEAM release. See [`docs/APP.md`](APP.md) for the full
+surface (grammar, `Cure.toml` `[application]` / `[release]`
+sections, error codes `E051` -- `E055`, runner script), and
+[`examples/cure_forge/`](../examples/cure_forge) for the canonical
+end-to-end showcase.
