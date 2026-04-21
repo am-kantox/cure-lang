@@ -114,6 +114,148 @@ defmodule Cure.Compiler.Errors do
     format_diagnostic("error", "codegen error", file, 0, "unsupported container type: #{type}")
   end
 
+  # -- App / release errors (E051-E055) ----------------------------------------
+
+  def format_error({:app_verification_failed, errors}, file) when is_list(errors) do
+    Enum.map_join(errors, "\n\n", &format_error(&1, file))
+  end
+
+  def format_error({:duplicate_app, occurrences}, _file) do
+    paths = Enum.map_join(occurrences, "\n      | ", fn {p, n} -> "#{p} -> app #{n}" end)
+
+    format_diagnostic(
+      "error",
+      "duplicate application (E051)",
+      "Cure.toml",
+      0,
+      "more than one `app` container in the project:\n      | #{paths}"
+    )
+  end
+
+  def format_error({:app_name_mismatch, expected, actual}, _file) do
+    format_diagnostic(
+      "error",
+      "app name mismatch (E051)",
+      "Cure.toml",
+      0,
+      "`app #{actual}` does not match [application].name = \"#{expected}\""
+    )
+  end
+
+  def format_error({:missing_application, _info}, _file) do
+    format_diagnostic(
+      "error",
+      "missing application (E052)",
+      "Cure.toml",
+      0,
+      "`cure release` requires the project to declare exactly one `app` container"
+    )
+  end
+
+  def format_error({:start_phase_missing, phase, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+
+    format_diagnostic(
+      "error",
+      "start phase mismatch (E053)",
+      file,
+      line,
+      "phase #{inspect(phase)} declared in [application].start_phases has no `on_phase` clause"
+    )
+  end
+
+  def format_error({:start_phase_unexpected, phase, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+
+    format_diagnostic(
+      "error",
+      "start phase mismatch (E053)",
+      file,
+      line,
+      "`on_phase #{inspect(phase)}` has no matching entry in [application].start_phases"
+    )
+  end
+
+  def format_error({:invalid_root, ast, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+
+    format_diagnostic(
+      "error",
+      "unresolved root supervisor (E054)",
+      file,
+      line,
+      "`root = ...` must be a `sup Name`, dotted module path, or atom literal: #{inspect(ast)}"
+    )
+  end
+
+  def format_error({:invalid_app_name, value, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+
+    format_diagnostic(
+      "error",
+      "invalid application name",
+      file,
+      line,
+      "`app` container name must be a non-empty dotted path; got #{inspect(value)}"
+    )
+  end
+
+  def format_error({:invalid_applications, value, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+
+    format_diagnostic(
+      "error",
+      "invalid applications list",
+      file,
+      line,
+      "`applications = ...` must be a list of atom literals; got #{inspect(value)}"
+    )
+  end
+
+  def format_error({:invalid_included_applications, value, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+
+    format_diagnostic(
+      "error",
+      "invalid included_applications list",
+      file,
+      line,
+      "`included_applications = ...` must be a list of atom literals; got #{inspect(value)}"
+    )
+  end
+
+  def format_error({:invalid_env, value, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+
+    format_diagnostic(
+      "error",
+      "invalid env",
+      file,
+      line,
+      "`env = %{...}` must be a map with atom keys; got #{inspect(value)}"
+    )
+  end
+
+  def format_error({:release_build_failed, module, reason}, _file) do
+    format_diagnostic(
+      "error",
+      "release build failed (E055)",
+      "Cure.toml",
+      0,
+      "systools/#{module} reported: #{inspect(reason)}"
+    )
+  end
+
+  def format_error({:release_build_failed, reason}, _file) do
+    format_diagnostic(
+      "error",
+      "release build failed (E055)",
+      "Cure.toml",
+      0,
+      inspect(reason)
+    )
+  end
+
   # -- FSM Verifier Errors -----------------------------------------------------
 
   def format_error({:unreachable_state, message, meta}, file) do
@@ -782,6 +924,97 @@ defmodule Cure.Compiler.Errors do
         strategy = :one_for_many   # Error: unknown strategy
 
     Fix: pick one of the declared values listed above.
+    """,
+    "E051" => """
+    E051: Duplicate Application
+
+    A Cure project may declare at most one `app` container. The
+    project-wide compile driver scans every `.cure` file under `lib/`
+    and aborts with this error when it finds two or more.
+
+    Example:
+      lib/foo_app.cure:
+        app Foo
+      lib/bar_app.cure:
+        app Bar         # Error: duplicate application
+
+    The same code surfaces when the `app` container's name does not
+    match `[application].name` in `Cure.toml` (which itself defaults
+    to `[project].name`).
+
+    Fix: keep one `app` per project; if the mismatch was deliberate,
+    update either the `app` declaration or `[application].name`.
+    """,
+    "E052" => """
+    E052: Missing Application
+
+    `cure release` (or `mix cure.release`) was invoked against a
+    project that does not declare an `app` container. The release
+    boot script needs an `Application` callback module to start.
+
+    Fix: add an `app` container under `lib/`, or remove the
+    `[release]` table from `Cure.toml` if you only need a library.
+    """,
+    "E053" => """
+    E053: Start Phase Mismatch
+
+    `[application].start_phases` and the `app` container's
+    `on_phase :name` clauses disagree. Every declared phase needs a
+    handler, and every handler needs a declaration; otherwise the
+    OTP boot script would either crash on a missing callback or
+    silently never invoke a written one.
+
+    Example:
+      Cure.toml:
+        [application]
+        start_phases = ["init", "warm_cache"]
+
+      lib/app.cure:
+        app Demo
+          on_phase :init
+            (...) -> :ok
+          # Missing :warm_cache
+
+    Fix: add the missing handler or drop the entry from
+    `start_phases`.
+    """,
+    "E054" => """
+    E054: Unresolved Root Supervisor
+
+    The `root = ...` declaration inside an `app` container did not
+    resolve to a known supervisor module. `root` accepts:
+
+      * A `sup Name` soft-keyword form (resolves to `:"Cure.Sup.Name"`).
+      * A bare PascalCase identifier (also resolves to `:"Cure.Sup.Name"`).
+      * A dotted module path (`App.Root` -> `:"App.Root"`).
+      * An atom literal (`:my_app_sup`).
+
+    Example:
+      app Demo
+        root = 42        # Error: not a module reference
+
+    Fix: replace the value with one of the four accepted forms; for
+    a phase-only application without a root supervisor, omit the
+    `root` line entirely.
+    """,
+    "E055" => """
+    E055: Release Build Failed
+
+    `cure release` invoked `:systools.make_script/2` (or one of the
+    file-write steps that follow) and got back an error. The exact
+    payload is included in the diagnostic.
+
+    Common causes:
+      * A dependency listed under `[release].applications` is not
+        loaded -- `mix deps.compile` it first or remove it.
+      * `[release].vm_args` or `[release].sys_config` points at a
+        path that does not exist.
+      * The project's `.app` resource is malformed (typically when
+        `[application]` mixes types -- e.g. an integer in the
+        `applications` list).
+
+    Fix: address the underlying systools error, then re-run
+    `cure release`.
     """
   }
 

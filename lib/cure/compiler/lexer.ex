@@ -38,6 +38,12 @@ defmodule Cure.Compiler.Lexer do
   # use it as a field name or local variable (e.g. the superdiagonal
   # row of a tridiagonal system) keep compiling. The parser recognises
   # `sup Name` contextually at block-prefix position.
+  #
+  # `app` follows the same soft-keyword discipline as `sup`: programs
+  # that already use `app` as an identifier (e.g. a field called `app`
+  # or a local variable) keep compiling; the parser only switches into
+  # `parse_app_container/1` when the token is followed by an identifier
+  # at block-prefix position.
   @keywords ~w(
     mod fn let type rec proto impl fsm local use as
     match if elif else then for do end

@@ -229,6 +229,19 @@ defmodule Cure.Compiler.Parser do
                 {variable(token), advance(state)}
             end
 
+          # Soft keyword: `app Name ...` at statement-prefix position is
+          # the application container. Everywhere else `app` remains a
+          # plain identifier, so pre-existing code that happens to use
+          # the name keeps parsing.
+          "app" ->
+            case peek_at(state, 1) do
+              %Token{type: :identifier} ->
+                parse_app_container(state)
+
+              _ ->
+                {variable(token), advance(state)}
+            end
+
           _ ->
             {variable(token), advance(state)}
         end
@@ -2997,6 +3010,144 @@ defmodule Cure.Compiler.Parser do
     state = skip_newlines(state)
     {value, state} = parse_expr(state, 0)
     {{String.to_atom(name), value}, state}
+  end
+
+  # -- Application container  app Name.Path ---------------------------------
+  #
+  # Declares an OTP application. The minimal grammar is:
+  #
+  #     app MyApp
+  #       vsn          = "0.1.0"
+  #       description  = "My humble application"
+  #       root         = sup MyApp.Root
+  #       applications = [:logger, :crypto]
+  #       env          = %{port: 4000, name: "dev"}
+  #       on_start
+  #         (type, args) -> do_start(type, args)
+  #       on_stop
+  #         (state) -> cleanup(state)
+  #       on_phase :init
+  #         (args, type, start_args) -> init_phase(args)
+  #       on_phase :warm_cache
+  #         (_args, _type, _start_args) -> Std.Cache.warm()
+  #
+  # `vsn`, `description`, `root`, `applications`, `included_applications`,
+  # `env`, and `registered` are parsed as `name = value` lines and hoisted
+  # onto the container meta. `on_start`, `on_stop`, and `on_phase :name`
+  # reuse the `parse_fsm_callback/1` machinery so patterns, guards, and
+  # bodies behave exactly as they do for FSM/actor lifecycle hooks.
+  #
+  # Compilation is handled by `Cure.App.Compiler` and produces an Elixir
+  # module `:"Cure.App.<Name>"` that `use Application` with `start/2`,
+  # `stop/1`, and `start_phase/3` callbacks.
+  defp parse_app_container(state) do
+    token = peek(state)
+    state = advance(state)
+
+    {name, state} = parse_dotted_name(state)
+    state = skip_newlines(state)
+    {body, meta_additions, state} = parse_app_block(state)
+
+    meta =
+      [container_type: :app, name: name, line: token.line, col: token.col] ++
+        meta_additions
+
+    ast = {:container, meta, body}
+    {ast, state}
+  end
+
+  defp parse_app_block(state) do
+    case peek(state) do
+      %Token{type: :indent} ->
+        state = advance(state)
+        {items, meta_acc, state} = parse_app_items(state, [], [])
+        state = expect_dedent(state)
+        {items, meta_acc, state}
+
+      _ ->
+        {[], [], state}
+    end
+  end
+
+  @app_settings ~w(vsn description root applications included_applications env registered)
+  @app_callback_names ~w(on_start on_stop)
+
+  defp parse_app_items(state, items_acc, meta_acc) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: type} when type in [:dedent, :eof] ->
+        {Enum.reverse(items_acc), meta_acc, state}
+
+      %Token{type: :identifier, value: setting} when setting in @app_settings ->
+        {new_meta, state} = parse_app_setting(state, setting)
+        state = skip_newlines(state)
+        parse_app_items(state, items_acc, meta_acc ++ new_meta)
+
+      %Token{type: :identifier, value: cb_name} when cb_name in @app_callback_names ->
+        {new_meta, state} = parse_fsm_callback(state)
+        state = skip_newlines(state)
+        parse_app_items(state, items_acc, meta_acc ++ new_meta)
+
+      %Token{type: :identifier, value: "on_phase"} ->
+        {new_meta, state} = parse_app_on_phase(state)
+        state = skip_newlines(state)
+        parse_app_items(state, items_acc, meta_acc ++ new_meta)
+
+      _ ->
+        # Unknown leading token inside an app body -- skip one expression
+        # and keep going so we don't deadlock.
+        {_, state} = parse_expr(state, 0)
+        state = skip_newlines(state)
+        parse_app_items(state, items_acc, meta_acc)
+    end
+  end
+
+  defp parse_app_setting(state, name) do
+    # Consume the identifier and the `=`.
+    state = advance(state)
+    state = expect(state, :assign)
+    state = skip_newlines(state)
+    {value, state} = parse_expr(state, 0)
+    {[{String.to_atom(name), value}], state}
+  end
+
+  # `on_phase :phase_name` introduces a single callback whose arity is
+  # three: `(args, start_type, start_args)`. The phase atom is hoisted
+  # onto the container meta under `:on_phase => [{phase_atom, [clauses]}]`
+  # so verifier and compiler can dispatch by phase.
+  defp parse_app_on_phase(state) do
+    state = advance(state)
+    state = skip_newlines(state)
+
+    {phase_atom, state} =
+      case peek(state) do
+        %Token{type: :atom, value: v} ->
+          {String.to_atom(to_string(v)), advance(state)}
+
+        %Token{type: :identifier, value: v} ->
+          {String.to_atom(to_string(v)), advance(state)}
+
+        other ->
+          {String.to_atom(to_string(other.value)), advance(state)}
+      end
+
+    state = skip_newlines(state)
+
+    {clauses, state} =
+      case peek(state) do
+        %Token{type: :indent} ->
+          state = advance(state)
+          {arms, state} = parse_fsm_callback_clauses(state)
+          state = expect_dedent(state)
+          {arms, state}
+
+        _ ->
+          {arm, state} = parse_fsm_callback_clause(state)
+          {[arm], state}
+      end
+
+    {[{:on_phase, [{phase_atom, clauses}]}], state}
   end
 
   # -- Enhanced Type Expression Parser ----------------------------------------

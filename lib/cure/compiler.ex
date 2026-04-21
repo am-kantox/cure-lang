@@ -71,19 +71,21 @@ defmodule Cure.Compiler do
     check? = Keyword.get(opts, :check_types, true)
 
     optimize? = Keyword.get(opts, :optimize, false)
+    declared_phases = Keyword.get(opts, :declared_phases)
 
     with {:ok, tokens} <- lex(source, file, emit?),
          {:ok, ast} <- parse(tokens, file, emit?),
          {:ok, _} <- maybe_check(ast, file, emit?, check?),
          {:ok, ast} <- maybe_optimize(ast, optimize?),
-         {:ok, forms} <- codegen(ast, file, emit?, output_dir) do
-      # Callback-mode FSMs, typed actors, and supervisors are already
-      # compiled, loaded, *and* persisted to `<output_dir>/<mod>.beam`
-      # by the codegen step (the dispatcher passed `output_dir` through
-      # to the respective compilers). In that case `forms` is one of
-      # the `{:callback_mode, module}`, `{:actor, module}`, or
-      # `{:supervisor, module}` markers, and there is nothing left for
-      # this orchestrator to write.
+         {:ok, forms} <- codegen(ast, file, emit?, output_dir, declared_phases) do
+      # Callback-mode FSMs, typed actors, supervisors, and
+      # applications are already compiled, loaded, *and* persisted to
+      # `<output_dir>/<mod>.beam` by the codegen step (the dispatcher
+      # passed `output_dir` through to the respective compilers). In
+      # that case `forms` is one of the `{:callback_mode, module}`,
+      # `{:actor, module}`, `{:supervisor, module}`, or `{:app,
+      # module}` markers, and there is nothing left for this
+      # orchestrator to write.
       case forms do
         {:callback_mode, mod_atom} ->
           {:ok, mod_atom, []}
@@ -92,6 +94,9 @@ defmodule Cure.Compiler do
           {:ok, mod_atom, []}
 
         {:supervisor, mod_atom} ->
+          {:ok, mod_atom, []}
+
+        {:app, mod_atom} ->
           {:ok, mod_atom, []}
 
         forms when is_list(forms) ->
@@ -132,12 +137,13 @@ defmodule Cure.Compiler do
     check? = Keyword.get(opts, :check_types, true)
 
     optimize? = Keyword.get(opts, :optimize, false)
+    declared_phases = Keyword.get(opts, :declared_phases)
 
     with {:ok, tokens} <- lex(source, file, emit?),
          {:ok, ast} <- parse(tokens, file, emit?),
          {:ok, _} <- maybe_check(ast, file, emit?, check?),
          {:ok, ast} <- maybe_optimize(ast, optimize?),
-         {:ok, forms} <- codegen(ast, file, emit?, nil) do
+         {:ok, forms} <- codegen(ast, file, emit?, nil, declared_phases) do
       # compile_and_load/2 intentionally does NOT persist bytecode to
       # disk -- it only loads into the current VM -- so we pass `nil`
       # for `output_dir` and the container compilers skip their
@@ -150,6 +156,9 @@ defmodule Cure.Compiler do
           {:ok, mod_atom}
 
         {:supervisor, mod_atom} ->
+          {:ok, mod_atom}
+
+        {:app, mod_atom} ->
           {:ok, mod_atom}
 
         forms when is_list(forms) ->
@@ -190,8 +199,13 @@ defmodule Cure.Compiler do
     end
   end
 
-  defp codegen(ast, file, emit?, output_dir) do
+  defp codegen(ast, file, emit?, output_dir, declared_phases) do
     opts = [file: file, emit_events: emit?, output_dir: output_dir]
+
+    opts =
+      if is_list(declared_phases),
+        do: Keyword.put(opts, :declared_phases, declared_phases),
+        else: opts
 
     case Codegen.compile_module(ast, opts) do
       {:ok, forms} -> {:ok, forms}

@@ -59,7 +59,9 @@ defmodule Cure.CLI do
           token: :string,
           cover: :boolean,
           strict: :boolean,
-          registry: :string
+          registry: :string,
+          include_erts: :boolean,
+          overwrite: :boolean
         ],
         aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
       )
@@ -94,6 +96,7 @@ defmodule Cure.CLI do
         ["info" | [name]] -> cmd_info(name, opts)
         ["keys", "generate", handle] -> cmd_keys_generate(handle)
         ["keys", "list"] -> cmd_keys_list()
+        ["release" | rest] -> cmd_release(rest, opts)
         ["help"] -> help()
         [] -> help()
         [unknown | _] -> error("Unknown command: #{unknown}. Run 'cure help' for usage.")
@@ -863,6 +866,38 @@ defmodule Cure.CLI do
     end
   end
 
+  # -- release ------------------------------------------------------------------
+
+  defp cmd_release(_rest, opts) do
+    case Cure.Project.load() do
+      {:ok, project} ->
+        release_opts =
+          [
+            include_erts: Keyword.get(opts, :include_erts, false),
+            output_dir: Keyword.get(opts, :output_dir),
+            overwrite: Keyword.get(opts, :overwrite, true)
+          ]
+          |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+
+        case Cure.Release.build(project, release_opts) do
+          {:ok, dir} ->
+            info("Release built: #{dir}")
+
+          {:error, reason} ->
+            error("cure release failed: #{inspect(reason)}")
+            exit({:shutdown, 1})
+        end
+
+      {:error, :no_project_file} ->
+        error("No Cure.toml found in current directory.")
+        exit({:shutdown, 1})
+
+      {:error, reason} ->
+        error("cure release failed: #{inspect(reason)}")
+        exit({:shutdown, 1})
+    end
+  end
+
   defp cmd_keys_list do
     trusted = Cure.Project.Signing.trusted_keys()
 
@@ -915,6 +950,7 @@ defmodule Cure.CLI do
       info <name[:ver]>    Show registry manifest / version list
       keys generate <h>    Generate an Ed25519 signing keypair
       keys list            List trusted publisher keys
+      release              Build a BEAM release (requires `app`)
       version              Show version
       help                 Show this help
 
@@ -935,6 +971,8 @@ defmodule Cure.CLI do
       --handle HANDLE        Maintainer handle for `cure publish`
       --token TOKEN          Upload token for `cure publish`
       --registry URL         Override registry base URL
+      --include-erts         `cure release --include-erts` bundles ERTS
+      --overwrite            `cure release --overwrite` wipes output dir (default)
       -v, --verbose          Verbose output
       -h, --help             Show help
     """)

@@ -1,0 +1,25 @@
+[project]
+name          = "cure_colony"
+version       = "0.1.0"
+source_paths  = ["cure_src"]
+
+[dependencies]
+
+[compiler]
+type_check = false
+optimize = false
+
+[application]
+name           = "cure_colony"
+vsn            = "0.1.0"
+description    = "Cure colony showcase: a typed supervision tree"
+applications   = ["logger"]
+start_phases   = []
+
+[application.env]
+
+[release]
+name         = "cure_colony"
+vsn          = "0.1.0"
+include_erts = false
+applications = []

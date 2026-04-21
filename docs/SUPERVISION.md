@@ -202,3 +202,8 @@ Run `cure explain E048` (or any code) for the full catalog text.
 See `examples/cure_colony/` for a working supervision tree: a root
 supervisor, a gateway actor, and a pair of worker actors that
 exchange messages through `<-|`.
+## See also
+With Cure 0.26.0 the `app` container ties an entire supervision tree
+to a single OTP application, and `cure release` packages it as a
+bootable BEAM release. See `docs/APP.md` for the full surface
+(grammar, TOML sections, error codes, runner script).

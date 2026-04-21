@@ -39,7 +39,7 @@ defmodule Cure.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :inets, :ssl, :crypto, :public_key, :tools],
+      extra_applications: [:logger, :inets, :ssl, :crypto, :public_key, :tools, :sasl],
       mod: {Cure.Application, []}
     ]
   end
@@ -127,6 +127,7 @@ defmodule Cure.MixProject do
         "docs/PUBLISHING.md",
         "docs/FSM_GUIDE.md",
         "docs/SUPERVISION.md",
+        "docs/APP.md",
         "docs/STDLIB.md",
         "docs/REPL.md"
       ],

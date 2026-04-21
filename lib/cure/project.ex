@@ -15,6 +15,32 @@ defmodule Cure.Project do
       [compiler]
       type_check = true
       optimize = true
+
+  ## Application and release sections (v0.26.0)
+
+  A project that ships an `app` container may additionally declare:
+
+      [application]
+      name           = "my_app"
+      vsn            = "0.1.0"
+      description    = ""
+      applications   = ["logger", "crypto"]
+      included_applications = []
+      start_phases   = ["init", "warm_cache"]
+
+      [application.env]
+      port = 4000
+
+      [release]
+      name         = "my_app"
+      vsn          = "0.1.0"
+      include_erts = false
+      applications = ["logger"]
+      vm_args      = "rel/vm.args"
+      sys_config   = "rel/sys.config"
+
+  The parser accepts a minimal TOML subset: scalar string/bool/int
+  values, string arrays, and nested tables (`[application.env]`).
   """
 
   defstruct [
@@ -22,7 +48,10 @@ defmodule Cure.Project do
     :version,
     dependencies: [],
     compiler_opts: [],
-    root: "."
+    source_paths: ["lib"],
+    root: ".",
+    application: nil,
+    release: nil
   ]
 
   @type dep :: %{name: String.t(), path: String.t()} | %{name: String.t(), git: String.t(), tag: String.t()}
@@ -216,7 +245,7 @@ defmodule Cure.Project do
     File.mkdir_p!(Path.join(name, "lib"))
     File.mkdir_p!(Path.join(name, "test"))
 
-    File.write!(Path.join(name, "Cure.toml"), default_toml(name))
+    File.write!(Path.join(name, "Cure.toml"), default_toml(name, template))
     File.write!(Path.join(name, ".gitignore"), default_gitignore())
     File.write!(Path.join(name, "README.md"), default_readme(name))
 
@@ -230,7 +259,42 @@ defmodule Cure.Project do
     :ok
   end
 
-  defp default_toml(name) do
+  defp default_toml(name, :app) do
+    mod = String.capitalize(name)
+
+    """
+    [project]
+    name = "#{name}"
+    version = "0.1.0"
+
+    [dependencies]
+
+    [compiler]
+    type_check = false
+    optimize = false
+
+    [application]
+    name           = "#{name}"
+    vsn            = "0.1.0"
+    description    = ""
+    applications   = ["logger"]
+    start_phases   = []
+
+    [application.env]
+
+    [release]
+    name         = "#{name}"
+    vsn          = "0.1.0"
+    include_erts = false
+    applications = []
+
+    # The `app` container in lib/app.cure is `app #{mod}`; the
+    # compiler verifies that its name matches `[application].name`
+    # above.
+    """
+  end
+
+  defp default_toml(name, _template) do
     """
     [project]
     name = "#{name}"
@@ -286,12 +350,27 @@ defmodule Cure.Project do
     write_lib_template(name)
     mod = String.capitalize(name)
 
-    File.write!(Path.join([name, "lib", "app.cure"]), """
-    mod #{mod}.App
-      use Std.Io
+    File.write!(Path.join([name, "lib", "root_sup.cure"]), """
+    ## Root supervisor for the #{mod} application. Add child specs as
+    ## the project grows.
+    sup #{mod}.Root
+      strategy = :one_for_one
+      intensity = 3
+      period = 5
+      children
+    """)
 
-      fn main() -> Atom =
-        Std.Io.println(#{mod}.hello())
+    File.write!(Path.join([name, "lib", "app.cure"]), """
+    ## #{mod} application.
+    ##
+    ## Compiles to `:"Cure.App.#{mod}"`, an OTP `Application` callback
+    ## module. The compiler verifies that exactly one `app` container
+    ## exists in the project and that its name matches
+    ## `[application].name` in `Cure.toml`.
+    app #{mod}
+      vsn         = "0.1.0"
+      description = "#{mod}"
+      root        = sup #{mod}.Root
     """)
   end
 
@@ -395,74 +474,371 @@ defmodule Cure.Project do
     ]
   end
 
+  # -- Project-wide compile driver (v0.26.0) ---------------------------------
+
+  @doc """
+  Compile every `.cure` file under the project's `lib/` directory,
+  enforcing the single-`app` invariant and emitting a `<name>.app`
+  resource file when an `app` container is present.
+
+  Steps:
+
+  1. Lex+parse every candidate file with a lightweight pre-pass
+     looking for `app` containers.
+  2. If more than one `app` is found, return
+     `{:error, {:duplicate_app, [{path, name}, ...]}}` (surfaced as
+     `E051`).
+  3. If exactly one `app` is found, verify its name matches
+     `[application].name` (or falls back to `[project].name`).
+     Mismatch returns `{:error, {:app_name_mismatch, expected, actual}}`.
+  4. Compile every file via `Cure.Compiler.compile_file/2`, threading
+     the declared phases through so `Cure.App.Verifier` can report
+     start-phase mismatches at compile time.
+  5. Emit the `.app` resource alongside the compiled `.beam` files.
+
+  Returns `{:ok, %{modules: [...], app_module: atom() | nil}}` on
+  success, `{:error, reason}` otherwise.
+  """
+  @spec compile_project(t(), keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def compile_project(%__MODULE__{} = project, opts \\ []) do
+    output_dir = Keyword.get(opts, :output_dir, Path.join(project.root, "_build/cure/ebin"))
+
+    extra_paths =
+      Keyword.get_lazy(opts, :paths, fn -> default_source_paths(project) end)
+
+    emit_events? = Keyword.get(opts, :emit_events, false)
+    check? = Keyword.get(opts, :check_types, false)
+
+    cure_files =
+      extra_paths
+      |> Enum.flat_map(fn dir ->
+        if File.dir?(dir), do: Path.wildcard(Path.join(dir, "**/*.cure")), else: []
+      end)
+      |> Enum.sort()
+
+    with {:ok, app_info} <- detect_app(cure_files, project),
+         :ok <- verify_app_name(app_info, project),
+         {:ok, modules} <-
+           compile_all_files(cure_files, output_dir, emit_events?, check?, declared_phases(project)),
+         :ok <- maybe_write_app_resource(app_info, modules, project, output_dir) do
+      {:ok, %{modules: modules, app_module: app_module(app_info)}}
+    end
+  end
+
+  @doc false
+  @spec detect_app([String.t()], t()) :: {:ok, map() | nil} | {:error, term()}
+  def detect_app(files, _project) do
+    # Lex+parse only enough to find `app` containers. We intentionally
+    # emit no events during the pre-pass so the main compile pass
+    # remains the sole emitter for LSP consumers.
+    containers =
+      Enum.flat_map(files, fn file ->
+        case File.read(file) do
+          {:ok, source} ->
+            with {:ok, tokens} <-
+                   Cure.Compiler.Lexer.tokenize(source, file: file, emit_events: false),
+                 {:ok, ast} <-
+                   Cure.Compiler.Parser.parse(tokens, file: file, emit_events: false) do
+              find_app_containers(ast, file)
+            else
+              _ -> []
+            end
+
+          _ ->
+            []
+        end
+      end)
+
+    case containers do
+      [] ->
+        {:ok, nil}
+
+      [single] ->
+        {:ok, single}
+
+      multiple ->
+        {:error, {:duplicate_app, Enum.map(multiple, fn c -> {c.file, c.name} end)}}
+    end
+  end
+
+  defp default_source_paths(%__MODULE__{root: root, source_paths: paths}) do
+    Enum.map(paths || ["lib"], &Path.join(root, &1))
+  end
+
+  defp find_app_containers({:container, meta, _body}, file) do
+    case Keyword.get(meta, :container_type) do
+      :app -> [%{file: file, name: Keyword.get(meta, :name), meta: meta}]
+      _ -> []
+    end
+  end
+
+  defp find_app_containers({:block, _, children}, file) when is_list(children) do
+    Enum.flat_map(children, &find_app_containers(&1, file))
+  end
+
+  defp find_app_containers(_, _), do: []
+
+  defp verify_app_name(nil, _project), do: :ok
+
+  defp verify_app_name(%{name: name}, project) do
+    expected = app_name_for(project)
+    actual = normalize_app_name(name)
+
+    if expected == actual do
+      :ok
+    else
+      {:error, {:app_name_mismatch, expected, actual}}
+    end
+  end
+
+  @doc false
+  def app_name_for(%__MODULE__{} = project) do
+    case project.application do
+      %{name: n} when is_binary(n) and n != "" -> normalize_app_name(n)
+      _ -> normalize_app_name(project.name)
+    end
+  end
+
+  defp normalize_app_name(nil), do: ""
+
+  defp normalize_app_name(name) when is_binary(name) do
+    name
+    |> String.replace(".", "_")
+    |> Macro.underscore()
+  end
+
+  defp declared_phases(%__MODULE__{application: %{start_phases: phases}}) when is_list(phases),
+    do: phases
+
+  defp declared_phases(_), do: nil
+
+  defp compile_all_files(files, output_dir, emit?, check?, declared_phases) do
+    base_opts = [
+      output_dir: output_dir,
+      emit_events: emit?,
+      check_types: check?
+    ]
+
+    opts =
+      if is_list(declared_phases),
+        do: Keyword.put(base_opts, :declared_phases, declared_phases),
+        else: base_opts
+
+    result =
+      Enum.reduce_while(files, {:ok, []}, fn file, {:ok, acc} ->
+        case Cure.Compiler.compile_file(file, opts) do
+          {:ok, module, _warnings} -> {:cont, {:ok, [module | acc]}}
+          {:error, _} = err -> {:halt, err}
+        end
+      end)
+
+    case result do
+      {:ok, modules} -> {:ok, Enum.reverse(modules)}
+      {:error, reason} -> {:error, {:compile_failed, reason}}
+    end
+  end
+
+  defp app_module(nil), do: nil
+
+  defp app_module(%{name: name}) do
+    String.to_atom("Cure.App." <> name)
+  end
+
+  defp maybe_write_app_resource(nil, _modules, _project, _output_dir), do: :ok
+
+  defp maybe_write_app_resource(app_info, modules, project, output_dir) do
+    Cure.App.Resource.write(app_info, modules, project, output_dir: output_dir)
+  end
+
   # -- TOML Parser (minimal subset) -------------------------------------------
 
   defp parse_toml(content) do
     lines = String.split(content, "\n")
-    {project, deps, compiler} = parse_sections(lines, nil, %{}, [], [])
+    acc = %{project: %{}, deps: [], compiler: [], application: %{}, release: %{}}
+    parsed = parse_lines(lines, nil, acc)
+
+    application_map = normalize_application(parsed.application)
+    release_map = normalize_release(parsed.release)
+
+    source_paths =
+      case Map.get(parsed.project, "source_paths") do
+        list when is_list(list) and list != [] -> Enum.map(list, &to_string/1)
+        _ -> ["lib"]
+      end
 
     %__MODULE__{
-      name: Map.get(project, "name", "unnamed"),
-      version: Map.get(project, "version", "0.1.0"),
-      dependencies: deps,
-      compiler_opts: compiler
+      name: Map.get(parsed.project, "name", "unnamed"),
+      version: Map.get(parsed.project, "version", "0.1.0"),
+      dependencies: parsed.deps,
+      compiler_opts: parsed.compiler,
+      source_paths: source_paths,
+      application: application_map,
+      release: release_map
     }
   end
 
-  defp parse_sections([], _section, project, deps, compiler) do
-    {project, deps, compiler}
-  end
+  defp parse_lines([], _section, acc), do: acc
 
-  defp parse_sections([line | rest], section, project, deps, compiler) do
+  defp parse_lines([line | rest], section, acc) do
     trimmed = String.trim(line)
 
     cond do
       trimmed == "" or String.starts_with?(trimmed, "#") ->
-        parse_sections(rest, section, project, deps, compiler)
+        parse_lines(rest, section, acc)
 
-      trimmed == "[project]" ->
-        parse_sections(rest, :project, project, deps, compiler)
-
-      trimmed == "[dependencies]" ->
-        parse_sections(rest, :dependencies, project, deps, compiler)
-
-      trimmed == "[compiler]" ->
-        parse_sections(rest, :compiler, project, deps, compiler)
-
-      section == :project ->
-        {key, val} = parse_kv(trimmed)
-        parse_sections(rest, section, Map.put(project, key, val), deps, compiler)
-
-      section == :dependencies ->
-        dep = parse_dep_line(trimmed)
-
-        if dep,
-          do: parse_sections(rest, section, project, [dep | deps], compiler),
-          else: parse_sections(rest, section, project, deps, compiler)
-
-      section == :compiler ->
-        {key, val} = parse_kv(trimmed)
-        atom_key = String.to_atom(key)
-        # `val` is always a binary (produced by `parse_kv/1` via `String.trim`),
-        # so comparing against the atom `true` here is unreachable; the single
-        # string check is sufficient.
-        bool_val = val == "true"
-        parse_sections(rest, section, project, deps, [{atom_key, bool_val} | compiler])
+      String.starts_with?(trimmed, "[") and String.ends_with?(trimmed, "]") ->
+        header = String.slice(trimmed, 1..-2//1) |> String.trim()
+        parse_lines(rest, {:table, header}, acc)
 
       true ->
-        parse_sections(rest, section, project, deps, compiler)
+        acc = apply_kv(section, trimmed, acc)
+        parse_lines(rest, section, acc)
     end
   end
+
+  defp apply_kv({:table, "project"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} ->
+        acc
+
+      {key, val} ->
+        # `source_paths = ["a", "b"]` is the only project-level key that
+        # currently expects a non-scalar value; route it through
+        # `parse_scalar/1` so the array form parses, while every other
+        # field stays a plain string with quotes stripped.
+        value =
+          case key do
+            "source_paths" -> parse_scalar(val)
+            _ -> strip_quotes(val)
+          end
+
+        %{acc | project: Map.put(acc.project, key, value)}
+    end
+  end
+
+  defp apply_kv({:table, "dependencies"}, line, acc) do
+    case parse_dep_line(line) do
+      nil -> acc
+      dep -> %{acc | deps: [dep | acc.deps]}
+    end
+  end
+
+  defp apply_kv({:table, "compiler"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} ->
+        acc
+
+      {key, val} ->
+        atom_key = String.to_atom(key)
+        bool_val = strip_quotes(val) == "true"
+        %{acc | compiler: [{atom_key, bool_val} | acc.compiler]}
+    end
+  end
+
+  defp apply_kv({:table, "application"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} -> acc
+      {key, val} -> %{acc | application: Map.put(acc.application, key, parse_scalar(val))}
+    end
+  end
+
+  defp apply_kv({:table, "application.env"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} ->
+        acc
+
+      {key, val} ->
+        env = Map.get(acc.application, "env", %{})
+        env = Map.put(env, key, parse_scalar(val))
+        %{acc | application: Map.put(acc.application, "env", env)}
+    end
+  end
+
+  defp apply_kv({:table, "release"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} -> acc
+      {key, val} -> %{acc | release: Map.put(acc.release, key, parse_scalar(val))}
+    end
+  end
+
+  defp apply_kv(_section, _line, acc), do: acc
 
   defp parse_kv(line) do
     case String.split(line, "=", parts: 2) do
-      [key, val] ->
-        {String.trim(key), String.trim(val) |> String.trim("\"")}
-
-      _ ->
-        {"", ""}
+      [key, val] -> {String.trim(key), String.trim(val)}
+      _ -> {"", ""}
     end
   end
+
+  defp strip_quotes(val) when is_binary(val) do
+    val
+    |> String.trim()
+    |> String.trim("\"")
+  end
+
+  defp strip_quotes(val), do: val
+
+  # Parse a TOML scalar: quoted string, bool, integer, string array, or
+  # bare identifier. Anything unrecognised falls back to its trimmed
+  # textual form so unknown keys still have *some* value.
+  defp parse_scalar(raw) when is_binary(raw) do
+    trimmed = String.trim(raw)
+
+    cond do
+      String.starts_with?(trimmed, "\"") and String.ends_with?(trimmed, "\"") ->
+        String.slice(trimmed, 1..-2//1)
+
+      trimmed in ["true", "false"] ->
+        trimmed == "true"
+
+      Regex.match?(~r/^-?\d+$/, trimmed) ->
+        String.to_integer(trimmed)
+
+      String.starts_with?(trimmed, "[") and String.ends_with?(trimmed, "]") ->
+        inner = String.slice(trimmed, 1..-2//1)
+
+        Regex.scan(~r/"([^"]*)"/, inner)
+        |> Enum.map(fn [_, v] -> v end)
+
+      true ->
+        trimmed
+    end
+  end
+
+  defp parse_scalar(other), do: other
+
+  defp normalize_application(map) when map == %{} or map == nil, do: nil
+
+  defp normalize_application(map) do
+    %{
+      name: Map.get(map, "name"),
+      vsn: Map.get(map, "vsn"),
+      description: Map.get(map, "description", ""),
+      applications: list_of_strings(Map.get(map, "applications", [])),
+      included_applications: list_of_strings(Map.get(map, "included_applications", [])),
+      start_phases: list_of_strings(Map.get(map, "start_phases", [])),
+      registered: list_of_strings(Map.get(map, "registered", [])),
+      env: Map.get(map, "env", %{})
+    }
+  end
+
+  defp normalize_release(map) when map == %{} or map == nil, do: nil
+
+  defp normalize_release(map) do
+    %{
+      name: Map.get(map, "name"),
+      vsn: Map.get(map, "vsn"),
+      include_erts: Map.get(map, "include_erts", false),
+      applications: list_of_strings(Map.get(map, "applications", [])),
+      vm_args: Map.get(map, "vm_args"),
+      sys_config: Map.get(map, "sys_config")
+    }
+  end
+
+  defp list_of_strings(list) when is_list(list), do: Enum.map(list, &to_string/1)
+  defp list_of_strings(str) when is_binary(str), do: [str]
+  defp list_of_strings(_), do: []
 
   defp parse_dep_line(line) do
     cond do

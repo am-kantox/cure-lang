@@ -69,27 +69,35 @@ defmodule Cure.Compiler.Codegen do
   `Cure.Sup.Compiler.compile/2`, which also loads the module eagerly
   and returns `{:ok, {:supervisor, module}}`.
 
-  All three eager-load paths accept an `:output_dir` option; when
+  Application containers (`app Name ...`) are compiled by
+  `Cure.App.Compiler.compile/2`, which generates an Elixir module
+  implementing the OTP `Application` behaviour (`start/2`, `stop/1`,
+  and `start_phase/3` when the container declares any `on_phase`
+  clauses), loads it, and returns `{:ok, {:app, module}}`.
+
+  All four eager-load paths accept an `:output_dir` option; when
   present, they additionally write the compiled bytecode to
   `<output_dir>/<module>.beam` via `Cure.Compiler.BeamWriter.write_beam/4`
-  so every Cure container -- `mod`, `proof`, `fsm`, `actor`, `sup` --
-  leaves a `.beam` file on disk, matching the behaviour of plain
-  modules.
+  so every Cure container -- `mod`, `proof`, `fsm`, `actor`, `sup`,
+  `app` -- leaves a `.beam` file on disk, matching the behaviour of
+  plain modules.
   """
   @spec compile_module(tuple(), keyword()) ::
           {:ok, list()}
           | {:ok, {:callback_mode, module()}}
           | {:ok, {:actor, module()}}
           | {:ok, {:supervisor, module()}}
+          | {:ok, {:app, module()}}
           | {:error, term()}
   def compile_module(ast, opts \\ []) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
     output_dir = Keyword.get(opts, :output_dir)
+    declared_phases = Keyword.get(opts, :declared_phases)
 
     case ast do
       {:container, meta, body} when is_list(meta) ->
-        dispatch_container(meta, body, emit?, file, output_dir)
+        dispatch_container(meta, body, emit?, file, output_dir, declared_phases)
 
       # If the AST is a block, find the first container (module/fsm) inside it
       # and merge any sibling definitions into its body (the parser may place
@@ -98,7 +106,7 @@ defmodule Cure.Compiler.Codegen do
         case find_container(children) do
           {:container, meta, body} ->
             merged_body = merge_sibling_defs(body, children)
-            dispatch_container(meta, merged_body, emit?, file, output_dir)
+            dispatch_container(meta, merged_body, emit?, file, output_dir, declared_phases)
 
           nil ->
             {:error, {:expected_module, ast}}
@@ -123,7 +131,7 @@ defmodule Cure.Compiler.Codegen do
 
   # -- Container Dispatch ------------------------------------------------------
 
-  defp dispatch_container(meta, body, emit?, file, output_dir) do
+  defp dispatch_container(meta, body, emit?, file, output_dir, declared_phases \\ nil) do
     common = [emit_events: emit?, file: file, output_dir: output_dir]
 
     case Keyword.get(meta, :container_type) do
@@ -163,6 +171,28 @@ defmodule Cure.Compiler.Codegen do
 
           {:error, errors} ->
             {:error, {:sup_verification_failed, errors}}
+        end
+
+      :app ->
+        ast = {:container, meta, body}
+        # Run structural verification first. The project-wide driver
+        # (`Cure.Project.compile_project/2`) passes declared_phases
+        # through so start_phase mismatches surface at compile time;
+        # when individual files are compiled in isolation, phases are
+        # verified against whatever is in the container itself only.
+        verifier_opts = [emit_events: emit?, file: file]
+
+        verifier_opts =
+          if is_list(declared_phases),
+            do: Keyword.put(verifier_opts, :declared_phases, declared_phases),
+            else: verifier_opts
+
+        case Cure.App.Verifier.verify(ast, verifier_opts) do
+          {:ok, _} ->
+            Cure.App.Compiler.compile(ast, common)
+
+          {:error, errors} ->
+            {:error, {:app_verification_failed, errors}}
         end
 
       other ->

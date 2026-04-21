@@ -1,0 +1,49 @@
+mod Std.App
+  ## Start, stop, and inspect OTP applications from Cure.
+  #
+  # Each Cure `app` container compiles to a loaded BEAM module that
+  # implements the `:application` behaviour. The functions below
+  # delegate to `Cure.App.Builtins`, which in turn wraps the Erlang
+  # `:application` BIFs, so Cure code sees plain atoms and values
+  # rather than OTP's tagged-tuple return shapes.
+
+  # Ensure the application and all of its dependencies are started.
+  @extern(Elixir.Cure.App.Builtins, :ensure_all_started, 1)
+  fn ensure_all_started(name: Atom) -> Atom
+
+  # Start a loaded application by name. Returns `:ok` whether or not
+  # the application was already running.
+  @extern(Elixir.Cure.App.Builtins, :start, 1)
+  fn start(name: Atom) -> Atom
+
+  # Stop a running application by name. Returns `:ok` whether or not
+  # the application was already stopped.
+  @extern(Elixir.Cure.App.Builtins, :stop, 1)
+  fn stop(name: Atom) -> Atom
+
+  # Fetch an environment variable. Returns `nil` when unset.
+  @extern(Elixir.Cure.App.Builtins, :get_env, 2)
+  fn get_env(name: Atom, key: Atom) -> Any
+
+  # Fetch an environment variable, falling back to `default` when
+  # unset.
+  @extern(Elixir.Cure.App.Builtins, :get_env, 3)
+  fn get_env(name: Atom, key: Atom, default: Any) -> Any
+
+  # Set an environment variable for an application.
+  @extern(Elixir.Cure.App.Builtins, :put_env, 3)
+  fn put_env(name: Atom, key: Atom, value: Any) -> Atom
+
+  # Return a list of `{name, description, vsn}` tuples for every
+  # currently-running application.
+  @extern(Elixir.Cure.App.Builtins, :which_applications, 0)
+  fn which_applications() -> List(Tuple)
+
+  # Return a list of every loaded application's name atom.
+  @extern(Elixir.Cure.App.Builtins, :loaded_applications, 0)
+  fn loaded_applications() -> List(Atom)
+
+  # Manually invoke a start phase for an application. Normally the
+  # OTP boot script does this for you; this is useful in tests.
+  @extern(Elixir.Cure.App.Builtins, :start_phase, 3)
+  fn start_phase(name: Atom, phase: Atom, phase_args: Any) -> Atom
