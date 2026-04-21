@@ -1,10 +1,14 @@
 ## Pool actor for the Cure forge supervision tree.
 ##
 ## A single-threaded worker that accepts tasks and reports their
-## outcome. The payload tracks the number of completed tasks and the
-## number of observed failures:
+## outcome. The payload is a two-slot tuple:
 ##
-##   payload = %{done: Int, failed: Int}
+##   payload = %[done, failed]
+##
+## A tuple is used rather than a map for the same reason as the
+## `Metrics` actor: Cure reserves the `%{base | field: val}` shape
+## for record updates, so rebuilding a two-slot tuple is the simplest
+## thing that type-checks without declaring a record.
 ##
 ## Messages understood:
 ##   * `%[:task, :ok]`           -- successful task: bump `done`,
@@ -13,7 +17,7 @@
 ##                                  notify the caller with
 ##                                  `%[:fail, why]`.
 ##   * `:get`                    -- notify the caller with the full
-##                                  `%{done:, failed:}` state.
+##                                  `%[done, failed]` tuple.
 ##   * `:reset`                  -- reset the counters.
 ##
 ## The `%[:task, outcome]` clause bodies both end with `notify(...)`,
@@ -22,18 +26,18 @@
 ## message to `Metrics`, closing the loop between the `Pool` and the
 ## `Metrics` actors.
 
-actor Pool with %{done: 0, failed: 0}
+actor Pool with %[0, 0]
   on_start
     (state) -> state
   on_message
-    (%[:task, :ok], state) ->
+    (%[:task, :ok], %[done, failed]) ->
       notify(%[:done, :ok])
-      %{state | done: state.done + 1}
-    (%[:task, %[:fail, why]], state) ->
+      %[done + 1, failed]
+    (%[:task, %[:fail, why]], %[done, failed]) ->
       notify(%[:done, %[:fail, why]])
-      %{state | failed: state.failed + 1}
+      %[done, failed + 1]
     (:reset, _state) ->
-      %{done: 0, failed: 0}
+      %[0, 0]
     (:get, state) ->
       notify(%[:pool, state])
       state

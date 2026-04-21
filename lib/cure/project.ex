@@ -771,13 +771,16 @@ defmodule Cure.Project do
     end
   end
 
+  # `parse_kv/1` only ever yields a `{binary, binary}` pair, so every
+  # in-tree call site of `strip_quotes/1` and `parse_scalar/1` hands
+  # over a binary. The catch-all clauses that used to exist for
+  # non-binary fallbacks were dead (dialyzer `pattern_match_cov`);
+  # the binary-guarded head below is therefore exhaustive.
   defp strip_quotes(val) when is_binary(val) do
     val
     |> String.trim()
     |> String.trim("\"")
   end
-
-  defp strip_quotes(val), do: val
 
   # Parse a TOML scalar: quoted string, bool, integer, string array, or
   # bare identifier. Anything unrecognised falls back to its trimmed
@@ -805,8 +808,6 @@ defmodule Cure.Project do
         trimmed
     end
   end
-
-  defp parse_scalar(other), do: other
 
   defp normalize_application(map) when map == %{} or map == nil, do: nil
 

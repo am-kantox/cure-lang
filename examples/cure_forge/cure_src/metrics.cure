@@ -1,35 +1,38 @@
 ## Metrics actor for the Cure forge supervision tree.
 ##
-## Keeps two monotonic counters in a single map payload:
+## Keeps two monotonic counters in a tuple payload
+## `%[requests, errors]`:
 ##
-##   * `requests` -- incremented whenever `Pool` finishes a task.
-##   * `errors`   -- incremented whenever `Pool` reports a failure.
+##   * first slot  -- incremented whenever `Pool` finishes a task.
+##   * second slot -- incremented whenever `Pool` reports a failure.
+##
+## A tuple is used rather than a map because Cure's map-update syntax
+## is reserved for records. With a two-slot tuple, every clause can
+## destructure `%[r, e]` in the pattern head and rebuild it in the
+## body without needing an intermediate record declaration.
 ##
 ## Messages understood:
-##   * `:inc_requests`            -- bump `requests` by 1.
-##   * `:inc_errors`              -- bump `errors`   by 1.
-##   * `:get`                     -- notify the spawning caller with
-##                                   the current counters and leave
-##                                   the payload untouched.
-##   * `%[:observe, ok_or_error]` -- single-point ingestion for the
-##                                   pool. `:ok` bumps `requests`,
-##                                   anything else bumps `errors`.
+##   * `:inc_requests`            -- bump the first slot.
+##   * `:inc_errors`              -- bump the second slot.
+##   * `%[:observe, :ok]`         -- single-point success ingestion.
+##   * `%[:observe, _other]`      -- single-point failure ingestion.
 ##   * `:reset`                   -- zero both counters.
+##   * `:get`                     -- notify the caller with the tuple.
 
-actor Metrics with %{requests: 0, errors: 0}
+actor Metrics with %[0, 0]
   on_start
     (state) -> state
   on_message
-    (:inc_requests, state) ->
-      %{state | requests: state.requests + 1}
-    (:inc_errors, state) ->
-      %{state | errors: state.errors + 1}
-    (%[:observe, :ok], state) ->
-      %{state | requests: state.requests + 1}
-    (%[:observe, _other], state) ->
-      %{state | errors: state.errors + 1}
+    (:inc_requests, %[r, e]) ->
+      %[r + 1, e]
+    (:inc_errors, %[r, e]) ->
+      %[r, e + 1]
+    (%[:observe, :ok], %[r, e]) ->
+      %[r + 1, e]
+    (%[:observe, _other], %[r, e]) ->
+      %[r, e + 1]
     (:reset, _state) ->
-      %{requests: 0, errors: 0}
+      %[0, 0]
     (:get, state) ->
       notify(%[:metrics, state])
       state

@@ -34,11 +34,13 @@ defmodule CureForge do
       iex> CureForge.metrics()
       %{requests: 2, errors: 1}
 
-      # Log lines are buffered and can be drained:
+      # Log lines are buffered and can be drained. The logger stores
+      # them newest-first (cons prepend); the facade reverses on the
+      # way out so callers see insertion order.
       iex> CureForge.log("booted")
       iex> CureForge.log("first tick")
       iex> CureForge.drain_log()
-      ["first tick", "booted"]
+      ["booted", "first tick"]
 
       # Application env is readable through Std.App (or Application):
       iex> Application.get_env(:cure_forge, :greeting)
@@ -106,12 +108,22 @@ defmodule CureForge do
 
   # -- Metrics ---------------------------------------------------------------
 
-  @doc "Return the current metrics snapshot `%{requests:, errors:}`."
+  @doc """
+  Return the current metrics snapshot `%{requests:, errors:}`.
+
+  The underlying actor stores the counters in a two-slot tuple
+  (`%[requests, errors]` in Cure, `{r, e}` on the BEAM); the facade
+  unwraps that into a map so callers can stay idiomatic on the
+  Elixir side.
+  """
   @spec metrics() :: %{
           required(:requests) => non_neg_integer(),
           required(:errors) => non_neg_integer()
         }
-  def metrics, do: @metrics_module.get_state(metrics_pid())
+  def metrics do
+    {r, e} = @metrics_module.get_state(metrics_pid())
+    %{requests: r, errors: e}
+  end
 
   @doc "Reset the metrics counters to zero."
   @spec reset_metrics() :: :ok
@@ -132,6 +144,10 @@ defmodule CureForge do
   (oldest first) and resets the buffer. Capped at `max_log_lines`
   from `Application.get_env/3`, matching the `[application.env]`
   declaration in `Cure.toml`.
+
+  Cure lowers `%[:lines, buffer]` to the BEAM tuple
+  `{:lines, buffer}`; the matcher accepts both that shape and a
+  legacy two-element list for forward-compatibility.
   """
   @spec drain_log() :: [term()]
   def drain_log do
@@ -140,20 +156,29 @@ defmodule CureForge do
 
     lines =
       receive_notification(pid, :drain, fn
+        {:lines, buffer} -> {:ok, Enum.reverse(buffer)}
         [:lines, buffer] -> {:ok, Enum.reverse(buffer)}
         _ -> :skip
       end)
 
-    Enum.take(lines, cap)
+    case lines do
+      list when is_list(list) -> Enum.take(list, cap)
+      other -> other
+    end
   end
 
-  @doc "Return the current logger buffer size without draining it."
+  @doc """
+  Return the current logger buffer size without draining it. The
+  queue actor does not expose a dedicated `:size` message (we keep
+  the Cure source minimal), so the facade reads the buffer directly
+  through the compiled actor's `get_state/1` and returns its length.
+  """
   @spec log_size() :: non_neg_integer()
   def log_size do
-    receive_notification(logger_pid(), :size, fn
-      [:size, n] -> {:ok, n}
-      _ -> :skip
-    end)
+    case logger_pid() do
+      nil -> 0
+      pid -> length(@logger_module.get_state(pid))
+    end
   end
 
   # -- Queue -----------------------------------------------------------------
@@ -166,13 +191,19 @@ defmodule CureForge do
   @spec submit(term()) :: :ok
   def submit(task), do: send_sync(queue_pid(), [:enqueue, task])
 
-  @doc "Return the current queue length."
+  @doc """
+  Return the current queue length.
+
+  Same approach as `log_size/0`: the facade reads the queue's
+  payload (a plain list) straight from the generated `get_state/1`
+  and reports its length, so the Cure source can stay minimal.
+  """
   @spec queue_size() :: non_neg_integer()
   def queue_size do
-    receive_notification(queue_pid(), :size, fn
-      [:size, n] -> {:ok, n}
-      _ -> :skip
-    end)
+    case queue_pid() do
+      nil -> 0
+      pid -> length(@queue_module.get_state(pid))
+    end
   end
 
   @doc """
@@ -197,6 +228,7 @@ defmodule CureForge do
 
     result =
       receive_notification(q_pid, :dequeue, fn
+        {:task, task} -> {:ok, {:task, task}}
         [:task, task] -> {:ok, {:task, task}}
         :empty -> {:ok, :empty}
         _ -> :skip
@@ -209,9 +241,13 @@ defmodule CureForge do
       {:task, task} ->
         # Forward the task to the pool -- this is exactly what the
         # Melquiades Operator (`pool_pid <-| {:task, task}`) would do
-        # in Cure source.
+        # in Cure source. The pool's `notify(...)` arrives as a
+        # `{:done, verdict}` tuple (Cure lowers `%[:done, verdict]`
+        # to that); the legacy two-element-list shape is also
+        # accepted for forward-compatibility.
         outcome =
           receive_notification(p_pid, {:task, task}, fn
+            {:done, verdict} -> {:ok, verdict}
             [:done, verdict] -> {:ok, verdict}
             _ -> :skip
           end)
@@ -224,12 +260,21 @@ defmodule CureForge do
 
   # -- Pool ------------------------------------------------------------------
 
-  @doc "Return the pool's current `%{done:, failed:}` snapshot."
+  @doc """
+  Return the pool's current `%{done:, failed:}` snapshot.
+
+  Like `metrics/0`, the underlying Cure payload is a two-slot tuple
+  (`%[done, failed]`); the facade wraps it into a map for
+  Elixir-side ergonomics.
+  """
   @spec pool_state() :: %{
           required(:done) => non_neg_integer(),
           required(:failed) => non_neg_integer()
         }
-  def pool_state, do: @pool_module.get_state(pool_pid())
+  def pool_state do
+    {done, failed} = @pool_module.get_state(pool_pid())
+    %{done: done, failed: failed}
+  end
 
   @doc "Reset the pool's counters."
   @spec reset_pool() :: :ok

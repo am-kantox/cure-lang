@@ -412,7 +412,8 @@ defmodule Cure.Release do
       # the host Erlang's installation paths.
       {:variables, [{~c"RELEASE_LIB", release_lib}]},
       :silent,
-      :no_module_tests
+      :no_warn_sasl,
+      :no_dot_erlang
     ]
 
     case :systools.make_script(String.to_charlist(rel_base), opts) do

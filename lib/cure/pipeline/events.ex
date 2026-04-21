@@ -40,8 +40,9 @@ defmodule Cure.Pipeline.Events do
 
   # `:registry` covers out-of-band lifecycle events from the package
   # registry and transparency log; `:sup_verifier` covers the structural
-  # verification pass for `sup` containers. Every other stage maps to
-  # one of the compilation pipeline phases.
+  # verification pass for `sup` containers; `:app_verifier` covers the
+  # structural verification pass for `app` containers (v0.26.0). Every
+  # other stage maps to one of the compilation pipeline phases.
   @type stage ::
           :lexer
           | :parser
@@ -49,6 +50,7 @@ defmodule Cure.Pipeline.Events do
           | :codegen
           | :fsm_verifier
           | :sup_verifier
+          | :app_verifier
           | :registry
   @type event_type :: atom()
   @type metadata :: %{file: String.t(), line: pos_integer(), timestamp: integer()}

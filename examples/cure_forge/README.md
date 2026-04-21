@@ -110,6 +110,8 @@ iex> CureForge.log("booted")
 iex> CureForge.log("first tick")
 iex> CureForge.drain_log()
 ["booted", "first tick"]
+# The logger buffers lines newest-first (cons prepend); the facade
+# reverses on the way out so callers see insertion order.
 
 iex> Application.get_env(:cure_forge, :greeting)
 "forge ready"
