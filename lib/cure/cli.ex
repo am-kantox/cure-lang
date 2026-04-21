@@ -117,7 +117,7 @@ defmodule Cure.CLI do
   # -- top / trace / synth (v0.27.0) -------------------------------------------
 
   defp cmd_top(opts) do
-    width = Keyword.get(opts, :output_dir, nil) |> then(fn _ -> Keyword.get(opts, :width, 80) end)
+    width = Keyword.get(opts, :width, 80)
     snapshot = Cure.Observe.Top.snapshot()
     IO.puts(Cure.Observe.Top.render(snapshot, width: width))
   end
@@ -141,10 +141,18 @@ defmodule Cure.CLI do
     end
   end
 
-  defp cmd_synth([], _opts), do: error("Usage: cure synth --goal T --ctx name=T[,...]")
-
   defp cmd_synth(_rest, opts) do
-    goal = Keyword.get(opts, :goal) || (error("--goal is required") && exit({:shutdown, 1}))
+    case Keyword.get(opts, :goal) do
+      nil ->
+        error("Usage: cure synth --goal T [--ctx name=T[,...]] [--effects io,state]")
+        exit({:shutdown, 1})
+
+      goal ->
+        do_synth(goal, opts)
+    end
+  end
+
+  defp do_synth(goal, opts) do
     ctx = parse_synth_ctx(Keyword.get(opts, :ctx, ""))
     effects = parse_synth_effects(Keyword.get(opts, :effects, ""))
     max_results = Keyword.get(opts, :max, 3)
