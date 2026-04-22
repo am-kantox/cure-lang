@@ -42,36 +42,44 @@ defmodule Mix.Tasks.Cure.Repl do
 
   use Mix.Task
 
-  @shortdoc "Starts the interactive Cure REPL"
+  alias Cure.REPL.Options
 
-  @switches [
-    raw: :boolean,
-    theme: :string,
-    mode: :string,
-    history: :string,
-    no_history: :boolean,
-    error_device: :string
-  ]
+  @shortdoc "Starts the interactive Cure REPL"
 
   @impl Mix.Task
   def run(args) do
-    Mix.Task.run("app.start", [])
+    # `mix app.start` only makes sense when the task is invoked from
+    # inside a Mix project. Guarding on `Mix.Project.get/0` keeps the
+    # task usable from contexts where Mix is loaded but no project is
+    # (e.g. a release that opted `:mix` into `extra_applications`).
+    if Mix.Project.get(), do: Mix.Task.run("app.start", [])
 
-    {parsed, _rest, _invalid} = OptionParser.parse(args, switches: @switches)
+    {parsed, _rest, _invalid} = OptionParser.parse(args, switches: Options.switches())
 
     parsed
     |> build_opts()
     |> start_repl()
   end
 
-  @doc false
+  @doc """
+  Translates a parsed keyword list of switches into the options keyword
+  accepted by `Cure.REPL.start/1`.
+
+  Any invalid switch values (for example `--theme=neon`) are reported
+  via `Mix.shell().error/1` and dropped from the result. The actual
+  parsing is delegated to `Cure.REPL.Options.build_opts/1`, which is
+  Mix-free and therefore reusable from release-time entry points
+  (such as the Yeesh browser terminal).
+  """
   @spec build_opts(keyword()) :: keyword()
   def build_opts(parsed) do
-    parsed
-    |> Enum.flat_map(&translate/1)
-    |> Enum.reverse()
-    |> Enum.uniq_by(&elem(&1, 0))
-    |> Enum.reverse()
+    {opts, warnings} = Options.build_opts(parsed)
+
+    Enum.each(warnings, fn message ->
+      Mix.shell().error("cure.repl: " <> message)
+    end)
+
+    opts
   end
 
   # Dispatch kept private so the task is mockable in tests: overriding
@@ -86,44 +94,4 @@ defmodule Mix.Tasks.Cure.Repl do
         Cure.REPL.start(opts)
     end
   end
-
-  # -- translate each parsed switch into `Cure.REPL.start/1` keyword ---------
-
-  defp translate({:raw, bool}) when is_boolean(bool), do: [{:raw, bool}]
-
-  defp translate({:theme, "auto"}), do: [{:theme, :auto}]
-
-  defp translate({:theme, name}) when name in ["dark", "light", "mono"],
-    do: [{:theme, String.to_atom(name)}]
-
-  defp translate({:theme, other}) do
-    Mix.shell().error("cure.repl: unknown --theme #{inspect(other)} (expected dark|light|mono|auto)")
-    []
-  end
-
-  defp translate({:mode, "emacs"}), do: [{:mode, :emacs}]
-  defp translate({:mode, "vi"}), do: [{:mode, :vi}]
-
-  defp translate({:mode, other}) do
-    Mix.shell().error("cure.repl: unknown --mode #{inspect(other)} (expected emacs|vi)")
-    []
-  end
-
-  defp translate({:history, ""}), do: [{:history_path, nil}]
-  defp translate({:history, path}) when is_binary(path), do: [{:history_path, path}]
-
-  defp translate({:no_history, true}), do: [{:history_path, nil}]
-  defp translate({:no_history, false}), do: []
-
-  defp translate({:error_device, "stdio"}), do: [{:error_device, :stdio}]
-  defp translate({:error_device, "stderr"}), do: [{:error_device, :stderr}]
-  defp translate({:error_device, "standard_io"}), do: [{:error_device, :stdio}]
-  defp translate({:error_device, "standard_error"}), do: [{:error_device, :stderr}]
-
-  defp translate({:error_device, other}) do
-    Mix.shell().error("cure.repl: unknown --error-device #{inspect(other)} (expected stdio|stderr)")
-    []
-  end
-
-  defp translate(_), do: []
 end

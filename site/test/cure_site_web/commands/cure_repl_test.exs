@@ -1,5 +1,8 @@
 defmodule CureSiteWeb.Commands.CureReplTest do
-  use ExUnit.Case, async: true
+  # async: false -- we reach into `Application.put_env(:cure,
+  # :repl_start_mfa, ...)`, which is a global switch shared with the
+  # Mix task test suite.
+  use ExUnit.Case, async: false
 
   alias CureSiteWeb.Commands.CureRepl
 
@@ -37,14 +40,71 @@ defmodule CureSiteWeb.Commands.CureReplTest do
     end
   end
 
-  describe "MixCommand wiring" do
-    test "wraps the `cure.repl` Mix task" do
-      # The `Yeesh.MixCommand` macro stashes the task name in a module
-      # attribute named `@mix_task`; it surfaces indirectly through
-      # Mix.Task.get/1 the moment the command executes. We verify it
-      # transitively here: the task module is resolvable once the host
-      # Mix project has been loaded.
-      assert Mix.Task.get("cure.repl") == Mix.Tasks.Cure.Repl
+  describe "execute/2 dispatch (Mix-free)" do
+    setup do
+      parent = self()
+      Application.put_env(:cure, :repl_start_mfa, {__MODULE__, :capture_repl_start, [parent]})
+      on_exit(fn -> Application.delete_env(:cure, :repl_start_mfa) end)
+      :ok
     end
+
+    test "delegates to `Cure.REPL.start/1` with defaults merged in" do
+      session = %Yeesh.Session{context: %{}}
+
+      assert {:ok, _output, new_session} = CureRepl.execute([], session)
+      assert new_session.mode == :normal
+
+      assert_received {:repl_opts, opts}
+      assert Keyword.get(opts, :raw) == false
+      assert Keyword.get(opts, :error_device) == :stdio
+      assert Keyword.get(opts, :history_path) == nil
+      assert Keyword.get(opts, :theme) == :dark
+    end
+
+    test "user-supplied flags override the defaults (last occurrence wins)" do
+      session = %Yeesh.Session{context: %{}}
+
+      assert {:ok, _output, _session} =
+               CureRepl.execute(["--theme=mono", "--mode=vi"], session)
+
+      assert_received {:repl_opts, opts}
+      assert Keyword.get(opts, :theme) == :mono
+      assert Keyword.get(opts, :mode) == :vi
+    end
+
+    test "invalid switch values are surfaced as a banner prefix, not a crash" do
+      session = %Yeesh.Session{context: %{}}
+
+      assert {:ok, output, _session} = CureRepl.execute(["--theme=neon"], session)
+
+      assert output =~ "repl:"
+      assert output =~ "--theme"
+
+      # The REPL still launches -- warnings are additive, not fatal.
+      # Note that `OptionParser` collapses repeated `:string` switches
+      # to last-wins, so `--theme=neon` overrides the default
+      # `--theme=dark` *before* validation. The invalid value is
+      # dropped by the translator, leaving no `:theme` override at
+      # all; `Cure.REPL.start/1` then applies its own default.
+      assert_received {:repl_opts, opts}
+      refute Keyword.has_key?(opts, :theme)
+    end
+
+    test "does not depend on Mix at runtime" do
+      # Sanity check: the module must not have pulled `Yeesh.MixCommand`
+      # into its compiled behaviours list. The whole point of the
+      # rewrite is to keep the `repl` command alive inside a prod
+      # release where Mix is absent.
+      behaviours =
+        CureRepl.module_info(:attributes) |> Keyword.get_values(:behaviour) |> List.flatten()
+
+      refute Yeesh.MixCommand in behaviours
+    end
+  end
+
+  @doc false
+  def capture_repl_start(parent, opts) do
+    send(parent, {:repl_opts, opts})
+    :ok
   end
 end
