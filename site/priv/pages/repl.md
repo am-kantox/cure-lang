@@ -115,12 +115,15 @@ Every meta-command is prefixed with `:`. Typing `:` and pressing
 - `:holes` -- list holes from the last evaluation
 - `:ast expr` -- dump the parsed AST
 - `:fmt expr` -- pretty-print `expr`
+- `:bless path` (v0.28.0) -- run the Socratic fix assistant on a
+  `.cure` file; walks through each type error interactively
 
 ### Modules and files
 
 - `:load path` -- compile and load a `.cure` file
 - `:reload` -- reload every previously loaded file
-- `:use Mod` -- bring `Mod`'s exports into scope
+- `:use Mod` -- bring `Mod`'s exports into scope (v0.28.0: warns and
+  suggests the closest stdlib module name when `Mod` is unknown)
 - `:env` -- list all imports
 - `:doc name` -- show the docstring of `name`
 

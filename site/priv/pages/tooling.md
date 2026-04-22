@@ -112,6 +112,7 @@ construction.
 cure fmt                         # algebra formatter (default)
 cure fmt lib/std/core.cure       # format a specific file
 cure fmt --check                 # CI mode: exits 1 if any file would change
+cure fmt --dry-run               # show colour diff without touching disk (v0.28.0)
 cure fmt --safe                  # legacy byte-level safe formatter
 cure fmt --aggressive            # legacy AST rewrite; strips comments
 ```
@@ -119,21 +120,19 @@ cure fmt --aggressive            # legacy AST rewrite; strips comments
 Options:
 
 - `--check` -- report files that would be reformatted and exit
-  non-zero; leaves files on disk untouched. v0.21.0 routes
-  `--check` through the algebra formatter so CI agrees with
-  interactive use.
-- `--safe` -- v0.20.0 byte-level formatter. Normalises line endings,
-  strips trailing whitespace, expands leading tabs into two spaces,
-  collapses runs of blank lines to a single blank line,
-  canonicalises operator spacing, and ensures a single trailing
-  newline. Kept as an escape hatch for sources that trip the
-  algebra formatter's round-trip check.
+  non-zero; leaves files on disk untouched.
+- `--dry-run` (v0.28.0) -- render a colour-annotated unified diff
+  for every file that would change using `List.myers_difference/2`.
+  Red lines (`-`) are removed; green lines (`+`) are added. Exits 1
+  when any file has pending changes, making it a natural CI gate:
+  `cure fmt --dry-run || exit 1`. ANSI colour is suppressed when
+  `NO_COLOR` is set or stdout is not a tty.
+- `--safe` -- v0.20.0 byte-level formatter. Kept as an escape hatch
+  for sources that trip the algebra formatter's round-trip check.
 - `--algebra` -- explicit opt-in to the algebra formatter;
   synonymous with the default since v0.21.0.
-- `--aggressive` / `--ast` -- legacy AST pretty printer
-  (`Cure.Compiler.Printer`). Strips plain `#` comments and any
-  non-canonical whitespace. Prints a warning before touching
-  files.
+- `--aggressive` / `--ast` -- legacy AST pretty printer. Strips
+  plain `#` comments. Prints a warning before touching files.
 
 **`cure repl`** -- Start a readline-grade interactive Cure session.
 Since v0.24.0, the REPL runs on top of a raw-mode line editor with
@@ -148,6 +147,33 @@ cure repl
 
 See the dedicated [REPL reference page](/repl) for the complete
 key-bindings table and meta-command list.
+
+**`cure bless <file>`** (v0.28.0) -- Socratic type-error assistant.
+For each type or refinement error in a `.cure` file, displays the
+diagnostic, explains what went wrong, proposes a concrete fix, and
+prompts `[y]es / [n]o / [s]kip`. On `y`, applies the fix in-place
+and re-runs the checker to confirm resolution.
+
+```bash
+cure bless lib/my_module.cure
+cure bless lib/my_module.cure --batch   # print suggestions; no prompts
+```
+
+See [`docs/BLESS.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/BLESS.md)
+for the full reference.
+
+**`cure replay <path.journal>`** (v0.28.0) -- Replay a recorded FSM
+trace from a `.journal` file produced by a `@record`-annotated FSM
+container.
+
+```bash
+cure replay .cure-trace/abc123.journal               # print trace only
+cure replay .cure-trace/abc123.journal --module MyFsm  # live replay
+cure replay .cure-trace/abc123.journal --module MyFsm --step  # step mode
+```
+
+See [`docs/REPLAY.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/REPLAY.md)
+for `@record` annotation details and the full API.
 
 **`cure explain <code>`** -- Look up a structured error explanation.
 
@@ -555,9 +581,17 @@ that is not in scope at the pattern's position.
 not cover every inhabitant of the scrutinee type; the compiler prints a
 concrete missing witness.
 
+### v0.28.0 codes
+
+**E063: Parse Error (recovered)** -- a statement contained a syntax
+error from which the parser recovered by skipping tokens until the
+next statement boundary (`fn`, `mod`, `rec`, etc.). Subsequent
+definitions in the same file are still reported. Fix the primary
+parse error; E063 diagnostics disappear automatically.
+
 ### v0.19.0 codes
 
-**E026: Proof Shape Mismatch** -- a binding inside a `proof` container does
+**E026: Proof Shape Mismatch**
 not elaborate to an `Eq(...)` or refinement proof.
 
 **E027: `assert_type` Assertion Failed** -- the expression in
@@ -605,8 +639,10 @@ error: type mismatch in function 'bad'
   | declared return type Int but body has type String
 ```
 
-The compiler also suggests corrections for typos using Levenshtein distance
-("Did you mean `length`?").
+The compiler suggests corrections for typos using Levenshtein distance.
+As of v0.28.0 this covers every name-resolution failure site: unbound
+variables, record field patterns, CLI subcommands, REPL `:use`, and
+REPL unknown meta-commands ("Did you mean `:type`?").
 
 ---
 

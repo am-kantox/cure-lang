@@ -95,12 +95,15 @@ You can also start directly in vi mode via `CURE_REPL_MODE=vi cure repl`.
 - `:holes`                       - list holes from the last evaluation
 - `:ast expr`                    - dump the parsed AST
 - `:fmt expr`                    - pretty-print `expr`
+- `:bless path` (v0.28.0)        - run the interactive type-error fix
+  assistant on a `.cure` file; see `docs/BLESS.md`
 
 ### Modules and files
 
 - `:load path`                   - compile and load a `.cure` file
 - `:reload`                      - reload every previously loaded file
 - `:use Mod`                     - bring `Mod`'s exports into scope
+  (v0.28.0: warns and suggests the nearest stdlib module when unknown)
 - `:env`                         - list all imports
 - `:doc name`                    - show the docstring of `name`
 

@@ -139,7 +139,9 @@ defmodule Cure.MixProject do
         "docs/OBSERVABILITY.md",
         "docs/PROTOCOL.md",
         "docs/TEMPORAL.md",
-        "docs/PLAYGROUND.md"
+        "docs/PLAYGROUND.md",
+        "docs/BLESS.md",
+        "docs/REPLAY.md"
       ],
       source_url: @source_url,
       source_ref: "v#{@version}",

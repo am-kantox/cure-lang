@@ -1124,6 +1124,61 @@ Five new codes `E051` -- `E055`:
 - `docs/STDLIB.md` -- new `Std.App` entry.
 - `site/priv/pages/applications.md` -- user-facing reference on the
   Cure website.
+## Implemented: v0.27.0 -- See Your System Breathe
+
+Observability and verification layered on top of the v0.26.0 OTP
+application surface. See the [v0.27.0 release post](/blog/cure-v0.27.0)
+for the full narrative.
+
+- **`Cure.OTel`** -- OpenTelemetry-compatible span bridge. Every
+  pipeline event becomes a span; `inject_ctx`/`extract_ctx` carry
+  trace context across process boundaries; `MemoryExporter` for tests.
+- **`cure top`** -- snapshot observer for supervisors, actors, and FSMs.
+- **`cure trace`** -- typed `:dbg` wrapper with BEAM signature lookup.
+- **`Cure.Temporal`** -- LTL formula DSL + bounded model checker over
+  FSM transition graphs. `E059 Temporal Property Violated` with a
+  minimal counterexample trace.
+- **`Cure.Protocol`** -- session types between actor roles, structural
+  verifier, projection to FSM traces. `E056 Protocol Violation`.
+- **`cure synth`** -- typed-hole synthesis via depth-budgeted
+  enumeration + stdlib catalogue. `E061 Synthesis Budget Exhausted`.
+- **New stdlib** -- `Std.Time` (14 fns), `Std.Regex` (7 fns, `E060`),
+  `Std.CRDT` (5 CRDTs × 4 ops).
+- **`Cure.Doc.Mermaid`** -- FSM / sup / app diagrams in `cure doc`.
+- **OSC 8 hyperlinks** -- `Cure.Term.Hyperlink` wraps error file paths
+  so they are clickable in WezTerm, Kitty, iTerm2, VTE, and Warp.
+- **LiveView Playground v1** -- syntax-highlighted two-pane editor.
+- **`examples/cure_atelier/`** -- showcase project exercising every
+  v0.27.0 surface.
+- **1451 tests.** 5 new error codes (E056--E062).
+
+## Implemented: v0.28.0 -- Talk Back
+
+Feedback loops closed at every level. See the [v0.28.0 release post](/blog/cure-v0.28.0)
+for the full narrative.
+
+- **Checker bug fix** -- `infer_and_unify_args` silently swallowed
+  lambda body type errors, returning `List(U)` instead of a type
+  error for ill-typed polymorphic lambdas. Fixed via error accumulator.
+  `Type.numeric?` extended to handle named type aliases and type
+  variables without false positives.
+- **Parser error recovery (E063)** -- `synchronize_to_statement/1`
+  after every error-producing expression; one pass, all errors.
+- **"Did you mean?"** -- Levenshtein suggestions at every
+  name-resolution failure: unbound variables, record fields, CLI
+  subcommands, REPL `:use`, REPL meta-commands.
+- **`cure fmt --dry-run`** -- colour-annotated unified diff without
+  touching disk; exits 1 when files would change.
+- **`cure bless`** -- Socratic type-error assistant with `[y/n/s]`
+  interactive fix prompting. `Cure.Bless`, `Cure.Bless.Advisor`,
+  `mix cure.bless`, REPL `:bless`.
+- **`@record` + `cure replay`** -- `@record` decorator opts any FSM
+  into `Cure.Observe.Journal`. `cure replay` loads `.journal` files
+  and replays event sequences with optional `--step` mode.
+- **Playground v2** -- live type-check panel + sandboxed evaluator
+  (`CureSiteWeb.Eval`, 64 MB heap cap, 2 s kill timer).
+- **1503 tests.** E063 added to the error catalog.
+
 ## Future
 These are not scheduled but are on the long-term radar.
 **Monomorphisation.** Specialise polymorphic functions whose call
