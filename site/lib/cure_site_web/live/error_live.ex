@@ -57,11 +57,13 @@ defmodule CureSiteWeb.ErrorLive do
           <div class="text-center space-y-2">
             <h1 class="text-3xl font-bold tracking-tight">Cure REPL</h1>
             <p class="text-base-content/60 text-sm">
-              Browser-based access to the Cure language.
-              Type <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">help</code>
-              for available commands or
+              Browser-based access to the Cure language. Type
+              <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">repl</code>
+              for a full interactive session,
               <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">eval 1 + 1</code>
-              to run Cure code.
+              for a one-shot expression, or
+              <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">help</code>
+              to list available commands.
             </p>
           </div>
         <% end %>
@@ -70,10 +72,12 @@ defmodule CureSiteWeb.ErrorLive do
         <div class="w-full max-w-4xl">
           <p class="mb-3 text-sm text-base-content/60 text-center">
             While you're here, try the Cure REPL.
-            Type <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">help</code>
-            to see available commands or
+            Type <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">repl</code>
+            to start a full interactive session,
             <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">eval 1 + 1</code>
-            to evaluate Cure code.
+            for a one-shot expression, or
+            <code class="rounded bg-base-300 px-1 py-0.5 font-mono text-xs">help</code>
+            to list commands.
           </p>
           <div
             id="error-terminal-container"
@@ -83,10 +87,18 @@ defmodule CureSiteWeb.ErrorLive do
             <.live_component
               module={Yeesh.Live.TerminalComponent}
               id="error-terminal"
-              commands={[CureSiteWeb.Commands.CureEval]}
+              commands={[
+                CureSiteWeb.Commands.CureRepl,
+                CureSiteWeb.Commands.CureEval
+              ]}
               prompt="cure> "
               theme={:default}
-              welcome_message="\e[1;36mCure REPL\e[0m -- type \e[1mhelp\e[0m for commands, \e[1meval <expr>\e[0m to run Cure code"
+              welcome_message={
+                "\e[1;36mCure REPL\e[0m -- " <>
+                  "type \e[1mrepl\e[0m for an interactive session, " <>
+                  "\e[1meval <expr>\e[0m for a one-shot expression, " <>
+                  "\e[1mhelp\e[0m for the command list."
+              }
             />
           </div>
           <div class="mt-3 flex flex-wrap gap-2 justify-center text-xs text-base-content/40">

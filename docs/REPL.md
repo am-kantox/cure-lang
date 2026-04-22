@@ -19,6 +19,16 @@ Launch it with:
 cure repl
 ```
 
+There are two more entry points, both shipped since **v0.28.0**:
+
+- `mix cure.repl` boots the same REPL from any Mix project that has
+  `:cure` on its dependency path. Useful when you want to experiment
+  against your own compiled modules without building the escript.
+- `CureSiteWeb.Commands.CureRepl` (in `site/`) wraps the Mix task into
+  a Yeesh command called `repl`, so visiting `/repl` on the Cure site
+  (or any error page) drops you into a full REPL session inside the
+  browser terminal.
+
 The prompt reads `cure(N)>` where `N` is the expression counter. Every
 submitted expression is wrapped into a synthetic `Repl.M<N>` module and
 compiled + loaded on the fly; its `main/0` value is echoed back with an
@@ -123,10 +133,48 @@ You can also start directly in vi mode via `CURE_REPL_MODE=vi cure repl`.
 
 Programmatic options to `Cure.REPL.start/1`:
 
-- `:history_path`  - override `~/.cure_history`
+- `:history_path`  - override `~/.cure_history`; pass `nil` to disable persistence
 - `:raw`           - `true`, `false`, or `:auto` (default); forces the raw-mode editor
 - `:theme`         - `:dark`, `:light`, `:mono`, or `:auto`
 - `:mode`          - `:emacs` or `:vi`
+- `:error_device`  - `:stderr` (default) or `:stdio`; use `:stdio` when the
+  REPL is hosted behind a custom group leader (e.g. the Yeesh IOServer)
+  so compiler diagnostics reach the embedder
+
+## Mix task
+
+```sh
+mix cure.repl                                  # standalone, full raw-mode experience
+mix cure.repl --theme=light
+mix cure.repl --no-raw --error-device=stdio    # embedded under a custom group leader
+mix cure.repl --no-history                     # ephemeral session, no `~/.cure_history`
+```
+
+Supported flags: `--raw` / `--no-raw`, `--theme`, `--mode`,
+`--history PATH`, `--no-history`, `--error-device stdio|stderr`.
+They map 1:1 to the options listed above.
+
+## Embedding in Yeesh
+
+`CureSiteWeb.Commands.CureRepl` (in `site/`) wraps `mix cure.repl`
+with the flags needed to run inside a browser terminal
+(`--no-raw --error-device=stdio --no-history --theme=dark`). Register
+it on any `Yeesh.Live.TerminalComponent`:
+
+```elixir
+<.live_component
+  module={Yeesh.Live.TerminalComponent}
+  id="terminal"
+  commands={[CureSiteWeb.Commands.CureRepl]}
+  prompt="cure> "
+/>
+```
+
+Then type `repl` at the Yeesh prompt to enter an interactive Cure
+session. Every `IO.gets` round-trip the REPL performs is intercepted
+by `Yeesh.IOServer`, turning the page into an actual Cure terminal.
+Use `:quit` inside the REPL (or a bare `exit` at the Yeesh prompt) to
+return to the normal Yeesh session.
 
 Environment variables:
 

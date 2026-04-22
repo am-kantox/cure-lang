@@ -22,12 +22,18 @@ defmodule Cure.REPL do
 
   ## Configuration
 
-  * `:history_path` -- override the history file.
+  * `:history_path` -- override the history file. Pass `nil` to disable
+    persistence entirely (useful when the REPL is embedded in an
+    ephemeral host such as the Yeesh browser terminal).
   * `:raw` -- force raw mode on or off.
   * `:theme` -- one of `:dark`, `:light`, `:mono`; defaults to `:dark`
     and automatically drops to `:mono` when `NO_COLOR` is set or stdout
     is not a tty.
   * `:mode` -- initial editing mode (`:emacs` or `:vi`).
+  * `:error_device` -- IO device used for diagnostic output. Defaults
+    to `:stderr`; set to `:stdio` when the REPL is hosted behind a
+    custom group leader (e.g. `Yeesh.IOServer`) so compiler errors
+    reach the embedder.
   """
 
   alias Cure.Compiler.Printer
@@ -46,6 +52,7 @@ defmodule Cure.REPL do
             theme: nil,
             mode: :emacs,
             color: true,
+            error_device: :stderr,
             running: true
 
   @type t :: %__MODULE__{}
@@ -53,9 +60,16 @@ defmodule Cure.REPL do
   @doc "Start the REPL."
   @spec start(keyword()) :: :ok
   def start(opts \\ []) do
-    history_path = Keyword.get(opts, :history_path, default_history_path())
+    history_path =
+      if Keyword.has_key?(opts, :history_path) do
+        Keyword.get(opts, :history_path)
+      else
+        default_history_path()
+      end
+
     theme = resolve_theme(opts)
     mode = resolve_mode(opts)
+    error_device = resolve_error_device(opts)
 
     # Pre-load the compiled Cure stdlib (`_build/cure/ebin`) so expressions
     # can reference `Std.List`, `Std.Math`, etc. without an explicit `:load`.
@@ -69,6 +83,7 @@ defmodule Cure.REPL do
       theme: theme,
       mode: mode,
       color: theme.name != :mono,
+      error_device: error_device,
       uses: Docs.default_uses()
     }
 
@@ -920,7 +935,7 @@ defmodule Cure.REPL do
 
   defp render_error(state, msg) do
     body = state.theme.error <> "error: " <> msg <> state.theme.reset
-    IO.binwrite(:stderr, body <> "\n")
+    IO.binwrite(state.error_device, body <> "\n")
   end
 
   # ==========================================================================
@@ -983,6 +998,17 @@ defmodule Cure.REPL do
     end
   end
 
+  defp resolve_error_device(opts) do
+    case Keyword.get(opts, :error_device, :stderr) do
+      :stderr -> :stderr
+      :stdio -> :stdio
+      :standard_error -> :stderr
+      :standard_io -> :stdio
+      other when is_atom(other) or is_pid(other) -> other
+      _ -> :stderr
+    end
+  end
+
   defp default_history_path do
     case System.user_home() do
       nil -> ".cure_history"
@@ -1013,6 +1039,19 @@ defmodule Cure.REPL do
 
   @doc false
   def __format_error__(reason), do: format_error(reason)
+
+  @doc false
+  def __render_error__(%__MODULE__{} = state, msg) when is_binary(msg) do
+    render_error(state, msg)
+  end
+
+  @doc false
+  def __new_state__(opts \\ []) do
+    %__MODULE__{
+      theme: Theme.for_name(Keyword.get(opts, :theme, :mono)),
+      error_device: Keyword.get(opts, :error_device, :stderr)
+    }
+  end
 
   defp format_microseconds(us) when us < 1_000, do: "#{us} us"
 

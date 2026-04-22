@@ -1,6 +1,8 @@
 defmodule Cure.REPLTest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureIO
+
   alias Cure.REPL
 
   describe "input classification" do
@@ -38,6 +40,32 @@ defmodule Cure.REPLTest do
 
     test "fallback uses inspect" do
       assert REPL.__format_error__({:weird, 42}) =~ "weird"
+    end
+  end
+
+  describe "error_device option" do
+    test "defaults to :stderr so the standalone REPL keeps stream separation" do
+      state = REPL.__new_state__()
+
+      assert state.error_device == :stderr
+
+      captured =
+        capture_io(:stderr, fn ->
+          REPL.__render_error__(state, "kaboom")
+        end)
+
+      assert captured =~ "error: kaboom"
+    end
+
+    test ":stdio routes diagnostics through the group leader" do
+      state = REPL.__new_state__(error_device: :stdio)
+
+      captured =
+        capture_io(fn ->
+          REPL.__render_error__(state, "kaboom")
+        end)
+
+      assert captured =~ "error: kaboom"
     end
   end
 end
