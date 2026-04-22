@@ -32,9 +32,9 @@ defmodule Cure.Types.Stdlib do
   """
 
   alias Cure.Compiler.{Lexer, Parser}
+  alias Cure.Stdlib.Paths
   alias Cure.Types.{Env, Type}
 
-  @stdlib_dir Path.join(["lib", "std"])
   @persistent_key {__MODULE__, :signatures_v2}
 
   @typedoc """
@@ -132,11 +132,26 @@ defmodule Cure.Types.Stdlib do
   defp load_all do
     empty = %{qualified: %{}, short_by_module: %{}}
 
-    case File.ls(@stdlib_dir) do
+    # The stdlib may live under `lib/std/` (cwd-relative, when Cure
+    # itself is the current Mix project), under `:code.priv_dir(:cure)/std`
+    # (the bundled location used by host applications), or at an
+    # explicit override set via `Application.put_env/3`. See
+    # `Cure.Stdlib.Paths` for the full resolution order.
+    case Paths.source_dir() do
+      nil ->
+        empty
+
+      dir ->
+        load_from_dir(dir, empty)
+    end
+  end
+
+  defp load_from_dir(dir, empty) do
+    case File.ls(dir) do
       {:ok, entries} ->
         entries
         |> Enum.filter(&String.ends_with?(&1, ".cure"))
-        |> Enum.map(&Path.join(@stdlib_dir, &1))
+        |> Enum.map(&Path.join(dir, &1))
         |> Enum.reduce(empty, &load_module/2)
 
       {:error, _} ->

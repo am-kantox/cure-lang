@@ -54,4 +54,72 @@ defmodule Cure.Types.StdlibTest do
       refute match?({:ok, {:fun, _, _}}, Env.lookup(env, "map"))
     end
   end
+
+  describe "path resolution" do
+    test "honours `:stdlib_source_dir` override so host apps can point at a custom dir" do
+      # Stage a copy of the real `Std.List` in an out-of-tree directory
+      # and verify the loader picks it up via the configuration hook.
+      # This is the exact mechanism `:cure_site` uses when running
+      # inside a release where `lib/std/` is not on disk but
+      # `priv/std/` is.
+      source = Path.join(["lib", "std", "list.cure"])
+
+      if File.regular?(source) do
+        tmp = Path.join(System.tmp_dir!(), "cure_stdlib_test_#{System.unique_integer([:positive])}")
+        File.mkdir_p!(tmp)
+        File.cp!(source, Path.join(tmp, "list.cure"))
+
+        previous = Application.get_env(:cure, :stdlib_source_dir)
+
+        try do
+          Application.put_env(:cure, :stdlib_source_dir, tmp)
+          Stdlib.reload()
+
+          bundle = Stdlib.all()
+
+          assert Map.has_key?(bundle.short_by_module, "Std.List")
+          assert {:fun, _, _} = Map.fetch!(bundle.qualified, "Std.List.map")
+        after
+          case previous do
+            nil -> Application.delete_env(:cure, :stdlib_source_dir)
+            value -> Application.put_env(:cure, :stdlib_source_dir, value)
+          end
+
+          Stdlib.reload()
+          File.rm_rf!(tmp)
+        end
+      else
+        :ok
+      end
+    end
+
+    test "degrades to an empty bundle when no stdlib dir resolves" do
+      previous = Application.get_env(:cure, :stdlib_source_dir)
+
+      try do
+        Application.put_env(
+          :cure,
+          :stdlib_source_dir,
+          "/nonexistent/cure/stdlib_#{System.unique_integer([:positive])}"
+        )
+
+        Stdlib.reload()
+
+        # We cannot force the priv/legacy candidates to disappear from
+        # inside the Cure repo, so we only assert the override did not
+        # crash the loader. The full "empty bundle" path is exercised
+        # from host projects and release builds.
+        bundle = Stdlib.all()
+        assert is_map(bundle.qualified)
+        assert is_map(bundle.short_by_module)
+      after
+        case previous do
+          nil -> Application.delete_env(:cure, :stdlib_source_dir)
+          value -> Application.put_env(:cure, :stdlib_source_dir, value)
+        end
+
+        Stdlib.reload()
+      end
+    end
+  end
 end

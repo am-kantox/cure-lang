@@ -87,7 +87,13 @@ defmodule Cure.MixProject do
       ],
       # `mix check` runs the Cure stdlib and example regression
       # suites. Invoke alongside `mix test` (CI does both).
-      check: ["cure.compile_stdlib", "cure.check"]
+      check: ["cure.compile_stdlib", "cure.check"],
+      # Stage stdlib `.cure` sources under `priv/std/` before every
+      # compile so host applications (notably the Cure REPL embedded
+      # in `:cure_site`) can locate them via `:code.priv_dir(:cure)`
+      # in both dev and prod releases. See
+      # `Mix.Tasks.Cure.BundleStdlib` and `Cure.Stdlib.Paths`.
+      compile: ["cure.bundle_stdlib", "compile"]
     ]
   end
 

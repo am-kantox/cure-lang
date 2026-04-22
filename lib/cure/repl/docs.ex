@@ -24,11 +24,9 @@ defmodule Cure.REPL.Docs do
   alias Cure.Compiler.{Lexer, Parser}
   alias Cure.Doc.Extractor
   alias Cure.REPL.{Markdown, Render}
-  alias Cure.Stdlib.Preload
+  alias Cure.Stdlib.{Paths, Preload}
 
   @cache_key :cure_repl_doc_cache
-
-  @stdlib_dir Path.join(["lib", "std"])
 
   @typedoc "A fully-resolved doc target."
   @type target ::
@@ -324,7 +322,13 @@ defmodule Cure.REPL.Docs do
         _ -> []
       end
 
-    ([@stdlib_dir] ++ extras ++ configured)
+    # `Paths.source_dirs/0` yields every stdlib candidate that exists:
+    # an explicit override, the bundled `priv/std/` (populated by
+    # `Mix.Tasks.Cure.BundleStdlib`), and the legacy cwd-relative
+    # `lib/std/`. Prepending them to the search roots means host
+    # applications -- notably the REPL embedded in `:cure_site` --
+    # resolve `:doc Std.List` without any extra configuration.
+    (Paths.source_dirs() ++ extras ++ configured)
     |> Enum.uniq()
     |> Enum.filter(&File.dir?/1)
   end

@@ -1,5 +1,7 @@
 defmodule Cure.REPL.DocsTest do
-  use ExUnit.Case, async: true
+  # async: false -- one test flips `Application.put_env(:cure,
+  # :stdlib_source_dir, ...)` which is process-global state.
+  use ExUnit.Case, async: false
 
   alias Cure.REPL.Docs
   alias Cure.REPL.Theme
@@ -65,6 +67,35 @@ defmodule Cure.REPL.DocsTest do
 
     test "returns :not_found for a non-existent module" do
       assert :not_found = Docs.locate_source("No.Such.Module.Ever", %{loaded: []})
+    end
+
+    test "resolves a module placed in :stdlib_source_dir (simulated release layout)" do
+      source = Path.join(["lib", "std", "list.cure"])
+
+      if File.regular?(source) do
+        tmp = Path.join(System.tmp_dir!(), "cure_docs_test_#{System.unique_integer([:positive])}")
+        File.mkdir_p!(tmp)
+        File.cp!(source, Path.join(tmp, "list.cure"))
+
+        previous = Application.get_env(:cure, :stdlib_source_dir)
+
+        try do
+          Application.put_env(:cure, :stdlib_source_dir, tmp)
+
+          assert {:ok, path} = Docs.locate_source("Std.List", %{loaded: []})
+          assert Path.dirname(path) == tmp
+          assert Path.basename(path) == "list.cure"
+        after
+          case previous do
+            nil -> Application.delete_env(:cure, :stdlib_source_dir)
+            value -> Application.put_env(:cure, :stdlib_source_dir, value)
+          end
+
+          File.rm_rf!(tmp)
+        end
+      else
+        :ok
+      end
     end
   end
 
