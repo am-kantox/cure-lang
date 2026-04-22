@@ -1,14 +1,14 @@
 defmodule CureSiteWeb.ErrorHTMLTest do
   use CureSiteWeb.ConnCase, async: true
 
-  # Bring render_to_string/4 for testing custom views
-  import Phoenix.Template, only: [render_to_string: 4]
+  test "404 error page embeds ErrorLive" do
+    {_status, _headers, body} =
+      assert_error_sent(404, fn ->
+        get(build_conn(), "/this-path-does-not-exist")
+      end)
 
-  test "renders 404.html" do
-    assert render_to_string(CureSiteWeb.ErrorHTML, "404", "html", []) == "Not Found"
-  end
-
-  test "renders 500.html" do
-    assert render_to_string(CureSiteWeb.ErrorHTML, "500", "html", []) == "Internal Server Error"
+    # Root layout wraps the live_render placeholder.
+    assert body =~ "<html"
+    assert body =~ "data-phx-session"
   end
 end

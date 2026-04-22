@@ -16,7 +16,7 @@ config :cure_site, CureSiteWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [html: CureSiteWeb.ErrorHTML, json: CureSiteWeb.ErrorJSON],
-    layout: false
+    layout: {CureSiteWeb.Layouts, :root}
   ],
   pubsub_server: CureSite.PubSub,
   live_view: [signing_salt: "thO7HilE"]
@@ -28,7 +28,13 @@ config :esbuild,
     args:
       ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
+    env: %{
+      "NODE_PATH" => [
+        Path.expand("../assets/node_modules", __DIR__),
+        Path.expand("../deps", __DIR__),
+        Mix.Project.build_path()
+      ]
+    }
   ]
 
 # Configure tailwind (the version is required)
