@@ -1,9 +1,12 @@
 defmodule Cure.REPLTest do
-  use ExUnit.Case, async: true
+  # async: false -- the `describe "definitions"` block loads the shared
+  # `:"Cure.Repl.Session"` BEAM module into the VM, which is process-global.
+  use ExUnit.Case, async: false
 
   import ExUnit.CaptureIO
 
   alias Cure.REPL
+  alias Cure.REPL.Session
 
   describe "input classification" do
     test "complete inputs" do
@@ -67,5 +70,119 @@ defmodule Cure.REPLTest do
 
       assert captured =~ "error: kaboom"
     end
+  end
+
+  describe "definitions" do
+    setup do
+      Session.clear()
+      on_exit(&Session.clear/0)
+      :ok
+    end
+
+    test "fn submission installs the definition and prints `defined name/arity`" do
+      {state, stdout, _stderr} =
+        submit_capture(REPL.__new_state__(), "fn add(a: Int, b: Int) -> Int = a + b")
+
+      assert [%{key: {:fn, "add", 2, :public}}] = state.defs
+      assert stdout =~ "defined add/2"
+      assert function_exported?(Session.module_atom(), :add, 2)
+    end
+
+    test "follow-up expression can call the user-defined function" do
+      state =
+        REPL.__new_state__()
+        |> submit("fn add(a: Int, b: Int) -> Int = a + b")
+
+      {_state, stdout, _stderr} = submit_capture(state, "add(2, 3)")
+      assert stdout =~ "=> 5"
+    end
+
+    test "redefining a function replaces the previous entry in place" do
+      state =
+        REPL.__new_state__()
+        |> submit("fn answer() -> Int = 1")
+        |> submit("fn other() -> Int = 2")
+
+      assert [%{key: {:fn, "answer", 0, :public}}, %{key: {:fn, "other", 0, :public}}] =
+               state.defs
+
+      {state, stdout, _stderr} = submit_capture(state, "fn answer() -> Int = 42")
+
+      assert stdout =~ "redefined answer/0"
+
+      assert [%{key: {:fn, "answer", 0, :public}, source: "fn answer() -> Int = 42"}, _other] =
+               state.defs
+
+      {_state, stdout, _stderr} = submit_capture(state, "answer()")
+      assert stdout =~ "=> 42"
+    end
+
+    test ":reset clears defs and unloads the session module" do
+      state =
+        REPL.__new_state__()
+        |> submit("fn ping() -> Int = 1")
+
+      assert [_] = state.defs
+      assert :code.is_loaded(Session.module_atom())
+
+      state = REPL.__submit__(state, ":reset")
+
+      assert state.defs == []
+      refute :code.is_loaded(Session.module_atom())
+    end
+
+    test ":defs command lists installed definitions" do
+      state =
+        REPL.__new_state__()
+        |> submit("fn foo(x: Int) -> Int = x")
+        |> submit("type Color = Red | Green")
+
+      {_state, stdout, _stderr} = submit_capture(state, ":defs")
+
+      assert stdout =~ "session definitions (2)"
+      assert stdout =~ "foo/1"
+      assert stdout =~ "type Color"
+    end
+  end
+
+  # Feed `line` through the REPL pipeline, silencing any captured IO. Used
+  # for setup steps whose stdout/stderr is not the subject of the
+  # assertion.
+  defp submit(state, line) do
+    {next_state, _stdout, _stderr} = submit_capture(state, line)
+    next_state
+  end
+
+  # Feed `line` through the REPL pipeline and return the updated state
+  # along with the captured stdout and stderr.
+  defp submit_capture(state, line) do
+    parent = self()
+    ref = make_ref()
+
+    stderr =
+      capture_io(:stderr, fn ->
+        stdout =
+          capture_io(fn ->
+            send(parent, {ref, REPL.__submit__(state, line)})
+          end)
+
+        send(parent, {ref, :stdout, stdout})
+      end)
+
+    next_state =
+      receive do
+        {^ref, %Cure.REPL{} = s} -> s
+      after
+        0 -> raise "submit_capture/2 did not produce a REPL state"
+      end
+
+    stdout =
+      receive do
+        {^ref, :stdout, s} -> s
+      after
+        0 -> ""
+      end
+
+    {next_state, stdout, stderr}
   end
 end

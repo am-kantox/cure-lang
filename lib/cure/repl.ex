@@ -37,13 +37,14 @@ defmodule Cure.REPL do
   """
 
   alias Cure.Compiler.Printer
-  alias Cure.REPL.{Docs, History, LineEditor, Markdown, Render, Search, Terminal, Theme}
+  alias Cure.REPL.{Docs, History, LineEditor, Markdown, Render, Search, Session, Terminal, Theme}
   alias Cure.Stdlib.Preload
   alias Cure.Types.{Checker, Holes}
 
   defstruct n: 1,
             loaded: [],
             uses: [],
+            defs: [],
             holes: [],
             editor: nil,
             history: nil,
@@ -381,8 +382,41 @@ defmodule Cure.REPL do
       state
       |> Map.put(:history, History.append(state.history, src))
       |> Map.put(:input_buffer, [])
-      |> evaluate(src)
+      |> handle_submission(src)
       |> Map.update!(:n, &(&1 + 1))
+    end
+  end
+
+  # Route a trimmed submission to the definition accumulator or the
+  # expression evaluator based on the parser's classification of its
+  # top-level nodes. A failure to install definitions (compile error,
+  # type error, ...) leaves `state.defs` untouched so the user can fix
+  # the source and retry without losing previously-installed bindings.
+  defp handle_submission(state, src) do
+    case Session.classify(src) do
+      {:definitions, entries} -> add_definitions(state, entries)
+      :expression -> evaluate(state, src)
+    end
+  end
+
+  defp add_definitions(state, entries) do
+    {candidate_defs, annotated} = Session.merge(state.defs, entries)
+
+    case Session.compile(candidate_defs) do
+      {:ok, _module} ->
+        Enum.each(annotated, fn
+          {:new, entry} -> render_info(state, "defined #{entry.label}")
+          {:redefined, entry} -> render_info(state, "redefined #{entry.label}")
+        end)
+
+        %{state | defs: candidate_defs}
+
+      :empty ->
+        %{state | defs: candidate_defs}
+
+      {:error, reason} ->
+        render_error(state, format_error(reason))
+        state
     end
   end
 
@@ -413,7 +447,7 @@ defmodule Cure.REPL do
 
   defp evaluate(state, src) do
     mod_name = "Repl.M#{state.n}"
-    uses = Enum.map(state.uses, &"  use #{&1}\n") |> Enum.join()
+    uses = effective_uses(state) |> Enum.map(&"  use #{&1}\n") |> Enum.join()
 
     source = """
     mod #{mod_name}
@@ -436,6 +470,15 @@ defmodule Cure.REPL do
         state
     end
   end
+
+  # The user's explicit `use` list, plus the synthetic `Repl.Session`
+  # module when any REPL-level definitions are in play. `Repl.Session`
+  # is intentionally NOT stored in `state.uses` so `:env` keeps
+  # showing only the imports the user asked for.
+  defp effective_uses(%__MODULE__{defs: []} = state), do: state.uses
+
+  defp effective_uses(%__MODULE__{} = state),
+    do: state.uses ++ [Session.module_name()]
 
   # ==========================================================================
   # Meta-commands
@@ -478,6 +521,7 @@ defmodule Cure.REPL do
   end
 
   defp handle_meta(state, ":reset") do
+    Session.clear()
     render_info(state, "REPL state reset.")
 
     %{
@@ -485,9 +529,23 @@ defmodule Cure.REPL do
       | n: 1,
         loaded: [],
         uses: Docs.default_uses(),
+        defs: [],
         holes: [],
         input_buffer: []
     }
+  end
+
+  defp handle_meta(state, ":defs") do
+    case state.defs do
+      [] ->
+        render_info(state, "(no definitions)")
+
+      defs ->
+        render_info(state, "session definitions (#{length(defs)}):")
+        Enum.each(defs, fn entry -> render_info(state, "  #{entry.label}") end)
+    end
+
+    state
   end
 
   defp handle_meta(state, ":holes") do
@@ -557,7 +615,7 @@ defmodule Cure.REPL do
     known_commands = ~w(
       :t :type :doc :effects :load :use :fmt :ast :time :bench
       :theme :mode :color :history :search :save :edit :holes
-      :reset :reload :help :imports :stdlib :quit :exit
+      :defs :reset :reload :help :imports :stdlib :quit :exit
     )
 
     bare = String.split(String.trim(other), " ") |> hd()
@@ -895,6 +953,7 @@ defmodule Cure.REPL do
     - `:use Mod` - bring a module's exports into scope
     - `:holes` - list holes from the last evaluated expression
     - `:env` - list every binding currently in scope
+    - `:defs` - list top-level definitions (`fn`, `type`, `rec`, ...) entered this session
     - `:reset` - forget all bindings, fresh session
     - `:fmt expr` - pretty-print `expr`
     - `:history [n]` - print the last `n` (default 20) entries
@@ -929,6 +988,14 @@ defmodule Cure.REPL do
     - `Tab` - completion for meta-commands, paths, modules, keywords
     - `Enter` - submit (or continue if the input looks incomplete)
     - `;;` on its own line - force submit a multi-line buffer
+
+    ## Top-level declarations
+    Submitting `fn name(...) = ...`, `type Name = ...`, `rec Name ...`,
+    `proto Name ...`, `impl Proto for Type ...`, or `proof Name ...`
+    installs the declaration into the REPL's synthesised
+    `Repl.Session` module. Subsequent expressions can call/use those
+    names unqualified. Redefining a declaration with the same name &
+    arity replaces the previous entry in place.
 
     ## Vi mode
     Press `Esc` to toggle between insert and normal mode. In normal mode:
@@ -1104,10 +1171,24 @@ defmodule Cure.REPL do
 
   @doc false
   def __new_state__(opts \\ []) do
+    theme = Theme.for_name(Keyword.get(opts, :theme, :mono))
+
     %__MODULE__{
-      theme: Theme.for_name(Keyword.get(opts, :theme, :mono)),
-      error_device: Keyword.get(opts, :error_device, :stderr)
+      theme: theme,
+      color: theme.name != :mono,
+      error_device: Keyword.get(opts, :error_device, :stderr),
+      uses: Keyword.get(opts, :uses, []),
+      history: History.load(nil),
+      editor: LineEditor.new(mode: :emacs)
     }
+  end
+
+  @doc false
+  # Test hook: feed a single submission through the same pipeline the
+  # raw/legacy loops use, without touching the terminal. Returns the
+  # updated state so tests can assert on `:defs`, `:n`, etc.
+  def __submit__(%__MODULE__{} = state, line) when is_binary(line) do
+    submit(state, line)
   end
 
   defp format_microseconds(us) when us < 1_000, do: "#{us} us"
