@@ -34,7 +34,7 @@ defmodule Cure.Observe.Replay do
   Returns `{:ok, results}` where `results` is a list of
   `{state_before, event, state_after, :ok | {:error, term()}}`.
   """
-  @spec replay(module(), list(), keyword()) :: {:ok, list()} | {:error, term()}
+  @spec replay(module(), list(), keyword()) :: {:ok, list()} | {:ok, :quit} | {:error, term()}
   def replay(fsm_module, entries, opts \\ []) do
     step? = Keyword.get(opts, :step, false)
     print? = Keyword.get(opts, :print, true)
@@ -144,7 +144,6 @@ defmodule Cure.Observe.Replay do
         :ok -> "ok"
         {:error, :state_unchanged} -> "WARN: state unchanged"
         {:error, {:unexpected_state, got}} -> "WARN: got #{got}"
-        _ -> "?"
       end
 
     IO.puts("[#{n_str}] #{from_str} --#{ev_str}--> #{to_str} (#{status})")

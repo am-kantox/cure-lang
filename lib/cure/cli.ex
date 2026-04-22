@@ -228,9 +228,15 @@ defmodule Cure.CLI do
 
           if Code.ensure_loaded?(mod) do
             case Cure.Observe.Replay.replay(mod, entries, step: step?) do
-              {:ok, :quit} -> info("Replay quit early.")
-              {:ok, _results} -> info("Replay complete.")
-              {:error, reason} -> error("Replay failed: #{inspect(reason)}") && exit({:shutdown, 1})
+              {:ok, :quit} ->
+                info("Replay quit early.")
+
+              {:ok, _results} ->
+                info("Replay complete.")
+
+              {:error, reason} ->
+                error("Replay failed: #{inspect(reason)}")
+                exit({:shutdown, 1})
             end
           else
             error("Module #{mod_str} not loaded. Run 'cure compile' first.")
@@ -252,10 +258,18 @@ defmodule Cure.CLI do
       info("Blessing #{path}...")
 
       case Cure.Bless.bless_file(path) do
-        :nothing_to_fix -> info("  No type errors found.")
-        :all_fixed -> info("  All errors fixed.")
-        :some_skipped -> info("  Some errors remain (skipped or declined).")
-        {:error, reason} -> error("  #{reason}") && exit({:shutdown, 1})
+        :nothing_to_fix ->
+          info("  No type errors found.")
+
+        :all_fixed ->
+          info("  All errors fixed.")
+
+        :some_skipped ->
+          info("  Some errors remain (skipped or declined).")
+
+        {:error, reason} ->
+          error("  #{reason}")
+          exit({:shutdown, 1})
       end
     end)
   end

@@ -668,10 +668,9 @@ defmodule Cure.Types.Checker do
         # Suggest the closest in-scope name using Levenshtein distance so users
         # can quickly spot simple typos ("did you mean 'foo'?").
         known_names =
-          case env do
-            %Cure.Types.Env{scopes: scopes} -> Enum.flat_map(scopes, &Map.keys/1)
-            _ -> []
-          end
+          env
+          |> Map.get(:scopes, [])
+          |> Enum.flat_map(&Map.keys/1)
 
         suffix =
           case Cure.Compiler.Errors.suggest(name, known_names) do
