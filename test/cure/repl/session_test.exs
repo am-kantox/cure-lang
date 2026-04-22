@@ -227,4 +227,50 @@ defmodule Cure.REPL.SessionTest do
       refute :code.is_loaded(Session.module_atom())
     end
   end
+
+  describe "signatures/1" do
+    test "empty input yields an empty list" do
+      assert [] = Session.signatures([])
+    end
+
+    test "public fn entry yields a resolved {:fun, params, ret} signature" do
+      entry = %{
+        key: {:fn, "add", 2, :public},
+        kind: :fn,
+        label: "add/2",
+        source: "fn add(a: Int, b: Int) -> Int = a + b"
+      }
+
+      assert [{"add", {:fun, [:int, :int], :int}}] = Session.signatures([entry])
+    end
+
+    test "missing return type falls back to :any" do
+      entry = %{
+        key: {:fn, "untyped", 1, :public},
+        kind: :fn,
+        label: "untyped/1",
+        source: "fn untyped(x) = x"
+      }
+
+      assert [{"untyped", {:fun, [:any], :any}}] = Session.signatures([entry])
+    end
+
+    test "private (local) fns are not exposed" do
+      entry = %{
+        key: {:fn, "hidden", 0, :private},
+        kind: :fn,
+        label: "hidden/0",
+        source: "local fn hidden() -> Int = 1"
+      }
+
+      assert [] = Session.signatures([entry])
+    end
+
+    test "non-fn entries are ignored" do
+      rec = %{key: {:rec, "Point"}, kind: :rec, label: "rec Point", source: "rec Point\n  x: Int"}
+      type = %{key: {:type, "Color"}, kind: :type, label: "type Color", source: "type Color = Red"}
+
+      assert [] = Session.signatures([rec, type])
+    end
+  end
 end

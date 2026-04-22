@@ -49,6 +49,7 @@ defmodule Cure.REPL.Session do
   """
 
   alias Cure.Compiler
+  alias Cure.Types.Type
 
   @module_name "Repl.Session"
   @module_atom :"Cure.Repl.Session"
@@ -329,5 +330,61 @@ defmodule Cure.REPL.Session do
     _ = :code.delete(@module_atom)
     _ = :code.purge(@module_atom)
     :ok
+  end
+
+  # ---------------------------------------------------------------------------
+  # Signatures (for the type checker)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Project the current list of entries into a list of `{name, type}`
+  bindings suitable for `Cure.Types.Checker.infer_expr/2`'s
+  `:extra_bindings` option.
+
+  Only public `fn` entries contribute bindings. Each entry's source
+  snippet is re-parsed through `Cure.quote/2` so we can resolve the
+  declared parameter and return types via `Cure.Types.Type.resolve/1`
+  -- identical to the machinery `Cure.Types.Checker.register_fn_signature/2`
+  uses for in-module definitions.
+
+  Entries whose source fails to re-parse are silently skipped; they
+  would already have been rejected by `compile/1` at install time.
+  """
+  @spec signatures([entry()]) :: [{String.t(), term()}]
+  def signatures(defs) when is_list(defs) do
+    Enum.flat_map(defs, &entry_signature/1)
+  end
+
+  defp entry_signature(%{kind: :fn, source: src}) do
+    case Cure.quote(src, file: "repl/session") do
+      {:ok, {:function_def, meta, _body}} -> build_fn_signature(meta)
+      _ -> []
+    end
+  end
+
+  defp entry_signature(_), do: []
+
+  defp build_fn_signature(meta) do
+    with name when is_binary(name) <- Keyword.get(meta, :name),
+         :public <- Keyword.get(meta, :visibility, :public) do
+      params = Keyword.get(meta, :params, [])
+      return_type_ast = Keyword.get(meta, :return_type)
+
+      param_types =
+        Enum.map(params, fn
+          {:param, pmeta, _pname} -> Type.resolve(Keyword.get(pmeta, :type))
+          _ -> :any
+        end)
+
+      ret_type =
+        case return_type_ast do
+          nil -> :any
+          ast -> Type.resolve(ast)
+        end
+
+      [{name, {:fun, param_types, ret_type}}]
+    else
+      _ -> []
+    end
   end
 end

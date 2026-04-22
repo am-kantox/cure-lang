@@ -143,6 +143,17 @@ defmodule Cure.REPLTest do
       assert stdout =~ "foo/1"
       assert stdout =~ "type Color"
     end
+
+    test ":t reports the real return type for a session function" do
+      state =
+        REPL.__new_state__()
+        |> submit("fn add1(a: Int, b: Int) -> Int = a + b")
+
+      {_state, stdout, _stderr} = submit_capture(state, ":t add1(1, 2)")
+
+      assert stdout =~ "add1(1, 2) : Int"
+      refute stdout =~ ": Any"
+    end
   end
 
   # Feed `line` through the REPL pipeline, silencing any captured IO. Used

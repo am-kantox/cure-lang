@@ -167,10 +167,19 @@ defmodule Cure.Types.Checker do
   @doc """
   Infer the type of a single expression AST node in an empty environment.
 
-  Useful for testing.
+  Useful for testing and for the REPL `:t` / `:effects` commands.
+
+  ## Options
+
+  * `:extra_bindings` -- a list of `{name, type}` tuples that are
+    installed on top of the default stdlib environment. The REPL uses
+    this to expose its session-level `fn` signatures so expressions
+    like `:t add(1, 2)` report the real return type instead of `Any`.
   """
-  @spec infer_expr(tuple()) :: {:ok, term()} | {:error, error()}
-  def infer_expr(ast) do
+  @spec infer_expr(tuple(), keyword()) :: {:ok, term()} | {:error, error()}
+  def infer_expr(ast, opts \\ []) do
+    extra_bindings = Keyword.get(opts, :extra_bindings, [])
+
     # Installing the stdlib lets callers (tests, the REPL `:t` command,
     # LSP hover helpers) resolve `Std.Mod.fun(...)` without having to
     # fabricate a wrapper module; short-name imports are handled by
@@ -179,11 +188,20 @@ defmodule Cure.Types.Checker do
       Env.new()
       |> Stdlib.install_qualified()
       |> install_default_imports()
+      |> install_extra_bindings(extra_bindings)
 
     case infer(env, ast, false, "nofile") do
       {:ok, type, _env} -> {:ok, type}
       {:error, _} = err -> err
     end
+  end
+
+  defp install_extra_bindings(env, []), do: env
+
+  defp install_extra_bindings(env, bindings) when is_list(bindings) do
+    Enum.reduce(bindings, env, fn {name, type}, acc when is_binary(name) ->
+      Env.extend(acc, name, type)
+    end)
   end
 
   # Short-name imports used by REPL-style expressions. Mirrors the

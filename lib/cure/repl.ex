@@ -633,7 +633,7 @@ defmodule Cure.REPL do
   defp cmd_type(state, expr) do
     case Cure.quote(expr) do
       {:ok, ast} ->
-        case Checker.infer_expr(ast) do
+        case Checker.infer_expr(ast, extra_bindings: Session.signatures(state.defs)) do
           {:ok, type} -> render_info(state, "#{expr} : #{Cure.Types.Type.display(type)}")
           {:error, reason} -> render_error(state, format_error(reason))
         end
@@ -653,7 +653,11 @@ defmodule Cure.REPL do
   defp cmd_effects(state, expr) do
     case Cure.quote(expr) do
       {:ok, ast} ->
-        env = Cure.Types.Env.new()
+        env =
+          Enum.reduce(Session.signatures(state.defs), Cure.Types.Env.new(), fn {name, sig}, e ->
+            Cure.Types.Env.extend(e, name, sig)
+          end)
+
         effects = Cure.Types.Effects.infer_effects(ast, env)
 
         if Enum.empty?(effects) do
