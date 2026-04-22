@@ -101,14 +101,13 @@ defmodule CureSiteWeb.PlaygroundLive do
 
           <div>
             <label class="block text-sm font-semibold mb-2">Highlighted</label>
-            <pre class="w-full h-96 font-mono text-sm border rounded p-3 overflow-auto bg-gray-50"><code class="makeup">{Phoenix.HTML.raw(@highlighted)}</code></pre>
+            <pre class="w-full h-96 font-mono text-sm border border-base-300 rounded p-3 overflow-auto bg-base-200 text-base-content"><code class="makeup cure">{Phoenix.HTML.raw(@highlighted)}</code></pre>
           </div>
         </.form>
 
         <p class="mt-8 text-sm text-gray-500">
           Type-checking and in-browser evaluation are on the roadmap
-          for v0.28. See
-          <.link navigate={~p"/roadmap"} class="underline">the roadmap</.link>
+          for v0.28. See <.link navigate={~p"/roadmap"} class="underline">the roadmap</.link>
           for details.
         </p>
       </main>

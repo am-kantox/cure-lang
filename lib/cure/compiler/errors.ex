@@ -1032,6 +1032,41 @@ defmodule Cure.Compiler.Errors do
   end
 
   @doc """
+  Return all known error codes with a one-line summary each.
+
+  Each element is `{code, title, brief}` where `title` is the short name
+  (e.g. "Type Mismatch") and `brief` is the first descriptive sentence.
+  The list is sorted by code.
+  """
+  @spec list_all() :: [{String.t(), String.t(), String.t()}]
+  def list_all do
+    @error_catalog
+    |> Enum.map(fn {code, text} ->
+      lines = text |> String.trim() |> String.split("\n") |> Enum.map(&String.trim/1)
+
+      title =
+        case lines do
+          [first | _] ->
+            case String.split(first, ":", parts: 2) do
+              [_, name] -> String.trim(name)
+              _ -> first
+            end
+
+          _ ->
+            code
+        end
+
+      brief =
+        lines
+        |> Enum.drop(1)
+        |> Enum.find("", &(&1 != ""))
+
+      {code, title, brief}
+    end)
+    |> Enum.sort_by(fn {code, _, _} -> code end)
+  end
+
+  @doc """
   Suggest similar names for typos using Levenshtein distance.
   """
   @spec suggest(String.t(), [String.t()]) :: String.t() | nil

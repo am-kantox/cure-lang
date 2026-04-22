@@ -88,6 +88,7 @@ defmodule Cure.CLI do
         ["deps", "update"] -> cmd_deps_update()
         ["deps", "tree"] -> cmd_deps_tree()
         ["test"] -> cmd_test(opts)
+        ["explain"] -> cmd_explain_all()
         ["explain" | [code]] -> cmd_explain(code)
         ["doc" | paths] -> cmd_doc(paths, opts)
         ["repl"] -> cmd_repl()
@@ -95,6 +96,7 @@ defmodule Cure.CLI do
         ["watch" | rest] -> cmd_watch(rest, opts)
         ["new" | rest] -> cmd_new(rest, opts)
         ["bench" | rest] -> cmd_bench(rest, opts)
+        ["why"] -> cmd_explain_all()
         ["why" | [code]] -> cmd_explain(code)
         ["doctor"] -> cmd_doctor(opts)
         ["fix"] -> cmd_fix(opts)
@@ -811,6 +813,19 @@ defmodule Cure.CLI do
   end
 
   # -- explain ------------------------------------------------------------------
+
+  defp cmd_explain_all do
+    entries = Cure.Compiler.Errors.list_all()
+    code_width = entries |> Enum.map(fn {c, _, _} -> String.length(c) end) |> Enum.max(fn -> 4 end)
+
+    info("Known error codes (run 'cure explain <code>' for full details):\n")
+
+    Enum.each(entries, fn {code, title, brief} ->
+      padded = String.pad_trailing(code, code_width)
+      info("  #{padded}  #{title}")
+      if brief != "", do: info("          #{brief}")
+    end)
+  end
 
   defp cmd_explain(code) do
     case Cure.Compiler.Errors.explain(code) do

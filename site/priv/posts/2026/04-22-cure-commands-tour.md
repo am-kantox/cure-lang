@@ -106,7 +106,7 @@ $ ./cure run examples/hello.cure
 
 The source it runs is the three-liner you would expect:
 
-```cure path=/opt/Proyectos/Cure/cure/examples/hello.cure start=1
+```cure
 mod Hello
   fn greet(name: String) -> String = "Hello, " <> name <> "!"
   fn main() -> Int = 42
@@ -306,7 +306,7 @@ Created project 'demo_init' with Cure.toml, lib/main.cure
 The `app` template produces three source files and a `Cure.toml`
 with all five tables wired up:
 
-```cure path=null start=null
+```cure
 app Demo_app
   vsn         = "0.1.0"
   description = "Demo_app"

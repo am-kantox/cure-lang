@@ -146,10 +146,36 @@
 .makeup .cm { color: #616e88; font-style: italic; } /* comment_multiline */
 .makeup .err { color: #bf616a; }           /* error */
 
-[data-theme="light"] .makeup .p { color: #2e3440; }
+/* Light theme overrides for Makeup highlighting.
+   These apply both when the user explicitly selects the light theme
+   (`data-theme="light"` set by the theme toggle) and when the user
+   leaves the toggle on "system" (no `data-theme` attribute) while the
+   OS reports `prefers-color-scheme: light`. Without the media-query
+   branch, the default near-white colors below would render as
+   white-on-white on a light base-100/base-200 background. */
+[data-theme="light"] .makeup .p  { color: #2e3440; }
+[data-theme="light"] .makeup .no { color: #4c566a; }
+[data-theme="light"] .makeup .n  { color: #2e3440; }
+[data-theme="light"] .makeup .nc { color: #5e81ac; }
+[data-theme="light"] .makeup .nf { color: #5e81ac; }
+[data-theme="light"] .makeup .ni { color: #5e81ac; }
+[data-theme="light"] .makeup .kt { color: #5e81ac; }
 [data-theme="light"] .makeup .c,
 [data-theme="light"] .makeup .c1,
 [data-theme="light"] .makeup .cm { color: #7b88a1; }
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .makeup .p  { color: #2e3440; }
+  :root:not([data-theme]) .makeup .no { color: #4c566a; }
+  :root:not([data-theme]) .makeup .n  { color: #2e3440; }
+  :root:not([data-theme]) .makeup .nc { color: #5e81ac; }
+  :root:not([data-theme]) .makeup .nf { color: #5e81ac; }
+  :root:not([data-theme]) .makeup .ni { color: #5e81ac; }
+  :root:not([data-theme]) .makeup .kt { color: #5e81ac; }
+  :root:not([data-theme]) .makeup .c,
+  :root:not([data-theme]) .makeup .c1,
+  :root:not([data-theme]) .makeup .cm { color: #7b88a1; }
+}
 
 /* Prose content styling */
 .prose-cure h2 { margin-top: 2rem; margin-bottom: 0.75rem; font-size: 1.5rem; font-weight: 700; }
