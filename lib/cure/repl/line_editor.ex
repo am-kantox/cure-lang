@@ -417,9 +417,7 @@ defmodule Cure.REPL.LineEditor do
 
   # -- Word boundary helpers -------------------------------------------------
 
-  @word_char ~r/[[:alnum:]_]/u
-
-  defp word_char?(g), do: Regex.match?(@word_char, g)
+  defp word_char?(g), do: Regex.match?(~r/[[:alnum:]_]/u, g)
 
   defp prev_word_index(graphemes) do
     # Walk right-to-left skipping non-word graphemes, then word graphemes.

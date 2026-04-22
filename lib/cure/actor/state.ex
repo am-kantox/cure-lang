@@ -77,7 +77,7 @@ defmodule Cure.Actor.State do
   """
   @spec merge(t(), term()) :: t()
   def merge(%__MODULE__{} = _state, %__MODULE__{} = replacement), do: replacement
-  def merge(%__MODULE__{} = state, bare), do: %__MODULE__{state | payload: bare}
+  def merge(%__MODULE__{} = state, bare), do: %{state | payload: bare}
 
   @doc "Send `message` to `state.caller` if one is registered; otherwise no-op."
   @spec notify(t(), term()) :: term()

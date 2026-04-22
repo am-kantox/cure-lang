@@ -103,9 +103,9 @@ defmodule Cure.FSM.State do
       new_meta =
         if has_meta, do: Map.get(partial, :meta) || Map.get(partial, "meta"), else: state.meta
 
-      %__MODULE__{state | payload: new_payload, meta: new_meta}
+      %{state | payload: new_payload, meta: new_meta}
     else
-      %__MODULE__{state | payload: partial}
+      %{state | payload: partial}
     end
   end
 
@@ -116,11 +116,11 @@ defmodule Cure.FSM.State do
       |> maybe_put(:meta, kv)
       |> maybe_put(:caller, kv)
     else
-      %__MODULE__{state | payload: kv}
+      %{state | payload: kv}
     end
   end
 
-  def merge(%__MODULE__{} = state, bare), do: %__MODULE__{state | payload: bare}
+  def merge(%__MODULE__{} = state, bare), do: %{state | payload: bare}
 
   defp maybe_put(%__MODULE__{} = state, key, kv) do
     case Keyword.fetch(kv, key) do
