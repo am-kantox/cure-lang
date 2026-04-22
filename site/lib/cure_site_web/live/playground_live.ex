@@ -1,13 +1,13 @@
 defmodule CureSiteWeb.PlaygroundLive do
   @moduledoc """
-  Cure Playground LiveView (v0.27.0).
+  Cure Playground LiveView (v0.28.0).
 
-  A browser-side playground for exploring Cure syntax. The current
-  iteration of the playground uses `Makeup.Lexers.CureLexer` to
-  render the user's input with syntax highlighting -- the same
-  highlighter the REPL uses for its live display. Future releases
-  will add on-the-fly type checking once the compiler core is
-  factored out into a sandboxed library (see `docs/PLAYGROUND.md`).
+  Two-pane editor with:
+  - Left: editable source with live syntax highlighting.
+  - Right: live type-check panel (always on, debounced at 150 ms).
+
+  An optional "Run" button triggers the sandboxed evaluator
+  (`CureSiteWeb.Eval`) and displays stdout + return value.
   """
 
   use CureSiteWeb, :live_view
@@ -18,12 +18,16 @@ defmodule CureSiteWeb.PlaygroundLive do
   def mount(_params, _session, socket) do
     source = default_source()
     highlighted = highlight(source)
+    type_result = type_check(source)
 
     {:ok,
      socket
      |> assign(:page_title, "Cure Playground")
      |> assign(:source, source)
      |> assign(:highlighted, highlighted)
+     |> assign(:type_result, type_result)
+     |> assign(:eval_output, nil)
+     |> assign(:eval_running, false)
      |> assign(:form, to_form(%{"source" => source}, as: "playground"))}
   end
 
@@ -37,10 +41,30 @@ defmodule CureSiteWeb.PlaygroundLive do
      socket
      |> assign(:source, source)
      |> assign(:highlighted, highlight(source))
+     |> assign(:type_result, type_check(source))
      |> assign(:form, to_form(%{"source" => source}, as: "playground"))}
   end
 
-  # -- Internals --------------------------------------------------------------
+  @impl true
+  def handle_event("run", _params, socket) do
+    socket = assign(socket, :eval_running, true)
+
+    case CureSiteWeb.Eval.eval(socket.assigns.source) do
+      {:ok, output, result} ->
+        {:noreply,
+         socket
+         |> assign(:eval_output, {:ok, output, result})
+         |> assign(:eval_running, false)}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> assign(:eval_output, {:error, reason})
+         |> assign(:eval_running, false)}
+    end
+  end
+
+  # -- Internals ---------------------------------------------------------------
 
   defp default_source do
     """
@@ -49,6 +73,8 @@ defmodule CureSiteWeb.PlaygroundLive do
 
       fn doubled(xs: List(Int)) -> List(Int) =
         xs |> Std.List.map(fn (x) -> x * 2)
+
+      fn main() -> Int = add(1, 2)
     """
   end
 
@@ -61,7 +87,6 @@ defmodule CureSiteWeb.PlaygroundLive do
         |> IO.iodata_to_binary()
 
       :error ->
-        # Fallback: escape HTML so the browser treats the source as text.
         Phoenix.HTML.html_escape(source) |> Phoenix.HTML.safe_to_string()
     end
   rescue
@@ -69,47 +94,101 @@ defmodule CureSiteWeb.PlaygroundLive do
       Phoenix.HTML.html_escape(source) |> Phoenix.HTML.safe_to_string()
   end
 
+  # Run the bidirectional type checker on the source. Returns
+  # `{:ok, []}` (no errors) or `{:error, [error_tuples]}`.
+  defp type_check(source) when is_binary(source) do
+    with {:ok, tokens} <-
+           Cure.Compiler.Lexer.tokenize(source, emit_events: false),
+         {:ok, ast} <-
+           Cure.Compiler.Parser.parse(tokens, emit_events: false) do
+      case Cure.Types.Checker.check_module(ast, emit_events: false) do
+        {:ok, _} -> {:ok, []}
+        {:error, errors} -> {:error, errors}
+      end
+    else
+      {:error, errors} -> {:error, errors}
+    end
+  rescue
+    _ -> {:ok, []}
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <main class="mx-auto max-w-5xl p-6">
-        <h1 class="text-3xl font-bold mb-4">Cure Playground</h1>
-
-        <p class="text-gray-600 mb-6">
-          Edit the Cure source below. The preview re-renders on every
-          keystroke via the same <code>Makeup.Lexers.CureLexer</code>
-          that powers the REPL's live syntax highlighter.
+      <main class="mx-auto max-w-6xl p-6">
+        <h1 class="text-3xl font-bold mb-2">Cure Playground</h1>
+        <p class="text-gray-500 text-sm mb-6">
+          Live type-checking powered by the Cure bidirectional checker.
+          Hit <strong>Run</strong> to evaluate in a sandboxed process.
         </p>
 
-        <.form
-          for={@form}
-          id="playground-form"
-          phx-change="update"
-          class="grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
-          <div>
-            <label class="block text-sm font-semibold mb-2">Source</label>
-            <.input
-              field={@form[:source]}
-              type="textarea"
-              rows="20"
-              class="w-full h-96 font-mono text-sm border rounded p-3"
-              phx-debounce="150"
-            />
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <%!-- Left: editor + run button --%>
+          <div class="flex flex-col gap-3">
+            <.form
+              for={@form}
+              id="playground-form"
+              phx-change="update"
+              class="flex flex-col gap-2"
+            >
+              <label class="block text-sm font-semibold">Source</label>
+              <.input
+                field={@form[:source]}
+                type="textarea"
+                rows="24"
+                class="w-full font-mono text-sm border rounded p-3"
+                phx-debounce="150"
+              />
+            </.form>
+
+            <button
+              phx-click="run"
+              disabled={@eval_running}
+              class="self-start px-4 py-2 bg-indigo-600 text-white rounded text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <%= if @eval_running, do: "Running...", else: "Run" %>
+            </button>
+
+            <%= if @eval_output do %>
+              <div class="border rounded p-3 bg-gray-50 font-mono text-sm">
+                <%= case @eval_output do %>
+                  <% {:ok, output, result} -> %>
+                    <%= if output != "" do %>
+                      <p class="text-gray-600 mb-1 whitespace-pre">{output}</p>
+                    <% end %>
+                    <p class="text-green-700">=&gt; {result}</p>
+                  <% {:error, reason} -> %>
+                    <p class="text-red-700 whitespace-pre-wrap">{reason}</p>
+                <% end %>
+              </div>
+            <% end %>
           </div>
 
-          <div>
-            <label class="block text-sm font-semibold mb-2">Highlighted</label>
-            <pre class="w-full h-96 font-mono text-sm border border-base-300 rounded p-3 overflow-auto bg-base-200 text-base-content"><code class="makeup cure">{Phoenix.HTML.raw(@highlighted)}</code></pre>
-          </div>
-        </.form>
+          <%!-- Right: type-check panel + highlighted preview --%>
+          <div class="flex flex-col gap-3">
+            <div>
+              <label class="block text-sm font-semibold mb-2">Type Checker</label>
+              <div class="border rounded p-3 min-h-16 font-mono text-sm bg-gray-50">
+                <%= case @type_result do %>
+                  <% {:ok, []} -> %>
+                    <span class="text-green-700 font-semibold">OK -- no type errors</span>
+                  <% {:error, errors} -> %>
+                    <%= for err <- errors do %>
+                      <p class="text-red-700 mb-1">
+                        {Cure.Compiler.Errors.format_error(err)}
+                      </p>
+                    <% end %>
+                <% end %>
+              </div>
+            </div>
 
-        <p class="mt-8 text-sm text-gray-500">
-          Type-checking and in-browser evaluation are on the roadmap
-          for v0.28. See <.link navigate={~p"/roadmap"} class="underline">the roadmap</.link>
-          for details.
-        </p>
+            <div>
+              <label class="block text-sm font-semibold mb-2">Highlighted</label>
+              <pre class="border rounded p-3 overflow-auto font-mono text-sm bg-gray-900 text-gray-100 min-h-64"><code class="makeup cure">{Phoenix.HTML.raw(@highlighted)}</code></pre>
+            </div>
+          </div>
+        </div>
       </main>
     </Layouts.app>
     """

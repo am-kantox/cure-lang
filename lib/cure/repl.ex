@@ -545,6 +545,8 @@ defmodule Cure.REPL do
 
   defp handle_meta(state, ":t " <> expr), do: cmd_type(state, expr)
   defp handle_meta(state, ":type " <> expr), do: cmd_type(state, expr)
+  defp handle_meta(state, ":bless"), do: cmd_bless(state, nil)
+  defp handle_meta(state, ":bless " <> path), do: cmd_bless(state, String.trim(path))
   defp handle_meta(state, ":doc " <> name), do: cmd_doc(state, name)
   defp handle_meta(state, ":effects " <> expr), do: cmd_effects(state, expr)
   defp handle_meta(state, ":load " <> path), do: cmd_load(state, String.trim(path))
@@ -552,7 +554,21 @@ defmodule Cure.REPL do
   defp handle_meta(state, ":fmt " <> expr), do: cmd_fmt(state, expr)
 
   defp handle_meta(state, other) do
-    render_error(state, "unknown command: #{other}. Try :help.")
+    known_commands = ~w(
+      :t :type :doc :effects :load :use :fmt :ast :time :bench
+      :theme :mode :color :history :search :save :edit :holes
+      :reset :reload :help :imports :stdlib :quit :exit
+    )
+
+    bare = String.split(String.trim(other), " ") |> hd()
+
+    suffix =
+      case Cure.Compiler.Errors.suggest(bare, known_commands) do
+        nil -> ""
+        suggestion -> " Did you mean '#{suggestion}'?"
+      end
+
+    render_error(state, "unknown command: #{other}.#{suffix} Try :help.")
     state
   end
 
@@ -626,6 +642,24 @@ defmodule Cure.REPL do
       render_info(state, "(already imported: #{mod})")
       state
     else
+      # If the module is unknown to the stdlib, warn and suggest the closest.
+      bundle = Cure.Types.Stdlib.all()
+      known = Map.keys(bundle.short_by_module)
+
+      state =
+        if known != [] and not Map.has_key?(bundle.short_by_module, mod) do
+          suffix =
+            case Cure.Compiler.Errors.suggest(mod, known) do
+              nil -> ""
+              suggestion -> " Did you mean '#{suggestion}'?"
+            end
+
+          render_error(state, "no stdlib module '#{mod}'.#{suffix} Type :stdlib to list known modules.")
+          state
+        else
+          state
+        end
+
       render_info(state, "imported #{mod}")
       %{state | uses: state.uses ++ [mod]}
     end
@@ -638,6 +672,29 @@ defmodule Cure.REPL do
     case Cure.quote(expr) do
       {:ok, ast} -> render_info(state, Printer.quoted_to_string(ast))
       {:error, reason} -> render_error(state, format_error(reason))
+    end
+
+    state
+  end
+
+  defp cmd_bless(state, nil) do
+    render_error(state, "Usage: :bless path/to/file.cure")
+    state
+  end
+
+  defp cmd_bless(state, path) do
+    case Cure.Bless.bless_file(path) do
+      :nothing_to_fix ->
+        render_info(state, "No type errors found in #{path}.")
+
+      :all_fixed ->
+        render_info(state, "All errors fixed.")
+
+      :some_skipped ->
+        render_info(state, "Some errors remain (skipped or declined).")
+
+      {:error, reason} ->
+        render_error(state, reason)
     end
 
     state

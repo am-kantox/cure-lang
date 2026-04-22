@@ -77,43 +77,187 @@ defmodule Cure.CLI do
       help()
     else
       case rest do
-        ["compile" | paths] -> cmd_compile(paths, opts)
-        ["run" | [path]] -> cmd_run(path, opts)
-        ["check" | [path]] -> cmd_check(path, opts)
-        ["lsp"] -> cmd_lsp()
-        ["stdlib"] -> cmd_stdlib(opts)
-        ["version"] -> cmd_version()
-        ["init" | [name]] -> cmd_init(name)
-        ["deps"] -> cmd_deps()
-        ["deps", "update"] -> cmd_deps_update()
-        ["deps", "tree"] -> cmd_deps_tree()
-        ["test"] -> cmd_test(opts)
-        ["explain"] -> cmd_explain_all()
-        ["explain" | [code]] -> cmd_explain(code)
-        ["doc" | paths] -> cmd_doc(paths, opts)
-        ["repl"] -> cmd_repl()
-        ["fmt" | paths] -> cmd_fmt(paths, opts)
-        ["watch" | rest] -> cmd_watch(rest, opts)
-        ["new" | rest] -> cmd_new(rest, opts)
-        ["bench" | rest] -> cmd_bench(rest, opts)
-        ["why"] -> cmd_explain_all()
-        ["why" | [code]] -> cmd_explain(code)
-        ["doctor"] -> cmd_doctor(opts)
-        ["fix"] -> cmd_fix(opts)
-        ["publish" | _] -> cmd_publish(opts)
-        ["search" | [query]] -> cmd_search(query, opts)
-        ["info" | [name]] -> cmd_info(name, opts)
-        ["keys", "generate", handle] -> cmd_keys_generate(handle)
-        ["keys", "list"] -> cmd_keys_list()
-        ["release" | rest] -> cmd_release(rest, opts)
-        ["top"] -> cmd_top(opts)
-        ["trace" | rest] -> cmd_trace(rest, opts)
-        ["synth" | rest] -> cmd_synth(rest, opts)
-        ["help"] -> help()
-        [] -> help()
-        [unknown | _] -> error("Unknown command: #{unknown}. Run 'cure help' for usage.")
+        ["compile" | paths] ->
+          cmd_compile(paths, opts)
+
+        ["run" | [path]] ->
+          cmd_run(path, opts)
+
+        ["check" | [path]] ->
+          cmd_check(path, opts)
+
+        ["lsp"] ->
+          cmd_lsp()
+
+        ["stdlib"] ->
+          cmd_stdlib(opts)
+
+        ["version"] ->
+          cmd_version()
+
+        ["init" | [name]] ->
+          cmd_init(name)
+
+        ["deps"] ->
+          cmd_deps()
+
+        ["deps", "update"] ->
+          cmd_deps_update()
+
+        ["deps", "tree"] ->
+          cmd_deps_tree()
+
+        ["test"] ->
+          cmd_test(opts)
+
+        ["explain"] ->
+          cmd_explain_all()
+
+        ["explain" | [code]] ->
+          cmd_explain(code)
+
+        ["doc" | paths] ->
+          cmd_doc(paths, opts)
+
+        ["repl"] ->
+          cmd_repl()
+
+        ["fmt" | paths] ->
+          cmd_fmt(paths, opts)
+
+        ["watch" | rest] ->
+          cmd_watch(rest, opts)
+
+        ["new" | rest] ->
+          cmd_new(rest, opts)
+
+        ["bench" | rest] ->
+          cmd_bench(rest, opts)
+
+        ["why"] ->
+          cmd_explain_all()
+
+        ["why" | [code]] ->
+          cmd_explain(code)
+
+        ["doctor"] ->
+          cmd_doctor(opts)
+
+        ["fix"] ->
+          cmd_fix(opts)
+
+        ["publish" | _] ->
+          cmd_publish(opts)
+
+        ["search" | [query]] ->
+          cmd_search(query, opts)
+
+        ["info" | [name]] ->
+          cmd_info(name, opts)
+
+        ["keys", "generate", handle] ->
+          cmd_keys_generate(handle)
+
+        ["keys", "list"] ->
+          cmd_keys_list()
+
+        ["release" | rest] ->
+          cmd_release(rest, opts)
+
+        ["top"] ->
+          cmd_top(opts)
+
+        ["trace" | rest] ->
+          cmd_trace(rest, opts)
+
+        ["synth" | rest] ->
+          cmd_synth(rest, opts)
+
+        ["bless" | rest] ->
+          cmd_bless(rest)
+
+        ["replay" | rest] ->
+          cmd_replay(rest, opts)
+
+        ["help"] ->
+          help()
+
+        [] ->
+          help()
+
+        [unknown | _] ->
+          known_commands = ~w(
+            compile run check lsp stdlib version init deps test
+            explain doc repl fmt watch new bench why doctor fix
+            publish search info keys release top trace synth bless replay help
+          )
+
+          suffix =
+            case Cure.Compiler.Errors.suggest(unknown, known_commands) do
+              nil -> ""
+              suggestion -> " Did you mean '#{suggestion}'?"
+            end
+
+          error("Unknown command: #{unknown}.#{suffix} Run 'cure help' for usage.")
       end
     end
+  end
+
+  # -- replay (v0.28.0) --------------------------------------------------------
+
+  defp cmd_replay([], _opts) do
+    error("Usage: cure replay <path.journal> [--module ModuleName] [--step]")
+    exit({:shutdown, 1})
+  end
+
+  defp cmd_replay([path | _], opts) do
+    step? = Keyword.get(opts, :step, false)
+    mod_str = Keyword.get(opts, :module)
+
+    case Cure.Observe.Journal.load(path) do
+      {:error, reason} ->
+        error("Cannot load #{path}: #{inspect(reason)}")
+        exit({:shutdown, 1})
+
+      {:ok, entries} ->
+        info("Loaded #{length(entries)} entries from #{path}")
+        Cure.Observe.Replay.print_trace(entries)
+
+        if mod_str do
+          mod = Module.concat([mod_str])
+
+          if Code.ensure_loaded?(mod) do
+            case Cure.Observe.Replay.replay(mod, entries, step: step?) do
+              {:ok, :quit} -> info("Replay quit early.")
+              {:ok, _results} -> info("Replay complete.")
+              {:error, reason} -> error("Replay failed: #{inspect(reason)}") && exit({:shutdown, 1})
+            end
+          else
+            error("Module #{mod_str} not loaded. Run 'cure compile' first.")
+            exit({:shutdown, 1})
+          end
+        end
+    end
+  end
+
+  # -- bless (v0.28.0) ---------------------------------------------------------
+
+  defp cmd_bless([]) do
+    error("Usage: cure bless path/to/file.cure")
+    exit({:shutdown, 1})
+  end
+
+  defp cmd_bless(paths) do
+    Enum.each(paths, fn path ->
+      info("Blessing #{path}...")
+
+      case Cure.Bless.bless_file(path) do
+        :nothing_to_fix -> info("  No type errors found.")
+        :all_fixed -> info("  All errors fixed.")
+        :some_skipped -> info("  Some errors remain (skipped or declined).")
+        {:error, reason} -> error("  #{reason}") && exit({:shutdown, 1})
+      end
+    end)
   end
 
   # -- top / trace / synth (v0.27.0) -------------------------------------------
@@ -640,6 +784,9 @@ defmodule Cure.CLI do
       Keyword.get(opts, :check, false) ->
         fmt_check(cure_files)
 
+      Keyword.get(opts, :dry_run, false) ->
+        fmt_diff(cure_files)
+
       true ->
         # v0.21.0: algebra formatter is the default. The explicit
         # `--algebra` flag is kept for symmetry with `--safe` but
@@ -680,6 +827,62 @@ defmodule Cure.CLI do
           File.write!(file, formatted)
           info("  formatted #{file}")
       end
+    end)
+  end
+
+  # `cure fmt --diff` (--dry-run flag): shows a red/green unified diff
+  # for every file that would be reformatted, without touching disk.
+  # Exits with code 1 when any file has pending changes (CI-friendly).
+  defp fmt_diff(files) do
+    changed =
+      Enum.reduce(files, 0, fn file, count ->
+        source = File.read!(file)
+        {:ok, formatted} = Cure.Compiler.Formatter.format_algebra(source)
+
+        if formatted == source do
+          count
+        else
+          render_unified_diff(file, source, formatted)
+          count + 1
+        end
+      end)
+
+    if changed == 0 do
+      info("All files are formatted")
+    else
+      error("#{changed} file(s) would be reformatted")
+      exit({:shutdown, 1})
+    end
+  end
+
+  # Render a colour-annotated unified diff of two multi-line strings.
+  # Red lines (-) are present in `original` but not in `formatted`.
+  # Green lines (+) are present in `formatted` but not in `original`.
+  # Uses `List.myers_difference/2` so the output is minimal and
+  # stable. No external tooling required.
+  defp render_unified_diff(file, original, formatted) do
+    orig_lines = String.split(original, "\n")
+    fmt_lines = String.split(formatted, "\n")
+
+    ansi? = IO.ANSI.enabled?()
+    red = if ansi?, do: IO.ANSI.red(), else: ""
+    green = if ansi?, do: IO.ANSI.green(), else: ""
+    reset = if ansi?, do: IO.ANSI.reset(), else: ""
+    dim = if ansi?, do: IO.ANSI.faint(), else: ""
+
+    info("#{dim}--- #{file} (original)#{reset}")
+    info("#{dim}+++ #{file} (formatted)#{reset}")
+
+    List.myers_difference(orig_lines, fmt_lines)
+    |> Enum.each(fn
+      {:eq, lines} ->
+        Enum.each(lines, fn l -> IO.puts("#{dim} #{l}#{reset}") end)
+
+      {:del, lines} ->
+        Enum.each(lines, fn l -> IO.puts("#{red}-#{l}#{reset}") end)
+
+      {:ins, lines} ->
+        Enum.each(lines, fn l -> IO.puts("#{green}+#{l}#{reset}") end)
     end)
   end
 

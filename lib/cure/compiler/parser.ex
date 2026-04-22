@@ -44,6 +44,11 @@ defmodule Cure.Compiler.Parser do
 
   defstruct [:tokens, :file, pos: 0, errors: [], emit_events: false]
 
+  # Keywords that can open a new top-level definition. Used by the
+  # synchronize_to_statement/1 recovery helper to know when to stop
+  # skipping tokens after a parse error.
+  @definition_keywords [:fn, :local, :mod, :rec, :type, :use, :sup, :app, :proto, :impl, :proof]
+
   @type t :: %__MODULE__{}
   @type ast :: {atom(), keyword(), term()}
   @type result :: {ast(), t()}
@@ -116,14 +121,29 @@ defmodule Cure.Compiler.Parser do
             {Enum.reverse(acc), state}
 
           _ ->
+            prev_errors = length(state.errors)
             {expr, state} = parse_expr(state, 0)
             expr = attach_doc(expr, doc_text)
+
+            state =
+              if length(state.errors) > prev_errors,
+                do: synchronize_to_statement(state),
+                else: state
+
             state = skip_newlines(state)
             parse_program(state, [expr | acc])
         end
 
       _ ->
+        prev_errors = length(state.errors)
         {expr, state} = parse_expr(state, 0)
+        # Recovery: synchronize after a broken top-level statement so subsequent
+        # well-formed definitions (fn, mod, rec, etc.) are still parsed.
+        state =
+          if length(state.errors) > prev_errors,
+            do: synchronize_to_statement(state),
+            else: state
+
         state = skip_newlines(state)
 
         if state.emit_events do
@@ -3761,14 +3781,32 @@ defmodule Cure.Compiler.Parser do
             {Enum.reverse(acc), state}
 
           _ ->
+            prev_errors = length(state.errors)
             {expr, state} = parse_expr(state, 0)
             expr = attach_doc(expr, doc_text)
+            # If this expression introduced new parse errors, skip to the next
+            # statement boundary (E063 recovery) so the broken statement cannot
+            # consume tokens that belong to subsequent well-formed definitions.
+            state =
+              if length(state.errors) > prev_errors,
+                do: synchronize_to_statement(state),
+                else: state
+
             state = skip_newlines(state)
             parse_block_body(state, [expr | acc])
         end
 
       _ ->
+        prev_errors = length(state.errors)
         {expr, state} = parse_expr(state, 0)
+        # Recovery: if this expression introduced parse errors, synchronize to
+        # the next statement boundary before continuing so subsequent
+        # well-formed definitions are not consumed as part of the failed parse.
+        state =
+          if length(state.errors) > prev_errors,
+            do: synchronize_to_statement(state),
+            else: state
+
         state = skip_newlines(state)
         parse_block_body(state, [expr | acc])
     end
@@ -3852,6 +3890,24 @@ defmodule Cure.Compiler.Parser do
     end
 
     %{state | errors: [error | state.errors]}
+  end
+
+  # After a parse error, skip forward until a safe statement boundary:
+  # a newline, dedent, or eof ends the current statement, and a
+  # definition-opening keyword (fn, mod, rec, ...) starts the next one.
+  # This prevents a broken statement from silently consuming tokens that
+  # belong to subsequent well-formed definitions (E063 recovery).
+  defp synchronize_to_statement(state) do
+    case peek(state) do
+      %Token{type: type} when type in [:eof, :dedent, :newline] ->
+        state
+
+      %Token{type: :keyword, value: kw} when kw in @definition_keywords ->
+        state
+
+      _ ->
+        synchronize_to_statement(advance(state))
+    end
   end
 
   # -- Doc Comment Helpers -----------------------------------------------------

@@ -58,6 +58,16 @@ defmodule Cure.Compiler.Errors do
     format_diagnostic("error", "unexpected token", file, line, "unexpected #{token_type} at column #{col}")
   end
 
+  def format_error({:parse_recovered, token_type, line, col}, file) do
+    format_diagnostic(
+      "error",
+      "parse error (E063)",
+      file,
+      line,
+      "unexpected #{token_type} at column #{col}; subsequent tokens skipped until next statement boundary"
+    )
+  end
+
   def format_error({:expected, expected, :got, got, line, col}, file) do
     format_diagnostic("error", "syntax error", file, line, "expected #{expected}, got #{got} at column #{col}")
   end
@@ -1015,6 +1025,29 @@ defmodule Cure.Compiler.Errors do
 
     Fix: address the underlying systools error, then re-run
     `cure release`.
+    """,
+    "E063" => """
+    E063: Parse Error (recovered)
+
+    A statement contained a syntax error from which the parser
+    recovered by skipping tokens until the next statement boundary
+    (newline, dedent, or definition-opening keyword such as `fn`,
+    `mod`, `rec`, etc.). Subsequent definitions in the same file are
+    still reported.
+
+    A file that contains this error will also contain one or more
+    primary parse errors (e.g. `:unexpected_token`) that identify
+    the root cause. Fix those first; E063 errors will disappear once
+    the primary error is resolved.
+
+    Example:
+      mod M
+        fn foo() -> ???bad     # primary parse error here
+        fn bar() -> Int = 0    # still parsed; E063 recovery consumed
+                               # the tokens between the two fns
+
+    Fix: address the root syntax error. E063 diagnostics are
+    informational and do not indicate a new, independent bug.
     """
   }
 

@@ -4,6 +4,98 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.28.0] -- Talk Back
+
+v0.28.0 closes feedback loops. The compiler now emits all parse errors
+per file (not just the first), every name-resolution failure carries a
+"did you mean?" suggestion, the formatter gains a colour diff view,
+type errors get an interactive fix assistant (`cure bless`), FSMs and
+actors can opt into time-travel journaling (`@record` + `cure replay`),
+and the Playground gains an in-browser type-check panel and sandboxed
+evaluator. A lurking type-checker bug that returned `List(U)` for
+ill-typed polymorphic lambdas is fixed at the source.
+
+### Fixed
+
+- **Checker: lambda body errors silenced in `infer_and_unify_args`.**
+  `:t Std.List.map(["1","2","3"], fn (x) -> x + 1)` previously returned
+  `List(U)` because `infer_and_unify_args` swallowed errors from
+  `infer_arg_with_expected` and substituted `:any`, leaving `U` unbound.
+  The fix threads an error accumulator through `infer_and_unify_args`;
+  when any argument expression is internally ill-typed the first error
+  is propagated instead of returning the garbage return type.
+- **Type.numeric?: named types and type variables treated as potentially
+  numeric.** User-defined numeric aliases (`type Rate = {r: Float | ...}`)
+  and polymorphic type variables (`T` in `fn(x: T) -> x + 1`) no longer
+  produce false-positive arithmetic type errors.
+
+### Added -- Parser
+
+- **Error recovery (E063).** `parse_block_body` and `parse_program` now
+  synchronise to the next statement boundary after every error-producing
+  expression so a broken statement cannot consume tokens belonging to the
+  next well-formed definition. New error code `E063 Parse Error
+  (recovered)` documents the behaviour.
+
+### Added -- "Did you mean?" suggestions
+
+- Unbound variable errors include the closest in-scope name.
+- Record field pattern errors include the closest declared field name.
+- `cure <unknown-subcommand>` suggests the closest known command.
+- REPL `:use <unknown-module>` warns and suggests the closest stdlib
+  module name.
+- REPL `:unknown-command` suggests the closest known meta-command.
+
+### Added -- `cure fmt --diff`
+
+`cure fmt --dry-run` (alias: `--diff`) shows a colour-annotated unified
+diff for every file that would be reformatted without touching disk.
+Exits 1 when any file has pending changes (CI-friendly).
+
+### Added -- `cure bless`
+
+New Socratic type-error assistant. For each type or refinement error
+in a `.cure` file, `cure bless` displays the error, explains what went
+wrong, and offers a concrete fix with a `[y/n/s]` prompt. On `y`, the
+fix is applied and the checker is re-run to confirm resolution.
+
+- New modules: `Cure.Bless`, `Cure.Bless.Advisor`.
+- New Mix task: `mix cure.bless`.
+- REPL `:bless <path>` command.
+
+### Added -- Time-travel: `@record` + `cure replay`
+
+`@record` decorator on a `fsm` container opts every transition into
+`Cure.Observe.Journal`, which writes ETS entries and flushes them to
+`.cure-trace/<pid>.journal`. `cure replay <path>` loads a journal file,
+prints the event trace, and optionally replays it against a live FSM
+with `--step` single-step mode.
+
+- New modules: `Cure.Observe.Journal`, `Cure.Observe.Replay`.
+- New Mix task: `mix cure.replay`.
+- `Cure.FSM.Compiler` extended to detect `@record` and inject journal
+  calls into the generated `handle_cast`.
+
+### Added -- Playground v2
+
+- **In-browser type checker.** `CureSiteWeb.PlaygroundLive` now runs
+  `Cure.Types.Checker` on every debounced keystroke and renders results
+  in a live type-check panel.
+- **Sandboxed evaluator.** `CureSiteWeb.Eval` spawns an isolated BEAM
+  process with `max_heap_size` and a 2-second kill timer, captures
+  stdout, and returns the `main/0` return value. A "Run" button in the
+  playground triggers it on demand.
+
+### Added -- Error catalog
+
+- **E063 Parse Error (recovered)** -- emitted implicitly when the
+  parser skips tokens to reach the next statement boundary after a
+  syntax error.
+
+### Changed
+
+- `mix.exs` version bumped to `0.28.0`.
+
 ## [0.27.0] -- See Your System Breathe
 
 v0.27.0 is the observability-and-verification release. It turns the

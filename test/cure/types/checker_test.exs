@@ -587,6 +587,24 @@ defmodule Cure.Types.CheckerTest do
 
       assert {:ok, _} = Checker.check_module(ast, emit_events: false)
     end
+
+    # Regression for the REPL bug where
+    #   :t Std.List.map(["1", "2", "3"], fn (x) -> x + 1)
+    # returned `List(U)` instead of a type error. The fix threads an
+    # error accumulator through `infer_and_unify_args` so that lambda
+    # body errors are not silently swallowed.
+    test "Std.List.map with an ill-typed lambda body surfaces a type error" do
+      assert {:error, {:type_mismatch, msg, _}} =
+               infer_src!("Std.List.map([\"1\", \"2\", \"3\"], fn(x) -> x + 1)")
+
+      assert msg =~ "numeric"
+    end
+
+    test "Std.List.map with a correct lambda still returns the specialised list type" do
+      # Sanity check: the happy path is not broken by the error accumulator.
+      assert {:ok, {:list, :int}} =
+               infer_src!("Std.List.map([1, 2, 3], fn(x) -> x + 1)")
+    end
   end
 
   # ============================================================================

@@ -124,6 +124,12 @@ defmodule Cure.FSM.Compiler do
     on_stop_clauses = Keyword.get(meta, :on_stop, [])
     notify_transitions? = Keyword.get(meta, :notify_transitions, false)
     auto_caller? = Keyword.get(meta, :auto_caller, false)
+    # @record decorator on the FSM container enables transition journaling.
+    record_transitions? =
+      case Keyword.get(meta, :decorator) do
+        {:record, _} -> true
+        _ -> false
+      end
 
     transitions = extract_transitions(transition_nodes)
     initial_state = Keyword.get(meta, :initial_state) || determine_initial_state(transitions)
@@ -155,7 +161,8 @@ defmodule Cure.FSM.Compiler do
         on_start_clauses,
         on_stop_clauses,
         notify_transitions?,
-        auto_caller?
+        auto_caller?,
+        record_transitions?
       )
 
     # Compile the generated Elixir source to BEAM. The generated module
@@ -240,7 +247,8 @@ defmodule Cure.FSM.Compiler do
          on_start_clauses,
          on_stop_clauses,
          notify_transitions?,
-         auto_caller?
+         auto_caller?,
+         record_transitions?
        ) do
     trans_table_str = inspect(trans_table)
     hard_states_str = inspect(hard_states)
@@ -258,6 +266,7 @@ defmodule Cure.FSM.Compiler do
     timer_handler = if timer, do: generate_timer_handler(timer), else: ""
     auto_caller_init = if auto_caller?, do: "true", else: "false"
     notify_transitions_flag = if notify_transitions?, do: "true", else: "false"
+    record_transitions_flag = if record_transitions?, do: "true", else: "false"
 
     """
     defmodule :"#{mod_atom}" do
@@ -270,6 +279,7 @@ defmodule Cure.FSM.Compiler do
       @soft_events #{soft_events_str}
       @notify_transitions #{notify_transitions_flag}
       @auto_caller #{auto_caller_init}
+      @record_transitions #{record_transitions_flag}
 
       # -- Public API ----------------------------------------------------------
 
@@ -390,6 +400,9 @@ defmodule Cure.FSM.Compiler do
               if @notify_transitions do
                 FsmState.notify(merged, {:cure_fsm, self(),
                   {:transition, state.current, event, actual_next, merged.payload}})
+              end
+              if @record_transitions do
+                Cure.Observe.Journal.record(self(), state.current, event, actual_next)
               end
               case Keyword.get(@hard_states, actual_next) do
                 nil -> {:noreply, new_state}

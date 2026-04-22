@@ -665,8 +665,21 @@ defmodule Cure.Types.Checker do
 
       :error ->
         line = Keyword.get(meta, :line, 1)
+        # Suggest the closest in-scope name using Levenshtein distance so users
+        # can quickly spot simple typos ("did you mean 'foo'?").
+        known_names =
+          case env do
+            %Cure.Types.Env{scopes: scopes} -> Enum.flat_map(scopes, &Map.keys/1)
+            _ -> []
+          end
 
-        {:error, {:unbound_variable, "undefined variable '#{name}'", line: line}}
+        suffix =
+          case Cure.Compiler.Errors.suggest(name, known_names) do
+            nil -> ""
+            suggestion -> "; did you mean '#{suggestion}'?"
+          end
+
+        {:error, {:unbound_variable, "undefined variable '#{name}'#{suffix}", line: line}}
     end
   end
 
@@ -1351,18 +1364,36 @@ defmodule Cure.Types.Checker do
   # subtyping relation, fall back to returning the declared return type
   # unchanged. That preserves today's permissive behaviour for calls
   # where the signature mixes `:any` with concrete types.
+  #
+  # Type errors originating *inside* an argument expression (e.g. a lambda
+  # body that is ill-typed with respect to the inferred parameter type) are
+  # collected in an error accumulator and surfaced after all arguments have
+  # been processed. This is distinct from a pure unification mismatch:
+  # unification failures are still silenced to allow the subtype fallback
+  # to produce a better-positioned error, but genuine internal errors are
+  # not swallowed.
   defp check_fn_call(name, param_types, ret_type, args, line, env) do
     if length(param_types) != length(args) do
       {:error,
        {:arity_mismatch, "function '#{name}' expects #{length(param_types)} arguments, got #{length(args)}", line: line}}
     else
-      {:ok, subst, arg_types, env} =
-        infer_and_unify_args(env, args, param_types, %{}, [])
+      {:ok, subst, arg_types, arg_errors, env} =
+        infer_and_unify_args(env, args, param_types, %{}, [], [])
 
-      if params_match?(param_types, arg_types) do
-        {:ok, Unify.apply_subst(ret_type, subst), env}
-      else
-        {:error, {:type_mismatch, "argument type mismatch in call to '#{name}'", line: line}}
+      case arg_errors do
+        [first_error | _] ->
+          # An argument expression itself is ill-typed (e.g. a lambda body
+          # whose inferred parameter type does not support the operations
+          # performed on it). Propagate the most precise error rather than
+          # returning a garbage return type such as `List(U)`.
+          {:error, first_error}
+
+        [] ->
+          if params_match?(param_types, arg_types) do
+            {:ok, Unify.apply_subst(ret_type, subst), env}
+          else
+            {:error, {:type_mismatch, "argument type mismatch in call to '#{name}'", line: line}}
+          end
       end
     end
   end
@@ -1371,17 +1402,28 @@ defmodule Cure.Types.Checker do
   # rebuilt from the running substitution. That way, once `T` is pinned
   # to `Int` by `[1, 2, 3]`, the lambda in position 2 sees an expected
   # type of `Int -> U` rather than the bare polymorphic `T -> U`.
-  defp infer_and_unify_args(env, [], [], subst, acc_types) do
-    {:ok, subst, Enum.reverse(acc_types), env}
+  #
+  # `acc_errors` collects genuine type errors from inside argument
+  # expressions. These are distinct from unification mismatches: the
+  # latter are intentionally swallowed here so the subtype fallback in
+  # `check_fn_call` can produce a more precise diagnostic; the former
+  # (a lambda body whose operations are ill-typed with respect to the
+  # inferred parameter type) must always be surfaced.
+  defp infer_and_unify_args(env, [], [], subst, acc_types, acc_errors) do
+    {:ok, subst, Enum.reverse(acc_types), Enum.reverse(acc_errors), env}
   end
 
-  defp infer_and_unify_args(env, [arg | args], [ptype | ptypes], subst, acc_types) do
+  defp infer_and_unify_args(env, [arg | args], [ptype | ptypes], subst, acc_types, acc_errors) do
     expected = Unify.apply_subst(ptype, subst)
 
-    {arg_type, env} =
+    {arg_type, new_errors, env} =
       case infer_arg_with_expected(env, arg, expected) do
-        {:ok, t, e2} -> {t, e2}
-        {:error, _} -> {:any, env}
+        {:ok, t, e2} -> {t, [], e2}
+        # Argument expression is internally ill-typed: record the error so
+        # check_fn_call can surface it, but continue with `:any` so that
+        # subsequent arguments still infer against updated substitutions
+        # (this maximises the number of diagnostics per invocation).
+        {:error, err} -> {:any, [err], env}
       end
 
     subst =
@@ -1393,7 +1435,7 @@ defmodule Cure.Types.Checker do
         {:error, _, _} -> subst
       end
 
-    infer_and_unify_args(env, args, ptypes, subst, [arg_type | acc_types])
+    infer_and_unify_args(env, args, ptypes, subst, [arg_type | acc_types], new_errors ++ acc_errors)
   end
 
   # When the expected type is a function type and the argument is a
@@ -1693,7 +1735,7 @@ defmodule Cure.Types.Checker do
           type = Map.get(known_fields, name, :any)
 
           if known_fields != %{} and not Map.has_key?(known_fields, name) do
-            emit_record_warning(e, rec_name, name, line)
+            emit_record_warning(e, rec_name, name, Map.keys(known_fields), line)
           end
 
           Env.extend(e, name, type)
@@ -1712,7 +1754,7 @@ defmodule Cure.Types.Checker do
             end
 
           if field_name != nil and known_fields != %{} and not Map.has_key?(known_fields, field_name) do
-            emit_record_warning(e, rec_name, field_name, line)
+            emit_record_warning(e, rec_name, field_name, Map.keys(known_fields), line)
           end
 
           bind_pattern_vars(e, value_pat, type)
@@ -1730,14 +1772,21 @@ defmodule Cure.Types.Checker do
     Enum.reduce(args, env, &bind_pattern_vars(&2, &1, :any))
   end
 
-  defp emit_record_warning(env, rec_name, field, line) do
+  defp emit_record_warning(env, rec_name, field, known_field_names, line) do
     if Map.get(env, :emit_events, false) do
       file = Map.get(env, :file, "nofile")
+
+      suffix =
+        case Cure.Compiler.Errors.suggest(field, known_field_names) do
+          nil -> ""
+          suggestion -> "; did you mean '#{suggestion}'?"
+        end
 
       Events.emit(
         :type_checker,
         :type_warning,
-        {:unknown_record_field, "record '#{rec_name}' pattern references unknown field '#{field}' (E021)", line: line},
+        {:unknown_record_field, "record '#{rec_name}' pattern references unknown field '#{field}' (E021)#{suffix}",
+         line: line},
         Events.meta(file, line)
       )
     end

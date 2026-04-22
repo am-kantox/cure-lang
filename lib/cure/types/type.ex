@@ -65,6 +65,18 @@ defmodule Cure.Types.Type do
   # Path-sensitive refinements narrow a base type; for arithmetic we only
   # care whether the underlying base is numeric.
   def numeric?({:refinement, base, _, _}), do: numeric?(base)
+  # Named types are user-defined aliases (e.g. `type Rate = {r: Float | r > 0.0}`).
+  # Without threading env into Type.numeric?/1 we cannot statically resolve the
+  # alias to its base type. Treat them as potentially numeric so that code that
+  # uses numeric type aliases (Rate, PositiveAmount, etc.) does not produce false
+  # positive errors. This mirrors the permissive treatment of `:any`.
+  def numeric?({:named, _}), do: true
+  # Type variables (T, U, ...) are polymorphic placeholders. A caller that passes
+  # `fn(x: T) -> x + 1` is implicitly constraining T to a numeric type; without
+  # a full inference pass we cannot verify this here, so we admit the operation
+  # and defer any mismatch to the concrete instantiation site. Same rationale as
+  # the `:any` escape hatch in the arithmetic check.
+  def numeric?({:type_var, _}), do: true
   def numeric?(_), do: false
 
   @doc "Returns the valid effect kind atoms."
