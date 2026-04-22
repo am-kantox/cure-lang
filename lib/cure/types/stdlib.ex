@@ -55,18 +55,34 @@ defmodule Cure.Types.Stdlib do
   @doc """
   Return the parsed stdlib signature bundle. The result is memoised;
   call `reload/0` after editing stdlib sources to rebuild it.
+
+  An **empty** bundle is deliberately *not* memoised. Empty almost
+  always means the stdlib sources were transiently unreachable
+  (release unpack in progress, `:stdlib_source_dir` override pointing
+  at a path that will exist shortly, Cure's `priv/` not yet symlinked
+  into the host's build tree, ...). Caching that first miss would
+  silently type every stdlib call as `Any` for the lifetime of the VM.
+  Retrying on the next call trades a cheap re-scan for self-healing
+  correctness; the cost is trivial compared to the cost of a silently
+  degraded REPL.
   """
   @spec all() :: bundle()
   def all do
     case :persistent_term.get(@persistent_key, :undefined) do
       :undefined ->
         loaded = load_all()
-        :persistent_term.put(@persistent_key, loaded)
+        unless empty?(loaded), do: :persistent_term.put(@persistent_key, loaded)
         loaded
 
       loaded ->
         loaded
     end
+  end
+
+  @doc false
+  @spec empty?(bundle()) :: boolean()
+  def empty?(%{qualified: q, short_by_module: s}) do
+    map_size(q) == 0 and map_size(s) == 0
   end
 
   @doc """

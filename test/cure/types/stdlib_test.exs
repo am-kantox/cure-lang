@@ -122,4 +122,74 @@ defmodule Cure.Types.StdlibTest do
       end
     end
   end
+
+  describe "defensive caching" do
+    test "empty?/1 recognises a fully empty bundle" do
+      assert Stdlib.empty?(%{qualified: %{}, short_by_module: %{}})
+      refute Stdlib.empty?(%{qualified: %{"x" => 1}, short_by_module: %{}})
+      refute Stdlib.empty?(%{qualified: %{}, short_by_module: %{"m" => %{}}})
+    end
+
+    test "does not memoise an empty bundle: a transient miss self-heals on retry" do
+      source = Path.join(["lib", "std", "list.cure"])
+
+      # The test is meaningful only from inside a Cure checkout where
+      # we have a real stdlib file to swap in; skip gracefully otherwise.
+      unless File.regular?(source), do: :ok
+
+      previous = Application.get_env(:cure, :stdlib_source_dir)
+      persistent_key = {Cure.Types.Stdlib, :signatures_v2}
+
+      empty_dir =
+        Path.join(System.tmp_dir!(), "cure_stdlib_empty_#{System.unique_integer([:positive])}")
+
+      populated_dir =
+        Path.join(System.tmp_dir!(), "cure_stdlib_ready_#{System.unique_integer([:positive])}")
+
+      File.mkdir_p!(empty_dir)
+      File.mkdir_p!(populated_dir)
+      File.cp!(source, Path.join(populated_dir, "list.cure"))
+
+      try do
+        # Phase 1: stdlib source dir exists but is empty (stdlib not
+        # yet extracted). The loader must NOT cement this empty
+        # bundle, otherwise every subsequent `:t` silently returns
+        # `Any` for the lifetime of the VM.
+        Application.put_env(:cure, :stdlib_source_dir, empty_dir)
+        Stdlib.reload()
+        _ = :persistent_term.erase(persistent_key)
+
+        bundle = Stdlib.all()
+
+        assert Stdlib.empty?(bundle)
+
+        # The cache must still be unset -- the sentinel proves the
+        # implementation did not `:persistent_term.put/2` an empty map.
+        assert :persistent_term.get(persistent_key, :sentinel) == :sentinel
+
+        # Phase 2: the stdlib becomes available on disk. A naive
+        # implementation that cached the empty bundle would keep
+        # returning empty; the self-healing implementation picks the
+        # new content up without any explicit reload.
+        Application.put_env(:cure, :stdlib_source_dir, populated_dir)
+
+        recovered = Stdlib.all()
+
+        refute Stdlib.empty?(recovered)
+        assert Map.has_key?(recovered.short_by_module, "Std.List")
+
+        # Now that the bundle is non-empty it is safe to memoise.
+        assert :persistent_term.get(persistent_key, :sentinel) == recovered
+      after
+        case previous do
+          nil -> Application.delete_env(:cure, :stdlib_source_dir)
+          value -> Application.put_env(:cure, :stdlib_source_dir, value)
+        end
+
+        Stdlib.reload()
+        File.rm_rf!(empty_dir)
+        File.rm_rf!(populated_dir)
+      end
+    end
+  end
 end
