@@ -53,7 +53,7 @@ defmodule Cure.Observe.Trace do
     :dbg.tracer(:process, {&trace_handler/2, %{target: target, opts: opts}})
 
     :dbg.p(:all, [:call, :return_to])
-    :dbg.tpl(module, fun, arity, :return_trace)
+    :dbg.tpl(module, fun, arity, [{:_, [], [{:return_trace}]}])
 
     Process.put({__MODULE__, :active}, mfa)
     :ok

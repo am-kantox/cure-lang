@@ -41,8 +41,11 @@ defmodule Cure.Pipeline.Events do
   # `:registry` covers out-of-band lifecycle events from the package
   # registry and transparency log; `:sup_verifier` covers the structural
   # verification pass for `sup` containers; `:app_verifier` covers the
-  # structural verification pass for `app` containers (v0.26.0). Every
-  # other stage maps to one of the compilation pipeline phases.
+  # structural verification pass for `app` containers (v0.26.0);
+  # `:synthesis` covers the typed-hole candidate-synthesis engine and
+  # `:doc_mermaid` the Mermaid diagram emitter for `cure doc`
+  # (v0.27.0). Every other stage maps to one of the compilation
+  # pipeline phases.
   @type stage ::
           :lexer
           | :parser
@@ -52,6 +55,8 @@ defmodule Cure.Pipeline.Events do
           | :sup_verifier
           | :app_verifier
           | :registry
+          | :synthesis
+          | :doc_mermaid
   @type event_type :: atom()
   @type metadata :: %{file: String.t(), line: pos_integer(), timestamp: integer()}
 

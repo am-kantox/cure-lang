@@ -148,7 +148,7 @@ defmodule :cure_std_regex do
 
   defp resolve(_), do: :error
 
+  # `:re.compile/2` only reports compile errors as `{reason_string,
+  # position}` tuples, so that is the only shape we need to format.
   defp format_reason({reason, _position}), do: to_string(reason)
-  defp format_reason(reason) when is_atom(reason), do: Atom.to_string(reason)
-  defp format_reason(other), do: inspect(other)
 end
