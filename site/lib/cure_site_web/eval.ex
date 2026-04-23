@@ -127,19 +127,40 @@ defmodule CureSiteWeb.Eval do
     end
   end
 
+  # Plain `mod` / `proof` containers come back as a list of Erlang abstract
+  # forms -- we need to run them through `:compile.forms/2` and load the
+  # resulting BEAM binary.
   defp load_module(forms) when is_list(forms) do
-    case :compile.forms(forms, [:return_errors]) do
+    # `:compile.forms/2` can return either `{:ok, Mod, Bin}` (no warnings) or
+    # `{:ok, Mod, Bin, Warnings}` (with `:return_warnings`). We handle both.
+    case :compile.forms(forms, [:return_errors, :return_warnings]) do
       {:ok, mod_atom, bytecode, _warnings} ->
-        :code.purge(mod_atom)
-        {:module, ^mod_atom} = :code.load_binary(mod_atom, ~c"playground", bytecode)
-        {:ok, mod_atom}
+        load_bytecode(mod_atom, bytecode)
+
+      {:ok, mod_atom, bytecode} ->
+        load_bytecode(mod_atom, bytecode)
 
       {:error, errors, _warnings} ->
         {:error, inspect(errors)}
+
+      :error ->
+        {:error, "Unknown compile error"}
     end
   end
 
+  # Eager-loaded containers (callback-mode FSMs, typed actors, supervisors,
+  # OTP applications) are already compiled and loaded by `Cure.Compiler.Codegen`
+  # -- we just need to unwrap the module atom.
   defp load_module({:callback_mode, mod_atom}), do: {:ok, mod_atom}
+  defp load_module({:actor, mod_atom}), do: {:ok, mod_atom}
+  defp load_module({:supervisor, mod_atom}), do: {:ok, mod_atom}
+  defp load_module({:app, mod_atom}), do: {:ok, mod_atom}
+
+  defp load_bytecode(mod_atom, bytecode) do
+    :code.purge(mod_atom)
+    {:module, ^mod_atom} = :code.load_binary(mod_atom, ~c"playground", bytecode)
+    {:ok, mod_atom}
+  end
 
   defp run_main(module) do
     if function_exported?(module, :main, 0) do
