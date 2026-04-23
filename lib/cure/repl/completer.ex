@@ -147,15 +147,28 @@ defmodule Cure.REPL.Completer do
 
   defp common(_, _, acc), do: acc
 
+  # The old implementation returned bare basenames, which is fine when
+  # the user's token has no path separators (e.g. `:load exa` completes
+  # to `:load examples/`), but broke every nested lookup: typing
+  # `:load examples/let` and hitting Tab silently dropped the
+  # `examples/` prefix and produced `:load let_destructuring.cure`,
+  # which is neither what the user wrote nor a valid path.
+  #
+  # The fix is to echo back the same visible directory prefix the user
+  # typed (`./`, `examples/`, `~/src/`, `/opt/...`, or nothing for a
+  # bare name in `.`) so the candidate, and therefore the longest common
+  # prefix used to replace the token, always rebuilds the full path.
   defp path_candidates(token) do
-    expanded = Path.expand(token)
-    base = Path.basename(expanded)
-
-    {dir, pattern} =
+    {user_dir, dir, pattern} =
       cond do
-        token == "" -> {".", "*"}
-        String.ends_with?(token, "/") -> {Path.expand(token), "*"}
-        true -> {Path.expand(Path.dirname(token)), base <> "*"}
+        token == "" ->
+          {"", ".", "*"}
+
+        String.ends_with?(token, "/") ->
+          {token, Path.expand(token), "*"}
+
+        true ->
+          {dirname_display(token), Path.expand(Path.dirname(token)), Path.basename(token) <> "*"}
       end
 
     case File.ls(dir) do
@@ -164,12 +177,29 @@ defmodule Cure.REPL.Completer do
         |> Enum.filter(&glob_match?(&1, pattern))
         |> Enum.map(fn entry ->
           full = Path.join(dir, entry)
-          if File.dir?(full), do: entry <> "/", else: entry
+          name = if File.dir?(full), do: entry <> "/", else: entry
+          user_dir <> name
         end)
         |> Enum.sort()
 
       _ ->
         []
+    end
+  end
+
+  # Reconstruct the user-visible directory prefix of `token`:
+  #
+  #   - `"ex"`              -> `""`       (bare name in cwd)
+  #   - `"./ex"`            -> `"./"`     (explicit cwd-relative)
+  #   - `"examples/let"`    -> `"examples/"`
+  #   - `"~/src/foo"`       -> `"~/src/"`
+  #   - `"/tmp/foo"`        -> `"/tmp/"`
+  #   - `"/foo"`            -> `"/"`
+  defp dirname_display(token) do
+    case Path.dirname(token) do
+      "." -> if String.contains?(token, "/"), do: "./", else: ""
+      "/" -> "/"
+      other -> other <> "/"
     end
   end
 

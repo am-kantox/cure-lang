@@ -156,6 +156,177 @@ defmodule Cure.REPLTest do
     end
   end
 
+  describe ":let meta-command" do
+    setup do
+      Session.clear()
+      on_exit(&Session.clear/0)
+      :ok
+    end
+
+    test "installs the bound value as a zero-arg session fn" do
+      {state, stdout, _stderr} =
+        submit_capture(REPL.__new_state__(), ":let answer = 42")
+
+      assert [%{key: {:fn, "answer", 0, :public}, source: "fn answer() -> Any = 42"}] =
+               state.defs
+
+      assert stdout =~ "pinned answer/0 : () -> Int"
+      assert function_exported?(Session.module_atom(), :answer, 0)
+      # `apply/3` keeps the dynamic call off the compiler's radar so it does
+      # not warn about `:"Cure.Repl.Session"` (which is defined at runtime).
+      assert 42 = apply(Session.module_atom(), :answer, [])
+    end
+
+    test "let-bound value is reachable from a follow-up expression" do
+      state =
+        REPL.__new_state__()
+        |> submit(":let a = 1")
+        |> submit(":let b = a() + 1")
+
+      {_state, stdout, _stderr} = submit_capture(state, "b()")
+      assert stdout =~ "=> 2"
+    end
+
+    test "redefining a pinned binding replaces the entry in place" do
+      state =
+        REPL.__new_state__()
+        |> submit(":let x = 1")
+
+      {state, stdout, _stderr} = submit_capture(state, ":let x = 99")
+
+      assert stdout =~ "redefined x/0"
+
+      assert [%{key: {:fn, "x", 0, :public}, source: "fn x() -> Any = 99"}] = state.defs
+
+      {_state, stdout, _stderr} = submit_capture(state, "x()")
+      assert stdout =~ "=> 99"
+    end
+
+    test "rejects invalid identifiers" do
+      {state, _stdout, stderr} =
+        submit_capture(REPL.__new_state__(), ":let 1bad = 42")
+
+      assert state.defs == []
+      assert stderr =~ "invalid binding name"
+    end
+
+    test "reports a usage error on missing '='" do
+      {state, _stdout, stderr} =
+        submit_capture(REPL.__new_state__(), ":let foo")
+
+      assert state.defs == []
+      assert stderr =~ "usage: :let name = expr"
+    end
+
+    test "reports a usage error on an empty right-hand side" do
+      {state, _stdout, stderr} =
+        submit_capture(REPL.__new_state__(), ":let foo =")
+
+      assert state.defs == []
+      assert stderr =~ "usage: :let name = expr"
+    end
+
+    test ":defs lists pinned let bindings alongside explicit declarations" do
+      state =
+        REPL.__new_state__()
+        |> submit(":let pi = 3.14")
+        |> submit("fn square(x: Int) -> Int = x * x")
+
+      {_state, stdout, _stderr} = submit_capture(state, ":defs")
+
+      assert stdout =~ "session definitions (2)"
+      assert stdout =~ "pi/0"
+      assert stdout =~ "square/1"
+    end
+  end
+
+  describe ":edit meta-command" do
+    setup do
+      Session.clear()
+      on_exit(&Session.clear/0)
+      :ok
+    end
+
+    test "runs $EDITOR and dispatches its contents as a fresh submission" do
+      script_path = write_editor_stub("fn pinned() -> Int = 7")
+      System.put_env("EDITOR", script_path)
+
+      try do
+        {state, stdout, _stderr} =
+          submit_capture(REPL.__new_state__(), ":edit")
+
+        assert stdout =~ "defined pinned/0"
+        assert [%{key: {:fn, "pinned", 0, :public}}] = state.defs
+        assert state.input_buffer == []
+      after
+        System.delete_env("EDITOR")
+        File.rm(script_path)
+      end
+    end
+
+    test "an empty editor buffer clears input_buffer and reports the no-op" do
+      script_path = write_editor_stub("")
+      System.put_env("EDITOR", script_path)
+
+      try do
+        {state, stdout, _stderr} =
+          submit_capture(REPL.__new_state__(), ":edit")
+
+        assert stdout =~ "empty buffer"
+        assert state.input_buffer == []
+      after
+        System.delete_env("EDITOR")
+        File.rm(script_path)
+      end
+    end
+
+    test "a multi-line editor buffer evaluates the whole body, not just the first line" do
+      # Regression test: the old evaluator spliced the source inline after
+      # `fn main() -> Any = `, which left every line past the first at
+      # column 0 -- siblings of `mod` instead of body statements of
+      # `main/0`. Indenting the body under `main/0` lets the parser read
+      # the whole thing as a block, so the REPL prints the result of the
+      # final expression instead of only the first.
+      script_path = write_editor_stub("let a = 1\nlet b = a + 1\nb")
+      System.put_env("EDITOR", script_path)
+
+      try do
+        {_state, stdout, _stderr} =
+          submit_capture(REPL.__new_state__(), ":edit")
+
+        assert stdout =~ "=> 2"
+      after
+        System.delete_env("EDITOR")
+        File.rm(script_path)
+      end
+    end
+
+    test "a non-zero editor exit discards the buffer without submitting" do
+      # The script exits non-zero *after* overwriting the tmp file, so we
+      # verify the guard triggers on exit_code alone.
+      script_path =
+        write_editor_stub_raw("""
+        #!/bin/sh
+        echo 'fn would_define() -> Int = 1' > "$1"
+        exit 3
+        """)
+
+      System.put_env("EDITOR", script_path)
+
+      try do
+        {state, _stdout, stderr} =
+          submit_capture(REPL.__new_state__(), ":edit")
+
+        assert stderr =~ "editor exited with status 3"
+        assert state.defs == []
+        assert state.input_buffer == []
+      after
+        System.delete_env("EDITOR")
+        File.rm(script_path)
+      end
+    end
+  end
+
   # Feed `line` through the REPL pipeline, silencing any captured IO. Used
   # for setup steps whose stdout/stderr is not the subject of the
   # assertion.
@@ -195,5 +366,28 @@ defmodule Cure.REPLTest do
       end
 
     {next_state, stdout, stderr}
+  end
+
+  # Write an executable shell script that overwrites its first argument
+  # (the REPL's temp file) with `content`. Returns the script path.
+  defp write_editor_stub(content) when is_binary(content) do
+    write_editor_stub_raw("""
+    #!/bin/sh
+    cat > "$1" <<'CURE_REPL_EDITOR_STUB_EOF'
+    #{content}
+    CURE_REPL_EDITOR_STUB_EOF
+    """)
+  end
+
+  defp write_editor_stub_raw(script) when is_binary(script) do
+    path =
+      Path.join(
+        System.tmp_dir!(),
+        "cure-repl-edit-stub-#{System.unique_integer([:positive])}.sh"
+      )
+
+    File.write!(path, script)
+    File.chmod!(path, 0o755)
+    path
   end
 end

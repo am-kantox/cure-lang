@@ -155,6 +155,81 @@ defmodule Cure.REPL.Terminal do
   end
 
   @doc """
+  Temporarily leave raw mode for the duration of `fun`, then re-enter it.
+
+  Meta-commands that hand the terminal over to an external process
+  (`:edit`, pagers, ...) must unhold the tty so the child can read
+  keystrokes and paint the screen without fighting the REPL's own
+  `/dev/tty` file descriptors.
+
+  Concretely:
+
+    1. Bracketed paste is disabled, the read/write `/dev/tty` handles
+       stashed in the process dictionary are closed, and `stty` is put
+       back into the state captured by the most recent `enter_raw/0`.
+    2. `fun.()` is invoked; its return value is returned from
+       `with_cooked_io/1`.
+    3. Raw mode is re-established -- `stty raw`, new read/write handles
+       on `/dev/tty`, bracketed paste back on. The saved cooked state
+       (`@state_key`) is preserved so the eventual `restore/1` on REPL
+       exit still returns to the user's original configuration.
+
+  If raw mode is not currently active (legacy loop, tests, CI pipes)
+  the function runs unchanged.
+  """
+  @spec with_cooked_io((-> any())) :: any()
+  def with_cooked_io(fun) when is_function(fun, 0) do
+    case Process.get(@state_key) do
+      nil ->
+        fun.()
+
+      saved ->
+        disable_bracketed_paste()
+        close_ttys()
+        Process.delete(@read_key)
+        Process.delete(@write_key)
+        stty_restore(saved)
+
+        try do
+          fun.()
+        after
+          reenter_raw()
+        end
+    end
+  end
+
+  defp reenter_raw do
+    _ = stty_raw()
+
+    case :file.open(~c"/dev/tty", [:read, :raw, :binary]) do
+      {:ok, fd} -> Process.put(@read_key, fd)
+      _ -> :ok
+    end
+
+    case :file.open(~c"/dev/tty", [:write, :raw, :binary]) do
+      {:ok, fd} -> Process.put(@write_key, fd)
+      _ -> :ok
+    end
+
+    enable_bracketed_paste()
+    :ok
+  end
+
+  @doc """
+  Best-effort resolve the filesystem path of BEAM's controlling tty
+  (e.g. `"/dev/pts/3"`). Returns `nil` when no pts device could be
+  detected (headless CI, redirected stdio, ...).
+
+  Meta-commands that spawn a subprocess and want it to see an
+  interactive terminal redirect the child's stdio to this path. It
+  works even when the child has no controlling tty of its own (which
+  `erl_child_setup` makes inevitable) because opening a `/dev/pts/*`
+  node, unlike opening `/dev/tty`, does not require a ctty.
+  """
+  @spec resolve_tty_path() :: String.t() | nil
+  def resolve_tty_path, do: tty_path()
+
+  @doc """
   Write bytes to the terminal. Prefers `/dev/tty` when raw mode is active,
   otherwise falls back to `:stdio`.
   """

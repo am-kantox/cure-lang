@@ -420,6 +420,29 @@ defmodule Cure.REPL do
     end
   end
 
+  # Expression submissions are compiled by synthesising a temporary
+  # `fn main() -> Any = ...` wrapper. Single-line expressions work fine
+  # inline (`= 1 + 1`), but a multi-line submission coming from `:edit`
+  # must be indented as the *body* of the function:
+  #
+  #   fn main() -> Any =
+  #     let a = 1
+  #     let b = a + 1
+  #     b
+  #
+  # If we instead splice the raw text after `= ` on the same line, the
+  # parser sees only the first expression as the function body and the
+  # trailing lines as top-level siblings, which is why the REPL printed
+  # the result of the first expression only.
+  defp indent_body(src) when is_binary(src) do
+    src
+    |> String.split("\n")
+    |> Enum.map_join("\n", fn
+      "" -> "    "
+      line -> "    " <> line
+    end)
+  end
+
   # ==========================================================================
   # Legacy line-mode fallback
   # ==========================================================================
@@ -451,7 +474,8 @@ defmodule Cure.REPL do
 
     source = """
     mod #{mod_name}
-    #{uses}  fn main() -> Any = #{src}
+    #{uses}  fn main() -> Any =
+    #{indent_body(src)}
     """
 
     case Cure.Compiler.compile_and_load(source, emit_events: false) do
@@ -610,10 +634,12 @@ defmodule Cure.REPL do
   defp handle_meta(state, ":load " <> path), do: cmd_load(state, String.trim(path))
   defp handle_meta(state, ":use " <> mod), do: cmd_use(state, String.trim(mod))
   defp handle_meta(state, ":fmt " <> expr), do: cmd_fmt(state, expr)
+  defp handle_meta(state, ":let " <> rest), do: cmd_let(state, rest)
+  defp handle_meta(state, ":let"), do: cmd_let(state, "")
 
   defp handle_meta(state, other) do
     known_commands = ~w(
-      :t :type :doc :effects :load :use :fmt :ast :time :bench
+      :t :type :doc :effects :load :use :fmt :let :ast :time :bench
       :theme :mode :color :history :search :save :edit :holes
       :defs :reset :reload :help :imports :stdlib :quit :exit
     )
@@ -808,21 +834,179 @@ defmodule Cure.REPL do
     state
   end
 
+  # `:edit` hands the terminal over to `$EDITOR` so the user can compose a
+  # multi-line submission with their usual editor. Three subtleties must be
+  # handled for this to work under the raw-mode REPL:
+  #
+  #   1. The REPL still owns `/dev/tty` read/write file descriptors and has
+  #      the terminal in raw mode. A curses-based editor (vim, nvim, nano,
+  #      lvim, ...) cannot paint its screen against a tty that BEAM is also
+  #      holding. `Terminal.with_cooked_io/1` closes our fds and restores
+  #      stty around the editor invocation, then re-enters raw mode on the
+  #      way out.
+  #
+  #   2. Children spawned by BEAM have no controlling tty (see
+  #      `Cure.REPL.Terminal`'s moduledoc). `</dev/tty` in the child fails
+  #      with ENXIO, so we redirect the child's stdio to the *pts path*
+  #      (`/dev/pts/N`) that we already resolved on startup. Opening that
+  #      node does not require a ctty.
+  #
+  #   3. After the editor exits, the previous implementation left the
+  #      editor's contents stranded in `state.input_buffer` and never
+  #      dispatched them, so the prompt silently turned into a continuation
+  #      (`...`). We now route the content through `dispatch_buffer/1` so
+  #      it is evaluated immediately, matching the user's mental model of
+  #      "finish editing, submit".
   defp cmd_edit(state) do
     editor = System.get_env("VISUAL") || System.get_env("EDITOR") || "vi"
     tmp = Path.join(System.tmp_dir!(), "cure-repl-#{System.unique_integer([:positive])}.cure")
-    File.write!(tmp, Enum.join(state.input_buffer, "\n"))
+    initial = Enum.join(state.input_buffer, "\n")
+    File.write!(tmp, initial)
 
-    _ = System.cmd(editor, [tmp], into: IO.stream(:stdio, :line))
+    exit_code = Terminal.with_cooked_io(fn -> spawn_editor(editor, tmp) end)
 
-    new_buffer =
+    new_content =
       case File.read(tmp) do
-        {:ok, content} -> String.split(content, "\n")
-        _ -> state.input_buffer
+        {:ok, content} -> content
+        _ -> ""
       end
 
     _ = File.rm(tmp)
-    %{state | input_buffer: new_buffer}
+
+    cond do
+      exit_code != 0 ->
+        render_error(state, "editor exited with status #{exit_code}; buffer discarded")
+        %{state | input_buffer: []}
+
+      String.trim(new_content) == "" ->
+        render_info(state, "(editor produced an empty buffer; nothing submitted)")
+        %{state | input_buffer: []}
+
+      true ->
+        lines = String.split(new_content, "\n")
+        dispatch_buffer(%{state | input_buffer: lines})
+    end
+  end
+
+  defp spawn_editor(editor, tmp) do
+    tmp_q = shell_escape(tmp)
+
+    command =
+      case Terminal.resolve_tty_path() do
+        nil ->
+          "#{editor} #{tmp_q}"
+
+        path ->
+          path_q = shell_escape(path)
+          "#{editor} #{tmp_q} <#{path_q} >#{path_q} 2>#{path_q}"
+      end
+
+    case System.shell(command) do
+      {_out, code} -> code
+    end
+  end
+
+  defp shell_escape(s) when is_binary(s) do
+    "'" <> String.replace(s, "'", "'\\''") <> "'"
+  end
+
+  # `:let name = expr` pins the value of `expr` as a zero-arg session
+  # function, so the user can reuse it across subsequent prompts.
+  #
+  # Cure's `let` is expression-scoped -- a bare `let a = 1` on one prompt
+  # is thrown away by the time the next prompt runs, because every
+  # submission compiles as its own throwaway module. The only kind of
+  # binding that *does* persist across prompts is a top-level `fn`, so
+  # `:let` desugars to `fn name() -> Any = <expr>` and threads it through
+  # the same `Session.merge/2` + `Session.compile/1` pipeline that powers
+  # explicit `fn` declarations. The binding is then called back as
+  # `name()` from follow-up expressions, and is visible to `:defs`,
+  # `:reset`, `:t`, and `:effects`.
+  #
+  # The return type is deliberately `Any`: a concrete type would prevent
+  # redefinition with a value of a different shape (`:let a = 1` then
+  # `:let a = "hi"`), which is exactly the ergonomic we want `:let` to
+  # preserve. Users who want the inferred type see it in the status line
+  # we print on success, and can always run `:t name()` afterwards.
+  defp cmd_let(state, raw) do
+    case parse_let_binding(raw) do
+      {:ok, name, expr_src} ->
+        install_let_binding(state, name, expr_src)
+
+      {:error, msg} ->
+        render_error(state, msg)
+        state
+    end
+  end
+
+  defp parse_let_binding(raw) do
+    trimmed = String.trim(raw)
+
+    case String.split(trimmed, "=", parts: 2) do
+      [lhs, rhs] ->
+        name = String.trim(lhs)
+        expr = String.trim(rhs)
+
+        cond do
+          name == "" or expr == "" ->
+            {:error, "usage: :let name = expr"}
+
+          not valid_binding_ident?(name) ->
+            {:error, "invalid binding name #{inspect(name)}; use a lowercase identifier (letters, digits, '_')"}
+
+          true ->
+            {:ok, name, expr}
+        end
+
+      _ ->
+        {:error, "usage: :let name = expr"}
+    end
+  end
+
+  defp valid_binding_ident?(name) when is_binary(name) do
+    Regex.match?(~r/^[a-z_][A-Za-z0-9_]*$/, name)
+  end
+
+  defp install_let_binding(state, name, expr_src) do
+    source = "fn #{name}() -> Any = #{expr_src}"
+
+    entry = %{
+      key: {:fn, name, 0, :public},
+      kind: :fn,
+      label: "#{name}/0",
+      source: source
+    }
+
+    {candidate_defs, annotated} = Session.merge(state.defs, [entry])
+
+    case Session.compile(candidate_defs) do
+      {:ok, _module} ->
+        inferred = describe_let_type(state, expr_src)
+
+        Enum.each(annotated, fn
+          {:new, _} -> render_info(state, "pinned #{name}/0 : () -> #{inferred}")
+          {:redefined, _} -> render_info(state, "redefined #{name}/0 : () -> #{inferred}")
+        end)
+
+        %{state | defs: candidate_defs}
+
+      :empty ->
+        %{state | defs: candidate_defs}
+
+      {:error, reason} ->
+        render_error(state, format_error(reason))
+        state
+    end
+  end
+
+  defp describe_let_type(state, expr_src) do
+    with {:ok, ast} <- Cure.quote(expr_src),
+         {:ok, type} <-
+           Checker.infer_expr(ast, extra_bindings: Session.signatures(state.defs)) do
+      Cure.Types.Type.display(type)
+    else
+      _ -> "Any"
+    end
   end
 
   defp cmd_time(state, expr) do
@@ -960,6 +1144,8 @@ defmodule Cure.REPL do
     - `:defs` - list top-level definitions (`fn`, `type`, `rec`, ...) entered this session
     - `:reset` - forget all bindings, fresh session
     - `:fmt expr` - pretty-print `expr`
+    - `:let name = expr` - pin `expr` as a zero-arg session fn `name/0`
+      so it survives across prompts (call as `name()`)
     - `:history [n]` - print the last `n` (default 20) entries
     - `:search term` - non-interactive history grep
     - `:save path` - write the session transcript to `path`

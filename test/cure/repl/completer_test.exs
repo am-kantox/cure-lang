@@ -1,5 +1,7 @@
 defmodule Cure.REPL.CompleterTest do
-  use ExUnit.Case, async: true
+  # async: false -- the `:load path completion` block changes cwd to a
+  # scratch directory so it can assert against a known filesystem layout.
+  use ExUnit.Case, async: false
 
   alias Cure.REPL.Completer
 
@@ -26,6 +28,65 @@ defmodule Cure.REPL.CompleterTest do
   describe "keyword fallback" do
     test "partial Cure keyword completes uniquely" do
       assert {:unique, "match"} = Completer.complete("matc", 4)
+    end
+  end
+
+  describe ":load path completion" do
+    setup do
+      root = Path.join(System.tmp_dir!(), "cure-completer-#{System.unique_integer([:positive])}")
+      File.mkdir_p!(Path.join(root, "examples"))
+      File.write!(Path.join([root, "examples", "let_destructuring.cure"]), "")
+      File.write!(Path.join([root, "examples", "match_showcase.cure"]), "")
+      File.mkdir_p!(Path.join(root, "extra"))
+      File.write!(Path.join(root, "readme.md"), "")
+
+      cwd = File.cwd!()
+      File.cd!(root)
+
+      on_exit(fn ->
+        File.cd!(cwd)
+        File.rm_rf!(root)
+      end)
+
+      %{root: root}
+    end
+
+    test "nested path keeps the user's directory prefix on a unique match" do
+      buffer = ":load examples/let"
+
+      assert {:unique, ":load examples/let_destructuring.cure"} =
+               Completer.complete(buffer, String.length(buffer))
+    end
+
+    test "nested path surfaces prefixed candidates on :partial" do
+      buffer = ":load examples/"
+      result = Completer.complete(buffer, String.length(buffer))
+      assert {:partial, common, cands} = result
+      assert common == "examples/" or String.starts_with?(common, "examples/")
+      assert "examples/let_destructuring.cure" in cands
+      assert "examples/match_showcase.cure" in cands
+    end
+
+    test "bare token in cwd completes directories with a trailing slash" do
+      buffer = ":load exa"
+
+      assert {:unique, ":load examples/"} =
+               Completer.complete(buffer, String.length(buffer))
+    end
+
+    test "cwd-relative `./` prefix is preserved" do
+      buffer = ":load ./exa"
+
+      assert {:unique, ":load ./examples/"} =
+               Completer.complete(buffer, String.length(buffer))
+    end
+
+    test "multiple top-level candidates share the correct common prefix" do
+      buffer = ":load ex"
+      result = Completer.complete(buffer, String.length(buffer))
+      assert {:partial, "ex", cands} = result
+      assert "examples/" in cands
+      assert "extra/" in cands
     end
   end
 end
