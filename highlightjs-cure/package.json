@@ -1,0 +1,35 @@
+{
+  "name": "highlightjs-cure",
+  "version": "0.1.0",
+  "description": "Highlight.js language definition for the Cure programming language",
+  "keywords": [
+    "highlight.js",
+    "highlightjs",
+    "syntax-highlighting",
+    "cure",
+    "cure-lang",
+    "beam",
+    "erlang",
+    "fsm"
+  ],
+  "homepage": "https://cure-lang.org",
+  "bugs": "https://github.com/am-kantox/cure/issues",
+  "license": "MIT",
+  "author": "Aleksei Matiushkin <matiouchkine@gmail.com>",
+  "main": "src/languages/cure.js",
+  "type": "module",
+  "files": [
+    "src/languages/cure.js",
+    "dist/cure.min.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "highlight.js": "^11.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/am-kantox/cure.git",
+    "directory": "highlightjs-cure"
+  }
+}

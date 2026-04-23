@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>highlightjs-cure demo</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/github-dark.min.css">
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 920px; margin: 2em auto; padding: 0 1em; }
+    pre  { border-radius: 8px; padding: 1em; overflow-x: auto; }
+    h1, h2 { border-bottom: 1px solid #ccc; padding-bottom: 0.2em; }
+  </style>
+</head>
+<body>
+  <h1>highlightjs-cure demo</h1>
+  <p>Rendered with highlight.js 11 + the <code>cure</code> grammar.</p>
+
+  <h2>Hello world</h2>
+  <pre><code class="language-cure">mod Hello
+  ## Greet someone by name.
+  fn greet(name: String) -> String = "Hello, #{name}!"
+
+  fn main() -> Int = 42</code></pre>
+
+  <h2>FSM with lifecycle hooks</h2>
+  <pre><code class="language-cure">fsm Pipeline with Integer
+  Idle    --start-->   Setup
+  Setup   --init!-->   Ready
+  Ready   --poll?-->   Ready
+  Ready   --process--> Done
+  *       --abort-->   Failed
+  @timer 5000
+  on_transition
+    (:idle,  :start,   _payload, data) -> %[:ok, :setup,    data]
+    (:ready, :process, _payload, data) -> %[:ok, :done,     data]
+  on_enter
+    (:ready, _state) -> :ok
+    (_,      _state) -> :ok</code></pre>
+
+  <h2>Dependent types and typed holes</h2>
+  <pre><code class="language-cure">mod HolesDemo
+  ### Hole-driven development.
+  Holes surface in type errors so you can fill them in incrementally:
+    ?name -- named, carries a goal type
+    ??    -- anonymous, numbered ?_1, ?_2, ...
+  ###
+
+  fn double(n: Int) -> Int = n * 2
+
+  fn square_sketch(n: Int) -> Int = ?body
+
+  fn main() -> Int = double(square_sketch(5))</code></pre>
+
+  <h2>Numbers, strings, regexes</h2>
+  <pre><code class="language-cure">mod Literals
+  fn digits() -> Int = 1_000_000
+  fn hex() -> Int = 0xFF_FF
+  fn bin() -> Int = 0b1010_0101
+  fn pi() -> Float = 3.141_592
+  fn greeting(who: String) -> String = "Hi, #{who}!\n"
+  fn is_email(s: String) -> Bool = s ~= ~r/^[^@]+@[^@]+$/i</code></pre>
+
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js"></script>
+  <script src="../dist/cure.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
