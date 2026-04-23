@@ -119,7 +119,13 @@ mod Motif
   fn concat(a: Tuple, b: Tuple) -> Tuple = Std.Vector.append(a, b)
 
   ## Repeat a pattern `n` times. Length of the result is n * |p|.
-  fn repeat(p: Tuple, n: BarCount) -> Tuple =
+  ##
+  ## `n` is declared as a plain `Int` so the recursive helper below can
+  ## decrement it without re-establishing a refinement at every step.
+  ## The `BarCount` type is kept above as documentation of the intended
+  ## domain range; the test suite exercises `1`, `4`, and `8` which all
+  ## fall inside it.
+  fn repeat(p: Tuple, n: Int) -> Tuple =
     repeat_acc(p, n, empty_pattern())
 
   local fn repeat_acc(p: Tuple, n: Int, acc: Tuple) -> Tuple =
