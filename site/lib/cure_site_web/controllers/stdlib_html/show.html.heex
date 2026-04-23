@@ -102,7 +102,7 @@
             <%= for f <- public_functions(@module) do %>
               <li class="card bg-base-100 border border-base-300" id={"fn-" <> f.name}>
                 <div class="card-body p-4">
-                  <h3 class="text-base font-mono">
+                  <h3 class="text-sm font-mono">
                     <a href={"#fn-" <> f.name} class="opacity-40 hover:opacity-100 mr-1">#</a>
                     <span class="text-violet-500 font-semibold">fn</span>
                     {render_signature(f)}
