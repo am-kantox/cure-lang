@@ -6,6 +6,16 @@ mod Std.Supervisor
   ## delegate to `Cure.Sup.Runtime`, which wraps `:supervisor` with
   ## a tiny ETS registry so a tree can be reached by its compiled
   ## module atom without threading pids through user code.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Supervisor
+  ##
+  ## start(:"Cure.Sup.MyRoot")
+  ## which_children(:"Cure.Sup.MyRoot")
+  ## stop(:"Cure.Sup.MyRoot")
+  ## ```
 
   ## Start a compiled Cure supervisor module. Returns the top-level
   ## supervisor pid on success.

@@ -5,6 +5,25 @@ mod Std.Math
   ## handful of small integer helpers written in Cure. `Float`
   ## functions (`sqrt`, `pow`, `log`, ...) operate on IEEE-754
   ## doubles; integer helpers expect `Int`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Math
+  ##
+  ## abs(0 - 5)                              # => 5
+  ## sqrt(16.0)                              # => 4.0
+  ## pow(2.0, 10.0)                          # => 1024.0
+  ## clamp(42, 0, 10)                        # => 10
+  ## is_even(8)                              # => true
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Math
+  ##
+  ## # Compute the length of the hypotenuse of a 3-4 right triangle.
+  ## sqrt(pow(3.0, 2.0) + pow(4.0, 2.0))     # => 5.0
+  ## ```
 
   ## Absolute value. Implemented as `:erlang.abs/1`.
   @extern(:erlang, :abs, 1)

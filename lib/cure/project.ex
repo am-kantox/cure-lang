@@ -51,7 +51,8 @@ defmodule Cure.Project do
     source_paths: ["lib"],
     root: ".",
     application: nil,
-    release: nil
+    release: nil,
+    doc: nil
   ]
 
   @type dep :: %{name: String.t(), path: String.t()} | %{name: String.t(), git: String.t(), tag: String.t()}
@@ -655,11 +656,22 @@ defmodule Cure.Project do
 
   defp parse_toml(content) do
     lines = String.split(content, "\n")
-    acc = %{project: %{}, deps: [], compiler: [], application: %{}, release: %{}}
+
+    acc = %{
+      project: %{},
+      deps: [],
+      compiler: [],
+      application: %{},
+      release: %{},
+      doc: %{},
+      doc_groups: %{}
+    }
+
     parsed = parse_lines(lines, nil, acc)
 
     application_map = normalize_application(parsed.application)
     release_map = normalize_release(parsed.release)
+    doc_map = normalize_doc(parsed.doc, parsed.doc_groups)
 
     source_paths =
       case Map.get(parsed.project, "source_paths") do
@@ -674,7 +686,8 @@ defmodule Cure.Project do
       compiler_opts: parsed.compiler,
       source_paths: source_paths,
       application: application_map,
-      release: release_map
+      release: release_map,
+      doc: doc_map
     }
   end
 
@@ -762,6 +775,33 @@ defmodule Cure.Project do
     end
   end
 
+  defp apply_kv({:table, "doc"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} -> acc
+      {key, val} -> %{acc | doc: Map.put(acc.doc, key, parse_scalar(val))}
+    end
+  end
+
+  defp apply_kv({:table, "doc.groups_for_modules"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} ->
+        acc
+
+      {key, val} ->
+        group_name = strip_quotes(key)
+        members = parse_scalar(val)
+
+        members =
+          case members do
+            list when is_list(list) -> list
+            single when is_binary(single) -> [single]
+            _ -> []
+          end
+
+        %{acc | doc_groups: Map.put(acc.doc_groups, group_name, members)}
+    end
+  end
+
   defp apply_kv(_section, _line, acc), do: acc
 
   defp parse_kv(line) do
@@ -834,6 +874,27 @@ defmodule Cure.Project do
       applications: list_of_strings(Map.get(map, "applications", [])),
       vm_args: Map.get(map, "vm_args"),
       sys_config: Map.get(map, "sys_config")
+    }
+  end
+
+  @doc false
+  # Normalize the `[doc]` and `[doc.groups_for_modules]` TOML tables
+  # into a tidy map consumed by `Cure.Doc.HTMLGenerator`. Always
+  # returns a map (even when the TOML file had no `[doc]` section) so
+  # downstream code never has to nil-check.
+  def normalize_doc(map, groups)
+      when (is_map(map) or is_nil(map)) and (is_map(groups) or is_nil(groups)) do
+    map = map || %{}
+    groups = groups || %{}
+
+    %{
+      main: Map.get(map, "main"),
+      title: Map.get(map, "title"),
+      extras: list_of_strings(Map.get(map, "extras", [])),
+      logo: Map.get(map, "logo"),
+      source_url: Map.get(map, "source_url"),
+      source_ref: Map.get(map, "source_ref"),
+      groups_for_modules: Enum.map(groups, fn {name, members} -> {name, list_of_strings(members)} end)
     }
   end
 

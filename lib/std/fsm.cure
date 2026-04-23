@@ -6,6 +6,27 @@ mod Std.Fsm
   ## `Cure.FSM.Runtime`. Spawning captures the calling process as the
   ## FSM's `:caller` so lifecycle hooks can notify it via
   ## `Std.Fsm.notify/1`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Fsm
+  ##
+  ## # Assume a compiled `Cure.FSM.TrafficLight` with Red -> Green -> Yellow -> Red.
+  ## let pid = spawn(:"Cure.FSM.TrafficLight")
+  ## send(pid, :timer)
+  ## state(pid)                              # => :green
+  ## stop(pid)
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Fsm
+  ##
+  ## # Drive the FSM through a batch of events.
+  ## let pid = spawn_named(:"Cure.FSM.TrafficLight", "main")
+  ## send_batch(pid, [:timer, :timer, :timer])
+  ## history(pid)                            # => [:timer, :timer, :timer]
+  ## ```
 
   ## Spawn an FSM instance from a compiled FSM module atom. The
   ## spawning process is recorded as the FSM's caller automatically;

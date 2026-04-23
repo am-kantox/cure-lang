@@ -6,6 +6,25 @@ mod Std.String
   ## size; case conversion and trimming go through OTP's Unicode-aware
   ## `:string` module. Numeric parsers raise on malformed input,
   ## matching the underlying BIFs.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.String
+  ##
+  ## length("hello")                         # => 5
+  ## concat("foo", "bar")                    # => "foobar"
+  ## upcase("cafe")                          # => "CAFE"
+  ## split("a,b,c", ",")                     # => ["a", "b", "c"]
+  ## repeat("ab", 3)                         # => "ababab"
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.String
+  ##
+  ## from_int(42)                            # => "42"
+  ## to_int("  -17 " |> trim)                # => -17
+  ## ```
 
   # -- Basic operations -------------------------------------------------------
 

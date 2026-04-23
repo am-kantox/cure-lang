@@ -28,6 +28,14 @@ defmodule CureSiteWeb.Router do
     live "/playground", PlaygroundLive, :index
     live "/repl", ErrorLive, :index
     live "/errors/:status", ErrorLive, :index
+
+    # Auto-generated stdlib documentation (extracted from lib/std/*.cure
+    # at compile time by `CureSite.Stdlib`). The old monolithic
+    # `/standard-library` page redirects here for backward compatibility.
+    get "/stdlib", StdlibController, :index
+    get "/stdlib/:module", StdlibController, :show
+    get "/standard-library", RedirectController, :to_stdlib
+
     get "/:id", PageController, :show
   end
 

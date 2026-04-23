@@ -5,6 +5,14 @@ mod Std.Functor
   ## map. The built-in impl for `List` delegates to `Std.List.map/2`;
   ## additional impls can be declared for user-defined container
   ## types.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Functor
+  ##
+  ## fmap([1, 2, 3], fn(x) -> x + 10)        # => [11, 12, 13]
+  ## ```
 
   ## `Functor(F)` lifts an arbitrary function `A -> B` to an
   ## endo-transformation on a container `F`.

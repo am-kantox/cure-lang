@@ -5,6 +5,25 @@ mod Std.Match
   ## serves as a smoke test for the pattern engine. They also double
   ## as lightweight convenience utilities when you want a single-call
   ## `unwrap`, `head/tail`, etc.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Match
+  ##
+  ## fst(%[42, "x"])                         # => 42
+  ## head_tail([1, 2, 3], 0)                 # => %[1, [2, 3]]
+  ## head_tail([], 0)                        # => %[0, []]
+  ## first_two([1, 2, 3, 4], 0)              # => %[1, 2, [3, 4]]
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Match
+  ##
+  ## unwrap_ok(Ok(42), 0)                    # => 42
+  ## unwrap_some(Some("ok"), "fallback")     # => "ok"
+  ## unwrap_some(None(), "fallback")         # => "fallback"
+  ## ```
 
   # -- Pair / Tuple -----------------------------------------------------------
 

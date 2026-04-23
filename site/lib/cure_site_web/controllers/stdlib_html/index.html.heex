@@ -1,0 +1,65 @@
+<Layouts.app flash={@flash} current_path={@conn.request_path}>
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+    <aside class="order-2 md:order-1">
+      <div class="card bg-base-100 border border-base-300 rounded-box md:sticky md:top-20">
+        <div class="card-body p-4">
+          <h2 class="card-title text-sm uppercase tracking-wider opacity-70">Modules</h2>
+          <input
+            type="search"
+            id="stdlib-filter"
+            placeholder="Filter (press /)"
+            class="input input-sm input-bordered w-full"
+          />
+          <%= for {group, mods} <- @groups do %>
+            <section class="mt-3">
+              <h3 class="text-xs uppercase opacity-60 mb-1">{group}</h3>
+              <ul class="menu menu-sm p-0">
+                <%= for m <- mods do %>
+                  <li>
+                    <a href={~p"/stdlib/#{m.module}"} class="truncate">{m.module}</a>
+                  </li>
+                <% end %>
+              </ul>
+            </section>
+          <% end %>
+        </div>
+      </div>
+    </aside>
+
+    <article class="order-1 md:order-2 prose-cure">
+      <header class="mb-6">
+        <h1 class="text-3xl font-bold">Standard Library</h1>
+        <p class="text-base-content/70">
+          Self-hosted in Cure, extracted live from <code>lib/std/</code>
+          at compile time. {length(@modules)} modules total.
+        </p>
+      </header>
+
+      <%= for {group, mods} <- @groups do %>
+        <section class="mb-8">
+          <h2 class="text-xl font-semibold border-b border-base-300 pb-2 mb-4">{group}</h2>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <%= for m <- mods do %>
+              <a
+                href={~p"/stdlib/#{m.module}"}
+                class="card bg-base-100 border border-base-300 hover:border-primary transition-colors"
+              >
+                <div class="card-body p-4">
+                  <h3 class="card-title text-base">{m.module}</h3>
+                  <p class="text-sm text-base-content/70 line-clamp-3">
+                    {first_line(m.module_doc)}
+                  </p>
+                  <div class="card-actions justify-end">
+                    <span class="badge badge-ghost badge-sm">
+                      {length(m.functions || [])} fns
+                    </span>
+                  </div>
+                </div>
+              </a>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+    </article>
+  </div>
+</Layouts.app>

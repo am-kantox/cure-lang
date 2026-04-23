@@ -6,6 +6,16 @@ mod Std.App
   ## delegate to `Cure.App.Builtins`, which in turn wraps the Erlang
   ## `:application` BIFs, so Cure code sees plain atoms and values
   ## rather than OTP's tagged-tuple return shapes.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.App
+  ##
+  ## ensure_all_started(:cure)
+  ## put_env(:my_app, :port, 4000)
+  ## get_env(:my_app, :port, 8080)           # => 4000
+  ## ```
 
   ## Ensure the application and all of its dependencies are started.
   ## Returns `:ok` whether or not the application was already running.

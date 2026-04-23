@@ -4,6 +4,25 @@ mod Std.Map
   ## Thin wrapper around Erlang's `:maps` module with one Cure-level
   ## default-aware getter (`get_or/3`) and trivial helpers
   ## (`is_empty/1`, `count/1`).
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Map
+  ##
+  ## let m = put(:age, 42, put(:name, "Ada", new()))
+  ## size(m)                                  # => 2
+  ## get(:name, m)                            # => "Ada"
+  ## get_or(:height, m, 0)                    # => 0
+  ## ```
+  ##
+  ## ```cure
+  ## # Right-biased merge: values in the second map win.
+  ## let a = from_list([%[:x, 1], %[:y, 2]])
+  ## let b = from_list([%[:y, 20], %[:z, 30]])
+  ## merge(a, b)
+  ## # => #{x: 1, y: 20, z: 30}
+  ## ```
 
   ## New empty map.
   @extern(:maps, :new, 0)

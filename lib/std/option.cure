@@ -5,6 +5,25 @@ mod Std.Option
   ## callers can `use Std.Option` without pulling in the rest of the
   ## core combinators. `Option(T)` lowers to `{:some, v}` / `{:none}`
   ## on the BEAM.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Option
+  ##
+  ## some(3)                                 # => Some(3)
+  ## map(some(3), fn(x) -> x * 2)            # => Some(6)
+  ## unwrap(none(), 0)                       # => 0
+  ## filter(some(3), fn(x) -> x > 5)         # => None()
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Option
+  ##
+  ## # Chain two Options into one.
+  ## zip(some("Ada"), some(1815))            # => Some(%["Ada", 1815])
+  ## zip(some("Ada"), none())                # => None()
+  ## ```
 
   ## Build a `Some(value)` Option.
   fn some(value: T) -> Option(T) = Some(value)

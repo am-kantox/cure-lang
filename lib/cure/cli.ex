@@ -68,7 +68,10 @@ defmodule Cure.CLI do
           strict: :boolean,
           registry: :string,
           include_erts: :boolean,
-          overwrite: :boolean
+          overwrite: :boolean,
+          title: :string,
+          main: :string,
+          extras: :keep
         ],
         aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
       )
@@ -698,10 +701,31 @@ defmodule Cure.CLI do
   end
 
   # -- doc ---------------------------------------------------------------------
-
+  #
+  # `cure doc` reads `Cure.toml`'s optional `[doc]` table, lets the
+  # user override the most interesting fields (`--title`, `--main`,
+  # `--extras`) from the command line, then hands everything to the
+  # generator. When `Cure.toml` is absent we fall back to sensible
+  # defaults (title = "Cure Documentation", no extras, no groups).
   defp cmd_doc(paths, opts) do
     output_dir = Keyword.get(opts, :output_dir, "_build/cure/doc")
-    title = Keyword.get(opts, :title, "Cure Documentation")
+    project_root = File.cwd!()
+    {project_doc, project_title} = load_doc_config(project_root)
+
+    cli_extras = Keyword.get_values(opts, :extras)
+
+    doc_config =
+      project_doc
+      |> Map.put(
+        :extras,
+        if(cli_extras == [], do: Map.get(project_doc, :extras, []), else: cli_extras)
+      )
+      |> Map.put(:main, Keyword.get(opts, :main, Map.get(project_doc, :main)))
+
+    title =
+      Keyword.get(opts, :title) ||
+        Map.get(project_doc, :title) ||
+        project_title
 
     cure_files =
       case paths do
@@ -737,8 +761,38 @@ defmodule Cure.CLI do
           end
         end)
 
-      Cure.Doc.HTMLGenerator.generate(modules, output_dir, title: title)
-      info("Documentation written to #{output_dir}/ (#{length(modules)} modules)")
+      Cure.Doc.HTMLGenerator.generate(modules, output_dir,
+        title: title,
+        doc_config: doc_config,
+        project_root: project_root,
+        cure_version: Cure.version()
+      )
+
+      extras_count = length(Map.get(doc_config, :extras, []))
+
+      info("Documentation written to #{output_dir}/ (#{length(modules)} modules, #{extras_count} extras)")
+    end
+  end
+
+  # Load the `[doc]` table from `Cure.toml`, returning `{doc_map,
+  # fallback_title}`. The fallback title is derived from `[project]`
+  # so a bare `Cure.toml` still produces a branded docset.
+  defp load_doc_config(root) do
+    case Cure.Project.load(root) do
+      {:ok, project} ->
+        title =
+          case project.name do
+            n when is_binary(n) and n != "" ->
+              String.capitalize(n) <> " Documentation"
+
+            _ ->
+              "Cure Documentation"
+          end
+
+        {project.doc, title}
+
+      _ ->
+        {%{}, "Cure Documentation"}
     end
   end
 

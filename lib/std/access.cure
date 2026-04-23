@@ -21,6 +21,27 @@ mod Std.Access
   ##    `put_in/3`, `update_in/3`, `get_and_update_in/3`,
   ##    `pop_in/2`) that accept a list of `Accessor` values and walk
   ##    nested data structures.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Access
+  ##
+  ## let m = Std.Map.from_list([%[:user, Std.Map.from_list([%[:name, "Ada"]])]])
+  ## get_in(m, [key(:user), key(:name)])      # => "Ada"
+  ## put_in(m, [key(:user), key(:name)], "Grace")
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Access
+  ##
+  ## # Bump every score in a list of users.
+  ## let users = [
+  ##   Std.Map.from_list([%[:name, "Ada"],   %[:score, 10]]),
+  ##   Std.Map.from_list([%[:name, "Grace"], %[:score, 20]])
+  ## ]
+  ## update_in(users, [all(), key(:score)], fn(s) -> s + 1)
+  ## ```
 
   # -- FFI primitives --------------------------------------------------------
 

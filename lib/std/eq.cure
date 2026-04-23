@@ -4,6 +4,16 @@ mod Std.Eq
   ## The `Eq(T)` protocol mirrors the built-in `==` operator but can
   ## be implemented for user-defined types so generic algorithms stay
   ## polymorphic. `ne/2` is derived from `eq/2`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Eq
+  ##
+  ## eq(1, 1)                                # => true
+  ## ne("a", "b")                            # => true
+  ## eq(:ok, :ok)                            # => true
+  ## ```
 
   ## Equality between two `T` values.
   proto Eq(T)

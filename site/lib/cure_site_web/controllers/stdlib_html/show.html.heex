@@ -1,0 +1,129 @@
+<Layouts.app flash={@flash} current_path={@conn.request_path}>
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+    <aside class="order-2 md:order-1">
+      <div class="card bg-base-100 border border-base-300 rounded-box md:sticky md:top-20">
+        <div class="card-body p-4">
+          <h2 class="card-title text-sm uppercase tracking-wider opacity-70">Modules</h2>
+          <input
+            type="search"
+            id="stdlib-filter"
+            placeholder="Filter (press /)"
+            class="input input-sm input-bordered w-full"
+          />
+          <%= for {group, mods} <- @groups do %>
+            <section class="mt-3">
+              <h3 class="text-xs uppercase opacity-60 mb-1">{group}</h3>
+              <ul class="menu menu-sm p-0">
+                <%= for m <- mods do %>
+                  <li>
+                    <a
+                      href={~p"/stdlib/#{m.module}"}
+                      class={[
+                        "truncate",
+                        m.module == @module.module && "menu-active"
+                      ]}
+                    >
+                      {m.module}
+                    </a>
+                  </li>
+                <% end %>
+              </ul>
+            </section>
+          <% end %>
+        </div>
+      </div>
+    </aside>
+
+    <article class="order-1 md:order-2 prose-cure">
+      <header class="mb-6">
+        <div class="flex items-center justify-between gap-4">
+          <h1 class="text-3xl font-bold">{@module.module}</h1>
+          <a
+            href={CureSite.Stdlib.source_url(@module)}
+            target="_blank"
+            rel="noopener"
+            class="link link-hover text-xs opacity-70"
+          >
+            View source &rarr;
+          </a>
+        </div>
+      </header>
+
+      <%= if @module.module_doc do %>
+        <section class="cure-doc-summary mb-6">
+          {render_doc(@module.module_doc)}
+        </section>
+      <% end %>
+
+      <%= if (@module.types || []) != [] do %>
+        <section class="mb-8">
+          <h2 class="text-xl font-semibold border-b border-base-300 pb-2 mb-4">Types</h2>
+          <ul class="space-y-2">
+            <%= for t <- @module.types do %>
+              <li class="card bg-base-100 border border-base-300">
+                <div class="card-body p-4" id={"type-" <> t.name}>
+                  <code class="text-sm">type {t.name}{variants_suffix(t)}</code>
+                  <%= if t.doc && t.doc != "" do %>
+                    <div class="text-sm text-base-content/80 mt-1">
+                      {render_doc(t.doc)}
+                    </div>
+                  <% end %>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </section>
+      <% end %>
+
+      <%= if (@module.protocols || []) != [] do %>
+        <section class="mb-8">
+          <h2 class="text-xl font-semibold border-b border-base-300 pb-2 mb-4">Protocols</h2>
+          <ul class="space-y-2">
+            <%= for p <- @module.protocols do %>
+              <li class="card bg-base-100 border border-base-300">
+                <div class="card-body p-4" id={"proto-" <> p.name}>
+                  <code class="text-sm">proto {p.name}{proto_params_suffix(p)}</code>
+                  <%= if p.doc && p.doc != "" do %>
+                    <div class="text-sm text-base-content/80 mt-1">
+                      {render_doc(p.doc)}
+                    </div>
+                  <% end %>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </section>
+      <% end %>
+
+      <%= if public_functions(@module) != [] do %>
+        <section>
+          <h2 class="text-xl font-semibold border-b border-base-300 pb-2 mb-4">Functions</h2>
+          <ul class="space-y-3">
+            <%= for f <- public_functions(@module) do %>
+              <li class="card bg-base-100 border border-base-300" id={"fn-" <> f.name}>
+                <div class="card-body p-4">
+                  <h3 class="text-base font-mono">
+                    <a href={"#fn-" <> f.name} class="opacity-40 hover:opacity-100 mr-1">#</a>
+                    <span class="text-violet-500 font-semibold">fn</span>
+                    {render_signature(f)}
+                    <%= if f.extern do %>
+                      <span class="badge badge-warning badge-sm ml-2">extern</span>
+                    <% end %>
+                    <%= if f.clauses > 1 do %>
+                      <span class="badge badge-info badge-sm ml-1">{f.clauses} clauses</span>
+                    <% end %>
+                  </h3>
+                  <%= if f.doc && f.doc != "" do %>
+                    <div class="text-sm text-base-content/80 mt-2">
+                      {render_doc(f.doc)}
+                    </div>
+                  <% end %>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </section>
+      <% end %>
+    </article>
+  </div>
+</Layouts.app>

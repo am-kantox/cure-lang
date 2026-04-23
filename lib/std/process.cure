@@ -8,6 +8,24 @@ mod Std.Process
   ## The monitor reference returned by `monitor/1` uses the `Ref`
   ## primitive type introduced for typed concurrency; see
   ## `docs/TYPE_SYSTEM.md`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Process
+  ##
+  ## let me = self()
+  ## is_alive(me)                            # => true
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Process
+  ##
+  ## # Monitor a child and wait for its down message.
+  ## let child = Std.Actor.spawn(:"Cure.Actor.Echo")
+  ## let ref   = monitor(child)
+  ## trap_exit(true)
+  ## ```
 
   ## Link the calling process to `pid`. Exits from either side
   ## propagate as `:EXIT` messages.

@@ -66,6 +66,11 @@ defmodule Cure.MixProject do
       {:makeup, "~> 1.2"},
       {:makeup_cure, "~> 0.1"},
 
+      # Markdown -- pure-Elixir, NIF-free renderer used by `cure doc`,
+      # `Cure.Doc.Markdown`, and the REPL helpers. `:md` is safe inside
+      # the escript because it has no dynamically-loaded native code.
+      {:md, "~> 0.12"},
+
       # Observability -- optional, used by Cure.Telemetry when loaded
       {:telemetry, "~> 1.3", optional: true},
 

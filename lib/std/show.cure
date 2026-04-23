@@ -7,6 +7,17 @@ mod Std.Show
   ## debugging and log output. Strings are wrapped in quotes, atoms
   ## are prefixed with `:`; callers that want raw text should use
   ## `Std.String.from_*` instead.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Show
+  ##
+  ## show(42)                                # => "42"
+  ## show("hi")                              # => "\"hi\""
+  ## show(:ok)                               # => ":ok"
+  ## show_line(true)                         # => "true\n"
+  ## ```
 
   ## Convert a value of any `Show`-able type to its string representation.
   proto Show(T)

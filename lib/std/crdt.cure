@@ -22,6 +22,26 @@ mod Std.CRDT
   ##
   ## All CRDTs carry a `node_id` to tag mutations so merges can
   ## reconcile conflicting updates deterministically.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.CRDT
+  ##
+  ## # Two replicas tick concurrently; merge converges without loss.
+  ## let a0 = g_increment(g_empty(), :n1, 3)
+  ## let b0 = g_increment(g_empty(), :n2, 2)
+  ## g_value(g_merge(a0, b0))                # => 5
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.CRDT
+  ##
+  ## # Add-then-remove is commutative under concurrent updates.
+  ## let s0 = or_add(or_empty(), :n1, "x")
+  ## let s1 = or_add(s0, :n1, "y")
+  ## or_value(or_remove(s1, "x"))            # => ["y"]
+  ## ```
 
   ## Grow-only counter. Per-replica counts are summed on read.
   rec GCounter

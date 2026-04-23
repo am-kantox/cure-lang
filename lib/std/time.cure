@@ -18,6 +18,24 @@ mod Std.Time
   ## `lib/cure/stdlib/cure_std_time.ex`). Every external call here
   ## maps directly to a one-line wrapper in that module, so the
   ## surface remains small and auditable.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Time
+  ##
+  ## let origin = of_unix(0)
+  ## format_iso8601(origin)                   # => "1970-01-01T00:00:00Z"
+  ## add(origin, seconds(60))                 # one minute after the epoch
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Time
+  ##
+  ## match parse_iso8601("2024-05-01T12:00:00Z")
+  ##   Ok(i)    -> to_unix(i)                 # => 1714564800
+  ##   Error(_) -> 0
+  ## ```
 
   ## A point in time, stored as Unix epoch microseconds.
   rec Instant

@@ -3,6 +3,17 @@ mod Std.Ord
   ##
   ## The `compare/2` callback returns one of `:lt`, `:eq`, `:gt`.
   ## Derived `lt`, `le`, `gt`, `ge` helpers build on that.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Ord
+  ##
+  ## compare(1, 2)                           # => :lt
+  ## lt(1, 2)                                # => true
+  ## ge(3, 3)                                # => true
+  ## compare("ada", "grace")                 # => :lt
+  ## ```
 
   ## Total ordering over `T`.
   proto Ord(T)

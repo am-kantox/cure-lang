@@ -4,6 +4,26 @@ mod Std.Result
   ## Parallel to the Result half of `Std.Core`, kept separate so that
   ## callers can import it without dragging in every combinator.
   ## `Result(T, E)` lowers to `{:ok, v}` / `{:error, e}`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Result
+  ##
+  ## ok(42)
+  ##   |> map(fn(x) -> x * 2)
+  ##   |> and_then(fn(x) -> if x > 0 then ok(x) else error(:neg))
+  ##   |> unwrap(0)                          # => 84
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Result
+  ##
+  ## # Recover from errors and collapse nested Results.
+  ## or_else(error(:oops), fn(_) -> ok(0))   # => Ok(0)
+  ## flatten(ok(ok(7)))                      # => Ok(7)
+  ## flatten(ok(error(:inner)))              # => Error(:inner)
+  ## ```
 
   ## Build an `Ok(value)` Result.
   fn ok(value: T) -> Result(T, E) = Ok(value)

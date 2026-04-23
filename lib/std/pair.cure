@@ -5,6 +5,17 @@ mod Std.Pair
   ## `:erlang.element/2`. Most helpers round-trip cleanly with
   ## `Std.Vector`, which stores its length/elements in a three-element
   ## tuple.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Pair
+  ##
+  ## let p = %[1, "one"]
+  ## first(p)                                # => 1
+  ## swap(p)                                 # => %["one", 1]
+  ## map_first(p, fn(x) -> x * 10)           # => %[10, "one"]
+  ## ```
 
   ## 1-based BEAM tuple element accessor; delegates to
   ## `:erlang.element/2`. `index` is 1-indexed, matching Erlang.

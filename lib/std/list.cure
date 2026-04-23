@@ -5,6 +5,36 @@ mod Std.List
   ## possible. Helpers come in five flavours: queries, access,
   ## construction, transformations, and search. Everything is
   ## polymorphic in the element type `T`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.List
+  ##
+  ## let xs = [1, 2, 3, 4, 5]
+  ## length(xs)                                # => 5
+  ## map(xs, fn(x) -> x * x)                   # => [1, 4, 9, 16, 25]
+  ## filter(xs, fn(x) -> x % 2 == 0)           # => [2, 4]
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.List
+  ##
+  ## # Sum of squares of positive integers up to 10
+  ## let r = range_list(1, 11)                 # [1..10]
+  ##           |> filter(fn(x) -> x > 0)
+  ##           |> map(fn(x) -> x * x)
+  ##           |> sum
+  ## # r => 385
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.List
+  ##
+  ## match uncons([1, 2, 3])
+  ##   %[h, t] -> Std.Io.print_int(h)          # prints 1
+  ##   _       -> Std.Io.println("empty")
+  ## ```
 
   # -- Basic queries ----------------------------------------------------------
 

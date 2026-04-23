@@ -4,6 +4,23 @@ mod Std.Json
   ## Runtime companion to the v0.21.0 `@derive(JSON)` extension. The
   ## decoder returns a `Std.Json.Value` ADT; encoders walk the ADT
   ## back out to a JSON string.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Json
+  ##
+  ## match decode("{\"x\": 1}")
+  ##   Ok(v)    -> encode(v)                 # => "{\"x\":1}"
+  ##   Error(_) -> ""
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Json
+  ##
+  ## let body = Obj([pair("status", Str("ok")), pair("count", num_of_int(3))])
+  ## encode(body)                            # => {"status":"ok","count":3}
+  ## ```
 
   ## Key/value pair inside a JSON object. Named rather than using a
   ## raw tuple type so the ADT surface stays simple.

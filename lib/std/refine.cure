@@ -5,6 +5,20 @@ mod Std.Refine
   ## runtime predicates. The aliases are *type-level* constraints
   ## used in function signatures; the predicates are plain `Bool`-
   ## returning helpers for use at call sites.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Refine
+  ##
+  ## # Signature uses the refinement type alias; the value is an
+  ## # ordinary integer satisfying the constraint.
+  ## fn decrement(n: Positive) -> NonNegative = n - 1
+  ##
+  ## positive?(3)                            # => true
+  ## percentage?(42)                         # => true
+  ## probability?(0.9)                       # => true
+  ## ```
 
   ## Non-zero integer (`Int` minus zero).
   type NonZero = {x: Int | x != 0}

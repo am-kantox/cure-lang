@@ -6,6 +6,15 @@ proof Std.Proof
   ## that `Std.Equal.refl/1` also returns. A `proof` container is
   ## the same as a `mod` container except that the type checker
   ## elaborates its contents in definitional style.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## # Every law here is a value of an `Eq` type that the type
+  ## # checker accepts when its two sides reduce to the same term.
+  ## plus_zero(42)                           # : Eq(Int, 42, 42)
+  ## append_nil([1, 2, 3])                   # : Eq(List(Int), [1,2,3], [1,2,3])
+  ## ```
 
   # -- Reflexivity and basic arithmetic laws ---------------------------------
 

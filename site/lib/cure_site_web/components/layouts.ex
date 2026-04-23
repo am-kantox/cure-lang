@@ -87,7 +87,7 @@ defmodule CureSiteWeb.Layouts do
             Apps
           </a>
           <a href={~p"/protocols"} class={nav_class(@current_path, ~p"/protocols")}>Protocols</a>
-          <a href={~p"/standard-library"} class={nav_class(@current_path, ~p"/standard-library")}>
+          <a href={~p"/stdlib"} class={nav_class(@current_path, ~p"/stdlib")}>
             Stdlib
           </a>
           <a href={~p"/tooling"} class={nav_class(@current_path, ~p"/tooling")}>Tooling</a>
@@ -137,10 +137,7 @@ defmodule CureSiteWeb.Layouts do
         <a href={~p"/protocols"} class={mobile_nav_class(@current_path, ~p"/protocols")}>
           Protocols
         </a>
-        <a
-          href={~p"/standard-library"}
-          class={mobile_nav_class(@current_path, ~p"/standard-library")}
-        >
+        <a href={~p"/stdlib"} class={mobile_nav_class(@current_path, ~p"/stdlib")}>
           Standard Library
         </a>
         <a href={~p"/tooling"} class={mobile_nav_class(@current_path, ~p"/tooling")}>Tooling</a>

@@ -4,6 +4,29 @@ mod Std.Test
   ## Assertions raise an Erlang error with a descriptive atom on
   ## failure (`:assertion_failed`, `:not_equal`, etc.). The
   ## property-based helpers pair with `Std.Gen` generators.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## mod MyTest
+  ##   use Std.Test
+  ##
+  ##   fn test_sanity() -> Atom =
+  ##     assert_eq(1 + 1, 2)
+  ## ```
+  ##
+  ## ```cure
+  ## # Property: reversing a list twice is the identity.
+  ## use Std.Test
+  ## use Std.Gen
+  ## use Std.List
+  ##
+  ## let prop = fn(xs: List(Int)) -> Bool =
+  ##   reverse(reverse(xs)) == xs
+  ##
+  ## forall_default(fn(_) -> list_int(10, 0, 100), prop)
+  ## # => :ok
+  ## ```
 
   ## Private: raise `reason` as an Erlang error.
   @extern(:erlang, :error, 1)

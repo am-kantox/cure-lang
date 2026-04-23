@@ -3,15 +3,28 @@ mod Std.Http
   ##
   ## Thin wrapper over OTP's `:httpc`; no external dependencies.
   ## Produces `Result(Response, HttpError)` so callers can compose
-  ## HTTP with regular `Result`-chains:
-  ##
-  ## ```
-  ## match Std.Http.get("https://example.com/api")
-  ##   Ok(resp)   -> ... resp.body ...
-  ##   Error(e)   -> ... handle ...
-  ## ```
+  ## HTTP with regular `Result`-chains.
   ##
   ## `Response.headers` is a list of `(name, value)` string pairs.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Http
+  ##
+  ## match get("https://example.com/api")
+  ##   Ok(resp)   -> resp.status             # => 200
+  ##   Error(_)   -> 0
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Http
+  ##
+  ## # POST a JSON payload.
+  ## let headers = [("Content-Type", "application/json")]
+  ## let body    = <<"{\"hello\":\"world\"}">>
+  ## post("https://example.com/api", headers, body)
+  ## ```
 
   ## HTTP response: status code, response headers, and body.
   rec Response

@@ -3,6 +3,16 @@ mod Std.System
   ##
   ## Light wrappers around `:erlang` and `:os` BIFs. `exit/1` halts
   ## the whole BEAM node -- use with care.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.System
+  ##
+  ## cpu_count()                             # e.g. 8
+  ## timestamp_ms() > 0                      # => true
+  ## node() == :nonode@nohost                # true without -sname
+  ## ```
 
   ## Native monotonic-time reading in implementation-defined units.
   ## Use for measuring durations (`a - b` is meaningful); not

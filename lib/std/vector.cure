@@ -5,6 +5,17 @@ mod Std.Vector
   ## `%[:vector, length, list]`. The length is tracked at the type
   ## level for dependent-type verification; at runtime it is a plain
   ## `Int` kept in sync with the underlying list.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Vector
+  ##
+  ## let v = from_list([1, 2, 3])
+  ## length(v)                               # => 3
+  ## head(cons(0, v))                        # => 0
+  ## to_list(map(v, fn(x) -> x * x))         # => [1, 4, 9]
+  ## ```
 
   ## Empty vector.
   fn empty() -> Tuple = %[:vector, 0, []]

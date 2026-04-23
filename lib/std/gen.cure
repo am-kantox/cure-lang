@@ -5,6 +5,22 @@ mod Std.Gen
   ## value on every call. Randomness is delegated to Erlang's `:rand`
   ## module. Used in tandem with `Std.Test.forall/3` to drive
   ## property-based tests, with optional shrinkers below.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Gen
+  ##
+  ## let g = fn(_) -> int_in(1, 100)
+  ## Std.Test.forall_default(g, fn(x) -> x > 0)   # => :ok
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Gen
+  ##
+  ## # Generate a list of 0..10 small ints.
+  ## list_int(10, 0, 5)                           # e.g. [3, 0, 2, 5]
+  ## ```
   # -- Primitive randomness ---------------------------------------------------
 
   ## Private wrapper over `:rand.uniform/1`; returns an integer in

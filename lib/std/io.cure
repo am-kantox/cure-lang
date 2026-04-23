@@ -4,6 +4,23 @@ mod Std.Io
   ## Wall-clock stdout primitives. Every entry that actually writes
   ## carries the `! Io` effect so callers are forced to declare it
   ## in their own signatures.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Io
+  ##
+  ## println("Hello, Cure!")                # Hello, Cure!
+  ## print_int(42)                          # 42
+  ## print_float(3.14)                      # 3.14
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Io
+  ##
+  ## fn greet(name: String) -> Atom ! Io =
+  ##   println("Hello, " <> name <> "!")
+  ## ```
 
   ## Print a string to stdout without a trailing newline.
   ## Wraps `:io.put_chars/1`.

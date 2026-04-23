@@ -14,6 +14,25 @@ mod Std.Regex
   ## at build time rather than at call time.
   ##
   ## The runtime module is `:cure_std_regex`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Regex
+  ##
+  ## let r = compile_bang("h[eo]llo")
+  ## is_match(r, "hello")                      # => true
+  ## is_match(r, "yellow")                     # => false
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Regex
+  ##
+  ## let digits = compile_bang("[0-9]+")
+  ## scan(digits, "ada 1815, lovelace 1852")
+  ## # => [Matched{whole: "1815", groups: []}, Matched{whole: "1852", groups: []}]
+  ## replace(digits, "ada 1815", "####")      # => "ada ####"
+  ## ```
 
   ## Opaque compiled regex handle.
   rec Regex

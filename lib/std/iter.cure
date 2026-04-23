@@ -10,6 +10,23 @@ mod Std.Iter
   ## An iterator is a zero-argument lambda returning either
   ## `Some(%[element, next_iter])` or `None()`. That shape is close to
   ## Elixir's `Stream` and lets the caller resume after every step.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Iter
+  ##
+  ## # Sum of the integers in [1, 10] via the iterator API.
+  ## fold(range(1, 10), 0, fn(x) -> fn(acc) -> acc + x)
+  ## # => 55
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Iter
+  ##
+  ## # Take at most 3 elements from a potentially infinite iterator.
+  ## take(from_list([1, 2, 3, 4, 5]), 3)      # => [1, 2, 3]
+  ## ```
   # -- Constructors -----------------------------------------------------------
 
   ## An iterator that is immediately exhausted.

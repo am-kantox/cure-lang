@@ -6,6 +6,26 @@ mod Std.Core
   ## `Result(T, E)` and `Option(T)` lower to `{:ok, v}` / `{:error, e}`
   ## and `{:some, v}` / `{:none}` respectively so they round-trip with
   ## Elixir and Erlang without wrappers.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Core
+  ##
+  ## let inc    = fn(x: Int) -> Int = x + 1
+  ## let double = fn(x: Int) -> Int = x * 2
+  ## let pipeline = compose(double, inc)
+  ## pipeline(3)                       # => 8
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Core
+  ##
+  ## ok(42)
+  ##   |> map_ok(fn(x) -> x * 2)
+  ##   |> and_then(fn(x) -> if x > 0 then ok(x) else error(:neg))
+  ##   |> unwrap_ok(0)                 # => 84
+  ## ```
 
   # -- Combinators ------------------------------------------------------------
 
@@ -14,6 +34,14 @@ mod Std.Core
 
   ## Right-to-left function composition.
   ## `compose(f, g)(x)` is `f(g(x))`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## let add1 = fn(x: Int) -> Int = x + 1
+  ## let neg  = fn(x: Int) -> Int = 0 - x
+  ## compose(neg, add1)(3)             # => -4
+  ## ```
   fn compose(f: B -> C, g: A -> B) -> (A -> C) =
     fn(x) -> f(g(x))
 
@@ -109,6 +137,13 @@ mod Std.Core
       Error(e) -> e
 
   ## Map over the `Ok` arm; passes `Error` through unchanged.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## map_ok(ok(3),     fn(x) -> x * x) # => Ok(9)
+  ## map_ok(error(:x), fn(x) -> x * x) # => Error(:x)
+  ## ```
   fn map_ok(result: Result(T, E), f: T -> U) -> Result(U, E) =
     match result
       Ok(v) -> Ok(f(v))
@@ -122,6 +157,14 @@ mod Std.Core
 
   ## Monadic bind over the `Ok` arm; short-circuits on `Error`.
   ## Chain fallible steps as `and_then(result, f)`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## let parse_int = fn(s: String) -> Result(Int, Atom) = ok(Std.String.to_int(s))
+  ## and_then(ok("42"), parse_int)     # => Ok(42)
+  ## and_then(error(:x), parse_int)    # => Error(:x)
+  ## ```
   fn and_then(result: Result(T, E), f: T -> Result(U, E)) -> Result(U, E) =
     match result
       Ok(v) -> f(v)
@@ -163,6 +206,13 @@ mod Std.Core
       None() -> default
 
   ## Functorial map on `Option`. `None()` is preserved.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## map_option(some(3), fn(x) -> x * 2)  # => Some(6)
+  ## map_option(none(),  fn(x) -> x * 2)  # => None()
+  ## ```
   fn map_option(opt: Option(T), f: T -> U) -> Option(U) =
     match opt
       Some(v) -> Some(f(v))

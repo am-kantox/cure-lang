@@ -3,6 +3,25 @@ mod Std.Set
   ##
   ## Every function delegates to `Std.Map` / `Std.List`, keeping the
   ## implementation trivial and the representation directly inspectable.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Set
+  ##
+  ## let s = add(:x, add(:y, new()))
+  ## member(:x, s)                          # => true
+  ## size(s)                                # => 2
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Set
+  ##
+  ## let a = from_list([1, 2, 3])
+  ## let b = from_list([2, 3, 4])
+  ## to_list(intersection(a, b))            # => [2, 3]
+  ## to_list(difference(a, b))              # => [1]
+  ## ```
 
   ## New empty set.
   fn new() -> Map = Std.Map.new()

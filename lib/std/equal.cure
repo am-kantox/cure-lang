@@ -9,6 +9,15 @@ mod Std.Equal
   ## All bindings here are erased at runtime: an `Eq` value lives
   ## only in the type checker. Every function returns the runtime
   ## atom `:cure_refl`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Equal
+  ##
+  ## refl(42)                                # : Eq(Int, 42, 42)
+  ## trans(refl(1), refl(1))                 # : Eq(Int, 1, 1)
+  ## ```
 
   ## Reflexivity: `x` equals itself. Produces the runtime witness
   ## `:cure_refl` with type `Eq(T, x, x)`.

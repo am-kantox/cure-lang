@@ -5,6 +5,25 @@ mod Std.Actor
   ## containers. Every function here delegates to
   ## `Cure.Actor.Builtins`, which calls `Cure.Actor.Runtime`.
   ## Spawning captures the caller as the actor's `:caller`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## use Std.Actor
+  ##
+  ## let pid = spawn(:"Cure.Actor.Echo")
+  ## send(pid, %[:ping, :hello])
+  ## is_alive(pid)                           # => true
+  ## stop(pid)
+  ## ```
+  ##
+  ## ```cure
+  ## use Std.Actor
+  ##
+  ## # Name an actor so other processes can find it without passing a pid.
+  ## let pid = spawn_named(:"Cure.Actor.Cache", "main-cache")
+  ## lookup("main-cache") == pid             # => true
+  ## ```
 
   ## Spawn a new actor instance from a compiled actor module atom.
   ## The spawning process is recorded as the actor's caller
