@@ -1,19 +1,34 @@
 {
   "name": "vscode-cure",
   "displayName": "Cure",
-  "description": "Cure language support for VS Code (LSP, syntax highlighting).",
-  "version": "0.1.0",
+  "description": "Cure language support for VS Code: LSP, syntax highlighting, and editor defaults aligned with Cure 0.28.x.",
+  "version": "0.2.0",
   "publisher": "oeditus",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Oeditus/cure"
+    "url": "https://github.com/am-kantox/cure-lang"
   },
+  "bugs": {
+    "url": "https://github.com/am-kantox/cure-lang/issues"
+  },
+  "homepage": "https://cure-lang.org",
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets",
+    "Formatters"
+  ],
+  "keywords": [
+    "cure",
+    "cure-lang",
+    "beam",
+    "erlang",
+    "dependent types",
+    "fsm",
+    "lsp"
   ],
   "activationEvents": [
     "onLanguage:cure"
@@ -40,34 +55,54 @@
         "path": "./syntaxes/cure.tmLanguage.json"
       }
     ],
+    "commands": [
+      {
+        "command": "cure.restartLsp",
+        "title": "Cure: Restart Language Server",
+        "category": "Cure"
+      }
+    ],
     "configuration": {
       "title": "Cure",
       "properties": {
         "cure.lsp.path": {
           "type": "string",
           "default": "cure",
-          "description": "Path to the Cure binary used to start the LSP."
+          "description": "Absolute path to (or `PATH`-resolvable name of) the `cure` escript used to start the LSP. Build it from the Cure repo with `mix escript.build`."
         },
         "cure.lsp.args": {
           "type": "array",
-          "default": [
-            "lsp"
-          ],
-          "description": "Arguments passed to the Cure binary to start the LSP."
+          "items": { "type": "string" },
+          "default": ["lsp"],
+          "description": "Arguments passed to the Cure binary to start the LSP. The default `[\"lsp\"]` targets `cure lsp` over stdio."
+        },
+        "cure.lsp.env": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": { "type": "string" },
+          "description": "Additional environment variables to set when spawning the LSP. Useful for `CURE_HYPERLINKS`, `NO_COLOR`, or pointing at a Z3 binary."
+        },
+        "cure.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the Cure language server. Written to the `Cure Language Server` output channel."
         }
       }
     }
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/vscode": "^1.80.0",
-    "typescript": "^5.0.0"
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.4.0"
   }
 }

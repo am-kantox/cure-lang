@@ -1,8 +1,8 @@
 " Vim filetype plugin
 " Language:    Cure
 " Maintainer:  Cure project
-" Last Change: 2026 Apr 17
-" Target:      Cure 0.17.0 (Proofs & Polish)
+" Last Change: 2026 Apr 23
+" Target:      Cure 0.28.2 (Talk Back)
 "
 " Per-buffer defaults for editing .cure files. The rest of the plugin
 " (ftdetect, syntax, indent) is installed alongside this file.
@@ -31,6 +31,12 @@ setlocal softtabstop=2
 setlocal tabstop=2
 setlocal commentstring=#\ %s
 
+" Cure identifiers can end in `?` or `!` (`is_empty?`, `stop!`). Let
+" `w`, `e`, `*`, `#`, and `gd` treat those suffixes as part of the
+" word. `@` is kept out of iskeyword so `@record` remains a decorator
+" head rather than an identifier.
+setlocal iskeyword+=?,!
+
 " Keep comment continuation (`r`, `c`) but drop the behaviours that
 " reformat paragraphs and force-comment new lines in code blocks:
 "   a - automatic paragraph formatting
@@ -42,4 +48,4 @@ setlocal formatoptions-=o
 
 " --- Undo hook for ftplugin unload ------------------------------------------
 let b:undo_ftplugin = 'setlocal expandtab< shiftwidth< softtabstop< tabstop<'
-      \ . ' commentstring< formatoptions<'
+      \ . ' commentstring< formatoptions< iskeyword<'

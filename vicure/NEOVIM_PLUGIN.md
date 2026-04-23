@@ -1,289 +1,219 @@
-# Cure Syntax Highlighting for Neovim
+# Cure support for Neovim / Vim
 
-This directory contains syntax highlighting, indentation, and filetype detection for the Cure programming language in Neovim/Vim.
+Detailed reference for the Vicure plugin. For the high-level tour and
+installation paths, see `README.md`. Target Cure version: **0.28.2**
+(Talk Back).
 
-## Installation
+## What ships in this directory
 
-### Manual Installation
-
-Copy the files to your Neovim configuration directory:
-
-```bash
-# For Neovim (recommended)
-mkdir -p ~/.config/nvim/syntax ~/.config/nvim/ftdetect ~/.config/nvim/ftplugin ~/.config/nvim/indent
-cp syntax/cure.vim   ~/.config/nvim/syntax/
-cp ftdetect/cure.vim ~/.config/nvim/ftdetect/
-cp ftplugin/cure.vim ~/.config/nvim/ftplugin/
-cp indent/cure.vim   ~/.config/nvim/indent/
-
-# For Vim
-mkdir -p ~/.vim/syntax ~/.vim/ftdetect ~/.vim/ftplugin ~/.vim/indent
-cp syntax/cure.vim   ~/.vim/syntax/
-cp ftdetect/cure.vim ~/.vim/ftdetect/
-cp ftplugin/cure.vim ~/.vim/ftplugin/
-cp indent/cure.vim   ~/.vim/indent/
+```
+vicure/
+  ftdetect/cure.vim      " Filetype detection for *.cure and Cure.toml
+  ftplugin/cure.vim      " Per-buffer editor defaults (indent, keywords, commentstring)
+  indent/cure.vim        " Indent engine for container / control headers
+  syntax/cure.vim        " Full Cure 0.28.x grammar
+  test_syntax.cure       " Short feature tour
+  test_syntax_comprehensive.cure
+                         " Exhaustive fixture used to spot-check every syntax group
+  README.md              " Installation and showcase
+  NEOVIM_PLUGIN.md       " This file
+  CHANGELOG.md           " Version history
+  MODERNIZATION_SUMMARY.md
+                         " Rationale for the v0.28 grammar overhaul
 ```
 
-### Using a Plugin Manager
+## Filetype detection
 
-#### lazy.nvim
+`ftdetect/cure.vim` sets the filetype to `cure` for any `*.cure`
+buffer and to `toml` for `Cure.toml` project manifests. No Lua
+autocommand is needed; classic vimscript detection works in both Vim
+and Neovim.
 
-Add to your `~/.config/nvim/lua/plugins/cure.lua`:
+## Per-buffer defaults (ftplugin)
 
-```lua
-return {
-  dir = "/opt/Proyectos/Oeditus/cure/vicure",
-  ft = "cure",
-  config = function()
-    vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
-      pattern = "*.cure",
-      callback = function()
-        vim.bo.filetype = "cure"
-      end,
-    })
-  end,
-}
-```
+`ftplugin/cure.vim` sets:
 
-#### packer.nvim
+- `expandtab`, `shiftwidth=2`, `softtabstop=2`, `tabstop=2`.
+- `commentstring = "# %s"`, so `gcc` / `Comment.nvim` /
+  `vim-commentary` emit line comments with the right leader.
+- `iskeyword += ?,!`, so Cure identifiers with trailing `?`/`!`
+  (`is_empty?`, `stop!`) behave as single tokens in `w`, `e`, `*`,
+  `#`, and `gd`.
+- `formatoptions -= a t o` -- keeps automatic comment continuation
+  (`r`, `c`) but drops paragraph auto-reflow, auto-wrap, and the
+  forced comment leader after `o`/`O`.
 
-Add to your `init.lua`:
+Format-on-save is *not* disabled: the Cure LSP delegates to
+`Cure.Compiler.Formatter`, a source-preserving formatter that
+round-trip-validates its output against the original AST, so a naïve
+`:w` with `format_on_save = true` is safe. If you still want to opt
+out, set `b:autoformat = 0` / `b:disable_autoformat = 1` yourself in
+`~/.config/nvim/after/ftplugin/cure.vim`.
 
-```lua
-use {
-  '/opt/Proyectos/Oeditus/cure/vicure',
-  ft = 'cure'
-}
-```
+## Syntax highlighting
 
-#### vim-plug
+`syntax/cure.vim` is aligned with `Makeup.Lexers.CureLexer` and
+`highlightjs-cure` so the three authoritative Cure highlighters agree
+on what is syntactic vs. user code.
 
-Add to your `init.vim`:
+### Keywords
 
-```vim
-Plug '/opt/Proyectos/Oeditus/cure/vicure'
-```
+| Bucket            | Keywords |
+|-------------------|----------|
+| Declarations      | `mod`, `fn`, `rec`, `fsm`, `proto`, `impl`, `type`, `let`, `actor`, `sup`, `app`, `proof`, `use`, `local`, `extern`, `as` |
+| Control flow      | `if`, `then`, `else`, `elif`, `match`, `when`, `where`, `for`, `in`, `do`, `of`, `end`, `with`, `try`, `catch`, `finally`, `throw`, `return`, `yield`, `assert_type`, `rewrite` |
+| Concurrency       | `spawn`, `send`, `receive`, `after` |
+| FSM callbacks     | `on_start`, `on_stop`, `on_transition`, `on_enter`, `on_exit`, `on_failure`, `on_timer`, `on_message`, `on_phase` |
+| Word operators    | `and`, `or`, `not` |
+| Literals          | `true`, `false`, `nil` |
+| Built-in types    | `Int`, `Float`, `Bool`, `String`, `Atom`, `Bitstring`, `Binary`, `Char`, `Any`, `Unit`, `Void`, `Nat`, `List`, `Tuple`, `Map`, `Set`, `Pair`, `Vector`, `Option`, `Result`, `Pid`, `Ref`, `Sigma`, `Pi`, `Eq`, `DPair` |
+| Constructors      | `Ok`, `Error`, `Some`, `None`, `Zero`, `Succ`, `Pred`, `Self`, `refl` |
 
-## Features
+### Lexical shapes
 
-### Syntax Highlighting
+- **Comments**: `# line`, `## doc line`, and fenced
+  `### ... ###` multi-line doc regions. `TODO`, `FIXME`, `NOTE`,
+  `XXX`, `HACK`, `BUG` are highlighted inside any comment, and
+  `@doctag` words inside doc comments get the `Tag` group.
+- **Strings**: double-quoted, with `\uXXXX` and common backslash
+  escapes, and `#{...}` interpolation that re-enters the root
+  grammar.
+- **Regex literals**: `~r/.../flags`.
+- **Char literals**: both `'c'` (single-quoted) and Erlang-style
+  `?c` / `?\n`.
+- **Numbers**: decimal, hex (`0x`), binary (`0b`), and floats, with
+  `_` digit separators.
+- **Atoms**: `:name`, `:name?`, `:name!`.
+- **Holes**: anonymous `??` and named `?identifier`.
+- **Attributes**: `@record`, `@derive`, `@deprecated`, ...
+- **FSM transition literals**: `State --event--> State` (event
+  names may end in `?` or `!` for soft / hard events).
+- **Melquiades send**: both ASCII `<-|` and the envelope glyph `✉`
+  (U+2709).
+- **Prefixes**: `%[...]` for tuples and `%{...}` for maps.
 
-The plugin provides syntax highlighting for:
+### Semantic heads
 
-- **Keywords**: `def`, `def_erl`, `curify`, `module`, `fsm`, `state`, `match`, `case`, `when`, `where`, etc.
-- **Type System Keywords**: `typeclass`, `trait`, `instance`, `impl`, `derive`, `class`
-- **FSM Constructs**: `fsm`, `state`, `states`, `initial`, `event`, `timeout`, `transition`, etc.
-- **Operators**: `->`, `|>`, `::`, `++`, `--`, `==`, `!=`, etc.
-- **Types**: Type names (capitalized identifiers)
-- **Constructors**: `Ok`, `Error`, `Some`, `None`, `Unit`
-- **Boolean literals**: `true`, `false`
-- **Numbers**: Integers and floats
-- **Strings**: With escape sequences and `#{}` interpolation support
-- **Atoms**: `:atom` and `'quoted atoms'`
-- **Comments**: `# comment` with TODO/FIXME/NOTE/XXX highlighting
-- **Function definitions**: Highlighted function names (including `curify` wrappers)
-- **Module/FSM/Record names**: Highlighted structure names
-- **Typeclass/Trait names**: Highlighted interface names
-- **Instance/Implementation**: Highlighted instance declarations
+Dedicated syntax groups let colour schemes style the name in each
+container header independently:
 
-### Indentation
+- `cureFunctionDef` -- the function name in `fn name(...) -> T`.
+- `cureModuleHead`, `cureActorHead`, `cureSupHead`, `cureAppHead`,
+  `cureProofHead` -- container names.
+- `cureRecordHead`, `cureFsmHead`, `cureProtoHead`, `cureTypeHead`,
+  `cureImplHead`, `cureImplFor`, `cureUseHead` -- type and
+  protocol heads.
+- `cureModulePath` -- dotted module paths (`Std.List`,
+  `Cure.Types.Pi`).
+- `cureTypeAnnotation` -- the type after `:` in `name: Type`.
 
-Automatic indentation for:
-- `do...end` blocks
-- `module...end` blocks
-- `fsm...end` blocks
-- `state...end` blocks
-- `typeclass...end` and `trait...end` blocks
-- `instance...end` and `impl...end` blocks
-- `match...end` and `case...of...end` expressions
-- Function definitions (including `curify`)
-- Bracket pairs `()`, `[]`, `{}`
+## Indentation
 
-### Filetype Detection
+`indent/cure.vim` increases indent after any line matching one of
+the v0.28 block headers (`mod`, `fn`, `fsm`, `rec`, `proto`, `impl`,
+`type`, `actor`, `sup`, `app`, `proof`, `use`, `match`, `for`,
+`try`, `receive`) or ending in one of `=`, `->`, `then`, `else`,
+`do`, `of`, `with`. Lines with unclosed brackets pull the next line
+in one shiftwidth; a leading `)` / `]` / `}` or a leading `|`
+continuation outdents accordingly.
 
-Automatically detects `.cure` files and sets the appropriate filetype.
-
-### Filetype Plugin (ftplugin)
-
-On top of detection, `ftplugin/cure.vim` sets sensible per-buffer
-defaults for editing Cure:
-
-- `commentstring = "# %s"` so `gcc` / `Comment.nvim` / `vim-commentary`
-  pick the right comment leader
-- 2-space `expandtab` / `shiftwidth` / `softtabstop` / `tabstop`
-- Trimmed `formatoptions`: drops `a` (auto paragraph reflow), `t`
-  (text auto-wrap at `textwidth`), and `o` (forced comment leader after
-  `o`/`O`). `r` and `c` (comment continuation on `<CR>` / wrap) stay
-  on so doc comments keep working.
-- No kill switches for format-on-save: the Cure LSP and `cure fmt`
-  both now default to a safe, source-preserving formatter, so
-  `:w` with `format_on_save = true` is fine. If you want to opt
-  out anyway, set `b:autoformat = 0` / `b:disable_autoformat = 1`
-  yourself in `~/.config/nvim/after/ftplugin/cure.vim`.
-
-### Formatting Policy
-
-The Cure LSP advertises `textDocument/formatting`, backed by
-`Cure.Compiler.Formatter` -- a source-preserving formatter that
-round-trip-validates its output against the original AST. It
-normalises line endings, strips trailing whitespace, expands leading
-tabs into two spaces, collapses runs of blank lines to a single blank
-line, and canonicalises operator spacing. Comments, string and regex
-literals, and doc comments are preserved byte-for-byte.
-
-The destructive AST rewrite is still available via
-`cure fmt --aggressive`; it strips plain `#` comments and any
-non-canonical whitespace in exchange for a fully canonical buffer.
-
-## Testing
-
-To verify the installation:
-
-1. Open a `.cure` file in Neovim:
-   ```bash
-   nvim examples/advanced_traffic_light.cure
-   ```
-
-2. Check the filetype:
-   ```vim
-   :set filetype?
-   ```
-   Should show: `filetype=cure`
-
-3. Check syntax highlighting is active:
-   ```vim
-   :syntax
-   ```
-   Should show various `cure*` syntax groups.
-
-## Color Scheme Compatibility
-
-The syntax file uses standard Vim highlight groups, so it will work with any color scheme:
-
-- `Keyword` - Language keywords
-- `Type` - Type names and constructors
-- `Function` - Function names in definitions
-- `Operator` - Operators
-- `String` - String literals
-- `Number`/`Float` - Numeric literals
-- `Comment` - Comments
-- `Constant` - Atoms
-- `Special` - String interpolations
-- `Structure` - Module/FSM/Record names
-
-## Examples
+`@decorator` lines (e.g. `@record` above an `fsm`) are treated as
+non-block: the next line inherits the indent of the real header
+below the attribute, so
 
 ```cure
-# Comment highlighting
-module TrafficLight do
-  # Keywords: module, do, end
-  # Structure name: TrafficLight
-  
-  # Record definition
-  record Color do
-    red: Int
-    green: Int
-    blue: Int
-  end
-  
-  # Typeclass definition
-  typeclass Show(T) do
-    def show(x: T): String
-  end
-  
-  # Instance implementation
-  instance Show(Color) do
-    def show(c: Color): String =
-      "Color(#{c.red}, #{c.green}, #{c.blue})"
-  end
-  
-  fsm SimpleFSM do
-    # FSM-specific keywords
-    states: [Red, Green, Yellow]
-    initial: Red
-    
-    state Red do
-      event(:timer) -> Green
-    end
-  end
-  
-  def calculate_area(radius: Float): Float =
-    # Function definition highlighting
-    # Type annotations
-    3.14159 * radius * radius
-  
-  # Generic function with where clause
-  def debug_value(x: T): T where Show(T) =
-    println(show(x))
-    x
-  
-  def interpolation_demo(name: String): String =
-    # String interpolation
-    "Hello #{name}!"
-    
-  # Pattern matching
-  def handle_result(result: Result(Int, String)): String =
-    match result do
-      Ok(value) -> "Success: #{value}"
-      Error(msg) -> "Failed: #{msg}"
-    end
-    
-  # Curify Erlang function
-  curify io_format(format: String, args: List): Unit =
-    erlang io format/2
-end
+@record
+fsm TrafficLight
+  Red --timer--> Green
 ```
+
+indents `Red --timer--> Green` under `fsm TrafficLight`, not under
+`@record`.
+
+## LSP integration
+
+The Cure LSP is a standalone escript (`cure lsp`) that Neovim's
+built-in client can start on demand:
+
+```lua
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "cure",
+  callback = function()
+    vim.lsp.start({
+      name = "cure-lsp",
+      cmd = { "cure", "lsp" },
+      root_dir = vim.fs.dirname(
+        vim.fs.find({ "Cure.toml", "mix.exs" }, { upward = true })[1]
+      ),
+    })
+  end,
+})
+```
+
+Capabilities:
+
+- Diagnostics (compile + type errors on every keystroke).
+- Hover (signatures, types, inferred effects).
+- Completion on `.` and `:` (keyword completions + stdlib module
+  members).
+- Go-to-definition (functions and modules).
+- Document symbols (modules, functions, protocols, FSMs).
+- Code actions -- add wildcard patterns for non-exhaustive matches,
+  `Did you mean?` quick fixes for unbound variables.
+- Document formatting (source-preserving; see `README.md`).
+
+If the escript is not yet on `PATH`, build it from the Cure repo
+root with `mix escript.build`.
+
+## Testing the plugin
+
+### Visual check
+
+```bash
+nvim vicure/test_syntax.cure                 # short feature tour
+nvim vicure/test_syntax_comprehensive.cure   # exhaustive grammar fixture
+```
+
+`:set filetype?` should say `filetype=cure` and `:syntax` should list
+`cure*` groups.
+
+### Indentation check
+
+- In `test_syntax.cure`, position the cursor inside a `fsm`, `actor`,
+  `sup`, `app`, `proof`, or `match` block and press `o` -- the new
+  line should indent under the header.
+- Type `end` / `else` / `| pattern` at the start of a line -- the
+  line should outdent to the matching header.
+- Add `@record` above an `fsm` -- the transition lines below the
+  `fsm` header should still align under `fsm`, not under `@record`.
 
 ## Troubleshooting
 
 ### Syntax highlighting not working
 
-1. Ensure the files are in the correct locations
-2. Restart Neovim: `:q` then reopen
-3. Force reload: `:e` in the buffer
-4. Check filetype: `:set filetype=cure`
+1. Ensure the files are in the correct locations (see `README.md`).
+2. Restart Neovim.
+3. Force reload: `:e` in the buffer.
+4. Force set: `:set filetype=cure`.
 
 ### Indentation not working
-
-Check that `filetype indent on` is enabled in your config:
-
-```vim
-filetype plugin indent on
-```
-
-Or in Lua:
 
 ```lua
 vim.cmd('filetype plugin indent on')
 ```
 
-### Colors look wrong
-
-Try a different color scheme or customize the highlighting in your config:
-
-```vim
-" Customize Cure syntax colors
-hi cureFunctionDef guifg=#61AFEF
-hi cureKeyword guifg=#C678DD
-hi cureType guifg=#E5C07B
-```
-
-### `:w` eats my comments / collapses the file
+### `:w` eats my comments or collapses the file
 
 The default formatter (`Cure.Compiler.Formatter`, used by both the
 LSP and `cure fmt`) is source-preserving and does not touch comments
-or layout. If comments are disappearing, something is running the
-`--aggressive` AST rewrite on save. Diagnose:
+or layout. If comments are disappearing, something is running
+`cure fmt --aggressive` or a fork of the old AST-based printer on
+save. Diagnose:
 
 ```vim
 :echo &filetype                                  " must be 'cure'
 :lua =vim.lsp.get_active_clients({ bufnr = 0 })  " only cure-lsp expected
 ```
-
-If a generic formatter (e.g. `prettier`, `clang-format`) is attached,
-it is almost certainly because Neovim detected the wrong filetype --
-add `vim.filetype.add({ extension = { cure = 'cure' } })` to your
-config before any plugin manager setup.
 
 One-shot opt-out for the current buffer:
 
@@ -296,14 +226,16 @@ One-shot opt-out for the current buffer:
 
 ## Contributing
 
-To add new features or fix issues with the syntax highlighting:
+Changes welcome. The canonical grammar lives in two places inside the
+Cure repository:
 
-1. Edit `syntax/cure.vim` for syntax rules
-2. Edit `indent/cure.vim` for indentation rules
-3. Edit `ftdetect/cure.vim` for filetype detection
-4. Test with example `.cure` files
-5. Submit improvements to the Cure project
+- `lib/makeup/lexers/cure_lexer.ex` -- the lexer used by Makeup,
+  `cure doc`, the REPL, and the Playground.
+- `highlightjs-cure/src/languages/cure.js` -- the highlight.js
+  grammar used by the cure-lang.org site.
+
+Keep the Vicure syntax file in sync with both.
 
 ## License
 
-This syntax plugin is part of the Cure programming language project.
+MIT, same as the rest of the Cure project.

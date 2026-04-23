@@ -1,340 +1,272 @@
-# Comprehensive Syntax Test for vicure Vim Plugin
-# This file tests all language features for proper highlighting
+# Comprehensive syntax fixture for the Vicure Vim / Neovim plugin.
+# Every keyword bucket, lexical shape, operator, and container
+# surface listed in `NEOVIM_PLUGIN.md` appears at least once so
+# changes to `syntax/cure.vim` can be spot-checked visually.
 
-# Module definition
-module SyntaxTest do
-  export [all_features/0, demo/1]
-  
-  import Std.List [map/2, filter/2]
-  import Std.Io [println/1]
-  
-  # ====================
-  # Function Definitions
-  # ====================
-  
-  # Simple function with type annotations
-  def simple_function(x: Int, y: Int): Int = x + y
-  
-  # Function with dependent types
-  def safe_vector(xs: Vector(T, n)) where n > 0 : Vector(T, n) = xs
-  
-  # Multi-clause function (pattern matching)
-  def factorial(n: Nat): Nat =
-    match n do
-      Zero -> Succ(Zero)
-      Succ(m) -> mult(n, factorial(m))
-    end
-  
-  # Function with guards
-  def classify(x: Int): Atom =
-    match x do
-      n when n < 0 -> :negative
-      0 -> :zero
-      n when n > 0 -> :positive
-    end
-  
-  # Lambda expressions
-  def apply_twice(f: (Int) -> Int, x: Int): Int =
+### Fenced doc comment (Cure v0.17+).
+@since v0.28.0
+@author Vicure
+###
+
+mod Comprehensive.Showcase
+  # -------------------------------------------------------------------------
+  # Imports
+  # -------------------------------------------------------------------------
+
+  use Std.List
+  use Std.Io as Io
+  use Std.Regex
+  use Std.String
+
+  # -------------------------------------------------------------------------
+  # Records (simple and parameterised)
+  # -------------------------------------------------------------------------
+
+  rec Point
+    x: Int
+    y: Int
+
+  rec Pair(A, B)
+    first: A
+    second: B
+
+  # -------------------------------------------------------------------------
+  # Type aliases and ADTs (including multi-line / guarded / refined forms)
+  # -------------------------------------------------------------------------
+
+  type UserId = Int
+
+  type Result(T, E) =
+    | Ok(T)
+    | Error(E)
+
+  type NonNeg = {n: Int | n >= 0}
+
+  # -------------------------------------------------------------------------
+  # Protocols and implementations (the modern typeclass surface)
+  # -------------------------------------------------------------------------
+
+  proto Show(T)
+    fn show(x: T) -> String
+
+  proto Eqish(T)
+    fn eqish?(a: T, b: T) -> Bool
+
+  impl Show for Int
+    fn show(x: Int) -> String = Std.String.from_int(x)
+
+  impl Show for Point
+    fn show(p: Point) -> String = "Point(#{p.x}, #{p.y})"
+
+  impl Show for String
+    fn show(s: String) -> String = s
+
+  # -------------------------------------------------------------------------
+  # Function definitions: literals, guards, destructuring, recursion
+  # -------------------------------------------------------------------------
+
+  fn simple(x: Int, y: Int) -> Int = x + y
+
+  fn factorial(n: Nat) -> Nat =
+    match n
+      Zero     -> Succ(Zero)
+      Succ(m)  -> n * factorial(m)
+
+  fn classify(n: Int) -> Atom =
+    match n
+      m when m < 0 -> :negative
+      0            -> :zero
+      _            -> :positive
+
+  fn apply_twice(f: (Int) -> Int, x: Int) -> Int =
     let g = fn(y) -> f(f(y)) end
     g(x)
-  
-  # Curify (Erlang interop)
-  curify erlang_length(list: List(T)): Int =
-    erlang:length/1
-  
-  # ====================
-  # Type Definitions
-  # ====================
-  
-  # Record type
-  record Person do
-    name: String
-    age: Int
-    email: String
-  end
-  
-  # Generic record
-  record Pair(T, U) do
-    first: T
-    second: U
-  end
-  
-  # Type alias
-  type UserId = Int
-  type Result(T, E) = Ok(T) | Error(E)
-  
-  # ====================
-  # Typeclass Definitions
-  # ====================
-  
-  typeclass Show(T) do
-    def show(x: T): String
-  end
-  
-  instance Show(Int) do
-    def show(x: Int): String = "Int"
-  end
-  
-  instance Show(Person) do
-    def show(p: Person): String = 
-      "Person{" <> p.name <> "}"
-  end
-  
-  # ====================
-  # Trait Definitions
-  # ====================
-  
-  trait Eq(T) do
-    def eq(a: T, b: T): Bool
-    def neq(a: T, b: T): Bool = not(eq(a, b))
-  end
-  
-  impl Eq for Int do
-    def eq(a: Int, b: Int): Bool = a == b
-  end
-  
-  # ====================
-  # FSM Definitions
-  # ====================
-  
-  fsm TrafficLight do
-    initial: :red
-    
-    # Arrow-based transitions
-    :red --> |:timer| :green
-    :green --> |:timer| :yellow
-    :yellow --> |:timer| :red
-    
-    # Emergency transition
-    :green --> |:emergency| :red
-    :yellow --> |:emergency| :red
-    
-    # With guard (future feature)
-    # :green --> |:timer| when timer > 30 : :yellow
-  end
-  
-  # FSM with properties
-  fsm Counter do
-    initial: 0
-    
-    property invariant: state >= 0
-    property eventually: state == 10
-    
-    state any do
-      on :increment -> state + 1
-      on :decrement -> state - 1
-      on :reset -> 0
-    end
-  end
-  
-  # ====================
-  # Pattern Matching
-  # ====================
-  
-  def process_result(r: Result(Int, String)): String =
-    match r do
-      Ok(value) -> "Success: " <> show(value)
-      Error(msg) -> "Error: " <> msg
-    end
-  
-  def process_list(xs: List(Int)): Int =
-    match xs do
-      [] -> 0
-      [h | t] -> h + process_list(t)
-    end
-  
-  def process_option(opt: Option(Int)): Int =
-    match opt do
-      Some(x) -> x
-      None -> 0
-    end
-  
-  # ====================
-  # Operators
-  # ====================
-  
-  def test_operators(): Unit =
-    # Arithmetic
-    let a = 1 + 2 * 3 / 4 - 5
-    let b = 10 % 3
-    
-    # Comparison
-    let c = a < b
-    let d = a <= b
-    let e = a > b
-    let f = a >= b
-    let g = a == b
-    let h = a != b
-    
-    # String concatenation
-    let s = "hello" <> " " <> "world"
-    
-    # List operations
-    let xs = [1, 2, 3] ++ [4, 5, 6]
-    let ys = [0] ++ xs
-    
-    # Pipe operator
-    let result = [1, 2, 3]
-      |> map(fn(x) -> x * 2 end)
-      |> filter(fn(x) -> x > 3 end)
-    
-    # Boolean operators
-    let bool1 = true and false
-    let bool2 = true or false
-    let bool3 = not true
-    
-    # Function composition (future)
-    # let composed = f >> g >> h
-    
-    # Functor operators (future)
-    # let mapped = (+1) <$ [1, 2, 3]
-    # let applied = [(+1), (*2)] <*> [1, 2, 3]
-    
-    # Monad operators (future)
-    # let bound = Some(5) >>= fn(x) -> Some(x * 2) end
-    
-    unit()
-  
-  # ====================
-  # Type Annotations
-  # ====================
-  
-  def with_annotation(): Int =
-    let x = 42 as Int
-    let y = [1, 2, 3] as List(Int)
-    let z = ‹1, 2, 3› as Vector(Int, 3)
-    x + y[0]
-  
-  # ====================
-  # Record Operations
-  # ====================
-  
-  def record_demo(): Person =
-    # Create record
-    let person = Person{
-      name: "Alice",
-      age: 30,
-      email: "alice@example.com"
-    }
-    
-    # Field access
-    let name = person.name
-    let age = person.age
-    
-    # Record update
-    let older = Person{person | age: 31}
-    
-    older
-  
-  # ====================
-  # Let Bindings
-  # ====================
-  
-  def let_demo(): Int =
-    let x = 10
-    let y = 20
-    let sum = x + y
-    
-    let result = 
-      let a = sum * 2
-      let b = a + 10
-      b / 2
-    
-    result
-  
-  # ====================
-  # Literals
-  # ====================
-  
-  def all_literals(): Unit =
-    # Integer
-    let i = 42
-    let i_neg = -100
-    
-    # Float
-    let f = 3.14159
-    let f_neg = -2.718
-    
-    # String
-    let s1 = "hello world"
-    let s2 = "with \"quotes\""
-    let s3 = "multiline\nstring\twith\rescapes"
-    
-    # String interpolation (future)
-    # let name = "Alice"
-    # let s4 = "Hello #{name}!"
-    
-    # Atom
-    let a1 = :ok
-    let a2 = :error
-    let a3 = :custom_atom
-    
-    # Boolean
-    let b1 = true
-    let b2 = false
-    
-    # List
-    let l1 = []
-    let l2 = [1, 2, 3, 4, 5]
-    let l3 = [1 | [2, 3]]
-    
-    # Tuple
-    let t1 = (1, 2)
-    let t2 = (1, "two", :three)
-    
-    # Vector (with Unicode delimiters)
-    let v1 = ‹1, 2, 3›
-    let v2 = ‹"a", "b", "c"›
-    
-    # Charlist (with Unicode quotes)
-    let c1 = 'hello'
-    let c2 = 'with\nescapes'
-    
-    # Special constructors
-    let ok_val = Ok(42)
-    let err_val = Error("failed")
-    let some_val = Some(10)
-    let none_val = None
-    let unit_val = Unit
-    
-    # Type-level naturals
-    let zero = Zero
-    let one = Succ(Zero)
-    let two = Succ(Succ(Zero))
-    
-    unit()
-  
-  # ====================
-  # Comments
-  # ====================
-  
-  # This is a line comment
-  # TODO: Implement this feature
-  # FIXME: Bug in this code
-  # NOTE: Important information
-  # XXX: Warning or concern
-  
-  def commented_function(): Int =
-    let x = 10  # Inline comment
-    # Another comment
-    let y = 20
-    x + y  # Result
-  
-  # ====================
-  # Main Demo Function
-  # ====================
-  
-  def all_features(): Unit =
-    println("=== Syntax Test Complete ===")
-    
-    let person = record_demo()
-    println("Person: " <> person.name)
-    
-    let ops = test_operators()
-    let result = with_annotation()
-    
-    println("Result: " <> show(result))
-    
-    unit()
 
-end
+  # -------------------------------------------------------------------------
+  # Pattern matching on lists, options, results, tuples, and records
+  # -------------------------------------------------------------------------
+
+  fn first_or_zero(xs: List(Int)) -> Int =
+    match xs
+      []       -> 0
+      [h | _t] -> h
+
+  fn unwrap_or(opt: Option(Int), default: Int) -> Int =
+    match opt
+      Some(x) -> x
+      None    -> default
+
+  fn process(result: Result(Int, String)) -> String =
+    match result
+      Ok(value)  -> "Success: " <> Std.String.from_int(value)
+      Error(msg) -> "Failed: " <> msg
+
+  # -------------------------------------------------------------------------
+  # Typed holes
+  # -------------------------------------------------------------------------
+
+  fn sketch(x: Int) -> Int = ?body_goes_here
+  fn another()     -> Int = ??
+
+  # -------------------------------------------------------------------------
+  # Regex, char, and string literals
+  # -------------------------------------------------------------------------
+
+  fn digit_pattern() -> Any = ~r/^[0-9]+$/i
+  fn word_pattern()  -> Any = ~r/\b\w+\b/
+
+  fn letter_a()  -> Char = 'a'
+  fn escape_n()  -> Char = '\n'
+  fn erlang_a()  -> Char = ?a
+  fn erlang_nl() -> Char = ?\n
+
+  fn greeting(name: String) -> String =
+    "Hello, #{name}! Welcome to Cure \uf00c."
+
+  # -------------------------------------------------------------------------
+  # Numeric literals, ranges, and operator zoo
+  # -------------------------------------------------------------------------
+
+  fn big_int()  -> Int   = 1_000_000_000
+  fn hex()      -> Int   = 0xDEAD_BEEF
+  fn binary()   -> Int   = 0b0100_1100
+  fn fraction() -> Float = 3.141_592e-1
+
+  fn operator_demo() -> Bool =
+    let a = 1 + 2 * 3 / 4 - 5
+    let b = 10 ** 3
+    let c = a % 7
+    let _ = 1..=10
+    let _ = 1..5
+    let _ = [1, 2, 3] ++ [4, 5]
+    let _ = [1, 2, 3] -- [2]
+    let _ = [1 | [2, 3]]
+    let _ = Some(3) >>= fn(x) -> Some(x * 2) end
+    let _ = fn(x) -> x + 1 end <$> Some(5)
+    (a < b) && (b >= c || not true)
+
+  # -------------------------------------------------------------------------
+  # Tuple and map literal prefixes, record construction and update
+  # -------------------------------------------------------------------------
+
+  fn origin_tuple() -> Any = %[:point, 0, 0]
+  fn defaults()     -> Any = %{greeting: "hi", idle_ms: 5_000}
+
+  fn origin() -> Point = Point{x: 0, y: 0}
+
+  fn translate(p: Point, dx: Int, dy: Int) -> Point =
+    Point{p | x: p.x + dx, y: p.y + dy}
+
+  # -------------------------------------------------------------------------
+  # Concurrency surface: spawn / send / receive / after / Melquiades sigils
+  # -------------------------------------------------------------------------
+
+  fn start_worker() -> Pid = spawn(fn() -> :ok end)
+
+  fn echo_loop() -> Unit =
+    receive
+      (:ping, from) -> send(from, :pong)
+      (:quit, _)    -> :ok
+    after 5_000
+      :timeout
+
+  fn melquiades_demo(target: Pid) -> Unit =
+    target <-| :hello
+    target  ✉ :world
+
+  # -------------------------------------------------------------------------
+  # Assertions and rewrites
+  # -------------------------------------------------------------------------
+
+  fn assert_positive(n: Int) -> Int =
+    assert_type n > 0
+    n
+
+  fn rewrite_demo(xs: List(Int)) -> List(Int) =
+    rewrite xs with
+      | [a, b | rest] when a > b -> [b, a | rest]
+      | other                    -> other
+
+  # -------------------------------------------------------------------------
+  # `with` chain and `try` / `catch` / `finally`
+  # -------------------------------------------------------------------------
+
+  fn fetch(name: String) -> Result(Int, String) =
+    with
+      Ok(raw)    <- load(name)
+      Ok(parsed) <- parse(raw)
+      Ok(parsed)
+    else
+      Error(reason) -> Error("fetch failed: " <> reason)
+
+  fn guarded() -> Int =
+    try
+      dangerous_call()
+    catch
+      (:noproc, _) -> 0
+      (:timeout, _) -> -1
+    finally
+      cleanup()
+
+  fn load(_n: String)  -> Result(String, String) = Ok("42")
+  fn parse(_s: String) -> Result(Int, String)    = Ok(42)
+  fn dangerous_call()  -> Int                    = 0
+  fn cleanup()         -> Unit                   = :ok
+
+  fn main() -> Int = Io.println("=== Comprehensive syntax fixture ===")
+
+# ---------------------------------------------------------------------------
+# Container surface: FSM with recording, actor, supervisor, application.
+# ---------------------------------------------------------------------------
+
+## FSM with time-travel journal enabled. The `@record` decorator must
+## be highlighted as an attribute and must not affect the indent of
+## the `fsm` header below.
+@record
+fsm Exhibit
+  Closed --open-->  Open
+  Open   --close--> Closed
+  Open   --sold-->  Sold
+
+## Soft and hard event suffixes on FSM transitions.
+fsm Gate
+  Locked   --unlock?--> Open
+  Open     --slam!-->   Locked
+
+## Actor with pattern-matching `on_message` and an initial payload.
+actor Painter with %[:idle, ""]
+  on_start
+    (state) -> state
+  on_message
+    (%[:submit, title], _state) -> %[:submitted, title]
+    (:reset, _state)            -> %[:idle, ""]
+    (:get, state)               -> notify(%[:painter_state, state])
+
+## Supervision tree.
+sup Gallery
+  strategy  = :one_for_one
+  intensity = 3
+  period    = 5
+  children
+    Painter as painter
+    Exhibit as exhibit (restart: :transient)
+
+## OTP application container.
+app Comprehensive
+  vsn         = "0.1.0"
+  description = "Vicure comprehensive fixture"
+  root        = sup Gallery
+  applications = [:logger, :runtime_tools]
+  env         = %{greeting: "hi", idle_ms: 5_000}
+  on_start
+    (_kind, _args) -> :ok
+  on_stop
+    (_state) -> :ok
+  on_phase :warm_cache
+    (_args, _kind, _start_args) -> :ok
+
+## Proof container: equality laws checked by the compiler.
+proof Laws
+  fn plus_zero(_n: Int) -> Eq(Int, n, n) = :cure_refl
+  fn append_nil(_xs: List(T)) -> Eq(List(T), xs, xs) = :cure_refl
+  fn map_id(_xs: List(T)) -> Eq(List(T), xs, xs) = :cure_refl

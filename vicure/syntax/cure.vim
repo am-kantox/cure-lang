@@ -1,8 +1,13 @@
 " Vim syntax file
 " Language:    Cure
 " Maintainer:  Cure project
-" Last Change: 2026 Apr 17
-" Target:      Cure 0.17.0 (Proofs & Polish)
+" Last Change: 2026 Apr 23
+" Target:      Cure 0.28.2 (Talk Back)
+"
+" Grammar buckets mirror `Makeup.Lexers.CureLexer` and `highlightjs-cure`
+" so every Cure highlighter agrees on what is syntactic vs. user code.
+" Identifiers may end in `?` or `!`, so `is_empty?` and `stop!` must
+" lex as a single word and never collapse onto the bare keyword.
 
 if exists("b:current_syntax")
   finish
@@ -13,9 +18,9 @@ syn case match
 " --- Comments ---------------------------------------------------------------
 " Cure has three comment flavours (all lexed as comments by the compiler):
 "
-"   ###        fenced multi-line doc comment (v0.17.0+)
-"   ##         single-line doc comment
-"   #          plain line comment
+"   ### ... ###  fenced multi-line doc comment (v0.17.0+)
+"   ## ...       single-line doc comment
+"   # ...        plain line comment
 "
 " The fenced region MUST be declared before the single-line matches so its
 " start pattern wins over `##.*$`. The single-line matches use a negative
@@ -23,62 +28,92 @@ syn case match
 syn region cureFencedDoc
       \ start="###"
       \ end="###"
-      \ contains=cureTodo,@Spell
+      \ contains=cureTodo,cureDocTag,@Spell
       \ keepend
 
-syn match  cureDocComment "\v##(#)@!.*$" contains=cureTodo,@Spell
+syn match  cureDocComment "\v##(#)@!.*$" contains=cureTodo,cureDocTag,@Spell
 syn match  cureComment    "\v#(#)@!.*$"  contains=cureTodo,@Spell
-syn keyword cureTodo contained TODO FIXME NOTE XXX HACK BUG
+syn keyword cureTodo      contained TODO FIXME NOTE XXX HACK BUG
+syn match   cureDocTag    contained "\v\@\w+"
 
 " Fenced doc comments can span arbitrarily many lines. Sync from the start
 " of the buffer so the region state is always correct, regardless of where
 " the viewport lands. Cure source files are small enough that this is cheap.
 syntax sync fromstart
 
-" --- Strings ----------------------------------------------------------------
-" Strings support #{...} interpolation and \n \r \t \\ \" escapes.
+" --- Strings, regexes, char literals ----------------------------------------
+" Strings support #{...} interpolation and \n \r \t \\ \" \uXXXX escapes.
 syn region cureString
       \ matchgroup=cureStringDelim
       \ start=+"+ skip=+\\.+ end=+"+
       \ contains=cureEscape,cureInterpolation,@Spell
-syn match  cureEscape         contained "\v\\[ntr\\\"']"
+syn match  cureEscape         contained "\v\\(u\x{4}|[ntr\\\"'])"
 syn region cureInterpolation  contained
       \ matchgroup=cureInterpolationDelim
       \ start="#{" end="}"
       \ contains=TOP
 
-" --- Numbers ----------------------------------------------------------------
-syn match cureFloat  "\v<\d+\.\d+([eE][+-]?\d+)?>"
-syn match cureNumber "\v<0x[0-9a-fA-F]+>"
-syn match cureNumber "\v<0b[01]+>"
-syn match cureNumber "\v<\d+>"
+" Regex literal: ~r/.../flags. Keep the end bound anchored so a stray
+" slash in code can't drag the region forward.
+syn region cureRegex
+      \ matchgroup=cureRegexDelim
+      \ start=+\~r/+ skip=+\\.+ end=+/[a-zA-Z]*+
+      \ contains=cureEscape,@NoSpell
+      \ keepend
 
-" --- Atoms ------------------------------------------------------------------
-syn match  cureAtom       "\v\:[a-z_][a-zA-Z0-9_]*[!?]?"
-" Char literals are a single character (or escape) in single quotes. A bounded
-" match -- not a region -- avoids a stray apostrophe in prose (e.g. "Cure's")
-" dragging the highlighter forward until the next `'` in the file.
-syn match  cureQuotedAtom "\v'([^'\\]|\\.)'" contains=cureEscape
+" Char literals come in two forms:
+"   'c' or '\n'    -- a single character or escape in single quotes
+"   ?c  or ?\n     -- Erlang-style character literal
+" Both are bounded matches (never regions) to avoid a stray apostrophe in
+" prose (e.g. "Cure's") dragging the highlighter forward.
+syn match  cureQuotedChar "\v'([^'\\]|\\.)'"                contains=cureEscape
+syn match  cureErlangChar "\v\?(\\[\\'\"ntrabfv0]|[[:print:]])"
+
+" --- Numbers ----------------------------------------------------------------
+" `_` is a legal digit separator in every base.
+syn match cureFloat  "\v<\d[\d_]*\.\d[\d_]*([eE][+-]?\d[\d_]*)?>"
+syn match cureNumber "\v<0x[0-9a-fA-F][0-9a-fA-F_]*>"
+syn match cureNumber "\v<0b[01][01_]*>"
+syn match cureNumber "\v<\d[\d_]*>"
+
+" --- Atoms, holes, decorators -----------------------------------------------
+" Atoms keep the trailing `?`/`!` the same as identifiers.
+syn match  cureAtom "\v\:[a-z_][a-zA-Z0-9_]*[!?]?"
+
+" Typed holes -- `??` anonymous, `?name` named.
+syn match  cureHole "\v\?\?"
+syn match  cureHole "\v\?[A-Za-z_][A-Za-z0-9_]*"
+
+" Attributes / decorators -- `@record`, `@derive`, `@deprecated`, etc.
+syn match  cureAttribute "\v\@[A-Za-z_][A-Za-z0-9_]*"
 
 " --- Keywords ---------------------------------------------------------------
 " Control flow
 syn keyword cureKeyword if then else elif match return throw try catch finally
-syn keyword cureKeyword when where use local in for
+syn keyword cureKeyword when where in for do of end with yield
+syn keyword cureKeyword assert_type rewrite
 
-" Declarations
+" Declarations (top-level and nested containers)
 syn keyword cureDeclaration fn mod rec fsm proto impl type let
+syn keyword cureDeclaration actor sup app proof
+syn keyword cureDeclaration local use as extern
 
-" FSM lifecycle (callback-mode, v0.16+)
-syn keyword cureFsmCallback on_transition on_enter on_exit on_failure on_timer
+" Concurrency / message passing
+syn keyword cureConcurrency spawn send receive after
+
+" FSM / container lifecycle hooks
+syn keyword cureFsmCallback on_start on_stop on_transition on_enter on_exit
+syn keyword cureFsmCallback on_failure on_timer on_message on_phase
 
 " Literal constants
 syn keyword cureBoolean true false
 syn keyword cureConstant nil
 
-" Built-in types the stdlib ships with
-syn keyword cureBuiltinType Int Float Bool String Atom
-syn keyword cureBuiltinType List Tuple Map Set Pair
-syn keyword cureBuiltinType Option Result Unit Nat Vector
+" Built-in BEAM / Cure types
+syn keyword cureBuiltinType Int Float Bool String Atom Bitstring Binary
+syn keyword cureBuiltinType Char Any Unit Void Nat
+syn keyword cureBuiltinType List Tuple Map Set Pair Vector
+syn keyword cureBuiltinType Option Result Pid Ref
 syn keyword cureBuiltinType Sigma Pi Eq DPair
 
 " Well-known constructors / canonical proofs
@@ -88,7 +123,16 @@ syn keyword cureConstructor Zero Succ Pred Self refl
 " --- Operators --------------------------------------------------------------
 syn keyword cureOperator and or not
 
+" FSM transition literal: `--event-->` (event name may end in ?/!).
+" Matched before the generic operator table so the arrow doesn't split.
+syn match cureFsmTransition "\v--[A-Za-z_][A-Za-z0-9_]*[!?]?--\>"
+
+" Melquiades send operator: ASCII `<-|` and the envelope glyph U+2709 (✉).
+syn match cureOperator "\v\<-\|"
+syn match cureOperator "\%u2709"
+
 " Arrows and pipes (multi-char first so they win)
+syn match cureOperator "\v--\>"
 syn match cureOperator "\v-\>"
 syn match cureOperator "\v\<-"
 syn match cureOperator "\v\=\>"
@@ -110,6 +154,12 @@ syn match cureOperator "\v\*\>"
 syn match cureOperator "\v\<\$"
 syn match cureOperator "\v\$\>"
 
+" Compound assignment
+syn match cureOperator "\v\+\="
+syn match cureOperator "\v-\="
+syn match cureOperator "\v\*\="
+syn match cureOperator "\v/\="
+
 " Range
 syn match cureOperator "\v\.\.\="
 syn match cureOperator "\v\.\."
@@ -120,6 +170,7 @@ syn match cureOperator "\v\+\+"
 syn match cureOperator "\v--"
 syn match cureOperator "\v\|\|"
 syn match cureOperator "\v\&\&"
+syn match cureOperator "\v\*\*"
 
 " Single-char math / assignment / guard heads
 syn match cureOperator "\v[+\-*/%]"
@@ -129,8 +180,8 @@ syn match cureOperator "\v\|"
 
 " --- Delimiters -------------------------------------------------------------
 syn match cureDelimiter "\v[(),;]"
-" Tuple prefix `%[...]` -- highlight the `%` distinctly
-syn match cureTuplePrefix "\v\%\ze\["
+" Tuple / map prefix `%[...]` / `%{...}` -- highlight the `%` distinctly
+syn match cureTuplePrefix "\v\%\ze[\[{]"
 
 " --- Identifiers, function / module / type heads ----------------------------
 " Dotted module path (e.g. Std.Vector, Cure.Types.Pi)
@@ -145,17 +196,23 @@ syn match cureIdentifier "\v<[a-z_][A-Za-z0-9_]*[!?]?>"
 " Function definition heads: `fn name(...)`
 syn match cureFunctionDef "\vfn\s+\zs[a-z_][A-Za-z0-9_]*[!?]?"
 
-" Module heads: `mod Name` or `mod Std.Pair`
+" Container heads: `mod Name`, `actor Name`, `sup Name`, `app Name`,
+" `proof Name`. Allow dotted module paths for `mod` and `sup`.
 syn match cureModuleHead "\vmod\s+\zs[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*"
+syn match cureActorHead  "\vactor\s+\zs[A-Z][A-Za-z0-9_]*"
+syn match cureSupHead    "\vsup\s+\zs[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*"
+syn match cureAppHead    "\vapp\s+\zs[A-Z][A-Za-z0-9_]*"
+syn match cureProofHead  "\vproof\s+\zs[A-Z][A-Za-z0-9_]*"
 
 " Record, fsm, proto heads
 syn match cureRecordHead "\vrec\s+\zs[A-Z][A-Za-z0-9_]*"
 syn match cureFsmHead    "\vfsm\s+\zs[A-Z][A-Za-z0-9_]*"
 syn match cureProtoHead  "\vproto\s+\zs[A-Z][A-Za-z0-9_]*"
 
-" `impl Trait` or `impl Trait for Type`
+" `impl Trait`, `impl Trait for Type`, `use Foo.Bar`
 syn match cureImplHead "\vimpl\s+\zs[A-Z][A-Za-z0-9_]*"
-syn match cureImplFor  "\vimpl\s+[A-Z][A-Za-z0-9_]*\s+for\s+\zs[A-Z][A-Za-z0-9_]*"
+syn match cureImplFor  "\vimpl\s+[A-Z][A-Za-z0-9_]*\s+for\s+\zs[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*"
+syn match cureUseHead  "\vuse\s+\zs[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*"
 
 " `type Name` heads (ADT / alias / refinement)
 syn match cureTypeHead "\vtype\s+\zs[A-Z][A-Za-z0-9_]*"
@@ -164,48 +221,61 @@ syn match cureTypeHead "\vtype\s+\zs[A-Z][A-Za-z0-9_]*"
 syn match cureTypeAnnotation "\v:\s*\zs[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*"
 
 " --- Highlight links --------------------------------------------------------
-hi def link cureComment           Comment
-hi def link cureDocComment        SpecialComment
-hi def link cureFencedDoc         SpecialComment
-hi def link cureTodo              Todo
+hi def link cureComment            Comment
+hi def link cureDocComment         SpecialComment
+hi def link cureFencedDoc          SpecialComment
+hi def link cureDocTag             Tag
+hi def link cureTodo               Todo
 
-hi def link cureString            String
-hi def link cureStringDelim       String
-hi def link cureEscape            SpecialChar
-hi def link cureInterpolation     Special
+hi def link cureString             String
+hi def link cureStringDelim        String
+hi def link cureEscape             SpecialChar
+hi def link cureInterpolation      Special
 hi def link cureInterpolationDelim SpecialChar
+hi def link cureRegex              String
+hi def link cureRegexDelim         Delimiter
 
-hi def link cureNumber            Number
-hi def link cureFloat             Float
+hi def link cureNumber             Number
+hi def link cureFloat              Float
 
-hi def link cureAtom              Constant
-hi def link cureQuotedAtom        Constant
+hi def link cureAtom               Constant
+hi def link cureQuotedChar         Character
+hi def link cureErlangChar         Character
+hi def link cureHole               Special
+hi def link cureAttribute          PreProc
 
-hi def link cureKeyword           Statement
-hi def link cureDeclaration       Keyword
-hi def link cureFsmCallback       Keyword
-hi def link cureBoolean           Boolean
-hi def link cureConstant          Constant
+hi def link cureKeyword            Statement
+hi def link cureDeclaration        Keyword
+hi def link cureConcurrency        Keyword
+hi def link cureFsmCallback        Keyword
+hi def link cureBoolean            Boolean
+hi def link cureConstant           Constant
 
-hi def link cureBuiltinType       Type
-hi def link cureConstructor       StorageClass
+hi def link cureBuiltinType        Type
+hi def link cureConstructor        StorageClass
 
-hi def link cureOperator          Operator
-hi def link cureDelimiter         Delimiter
-hi def link cureTuplePrefix       Special
+hi def link cureFsmTransition      Special
+hi def link cureOperator           Operator
+hi def link cureDelimiter          Delimiter
+hi def link cureTuplePrefix        Special
 
-hi def link cureModulePath        Structure
-hi def link cureType              Type
-hi def link cureIdentifier        Identifier
+hi def link cureModulePath         Structure
+hi def link cureType               Type
+hi def link cureIdentifier         Identifier
 
-hi def link cureFunctionDef       Function
-hi def link cureModuleHead        PreProc
-hi def link cureRecordHead        PreProc
-hi def link cureFsmHead           PreProc
-hi def link cureProtoHead         PreProc
-hi def link cureImplHead          Special
-hi def link cureImplFor           Type
-hi def link cureTypeHead          PreProc
-hi def link cureTypeAnnotation    TypeDef
+hi def link cureFunctionDef        Function
+hi def link cureModuleHead         PreProc
+hi def link cureActorHead          PreProc
+hi def link cureSupHead            PreProc
+hi def link cureAppHead            PreProc
+hi def link cureProofHead          PreProc
+hi def link cureRecordHead         PreProc
+hi def link cureFsmHead            PreProc
+hi def link cureProtoHead          PreProc
+hi def link cureImplHead           Special
+hi def link cureImplFor            Type
+hi def link cureUseHead            Include
+hi def link cureTypeHead           PreProc
+hi def link cureTypeAnnotation     TypeDef
 
 let b:current_syntax = "cure"
