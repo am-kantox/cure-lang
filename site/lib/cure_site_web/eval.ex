@@ -72,7 +72,7 @@ defmodule CureSiteWeb.Eval do
   defp do_eval(source) do
     # Capture stdout from the compiled module's execution.
     output =
-      ExUnit.CaptureIO.capture_io(fn ->
+      capture_io(fn ->
         case compile_and_run(source) do
           {:ok, value} -> send(self(), {:eval_result, {:ok, value}})
           {:error, _} = err -> send(self(), {:eval_result, err})
@@ -91,6 +91,24 @@ defmodule CureSiteWeb.Eval do
     end
   rescue
     e -> {:error, "Evaluation error: #{Exception.message(e)}"}
+  end
+
+  # Lightweight stdout capture that does not depend on ExUnit (which is not
+  # started outside the :test environment). Redirects the current process's
+  # group leader to a `StringIO` device for the duration of `fun`.
+  defp capture_io(fun) when is_function(fun, 0) do
+    {:ok, string_io} = StringIO.open("")
+    original_gl = Process.group_leader()
+    true = Process.group_leader(self(), string_io)
+
+    try do
+      fun.()
+    after
+      Process.group_leader(self(), original_gl)
+    end
+
+    {:ok, {_input, output}} = StringIO.close(string_io)
+    output
   end
 
   defp compile_and_run(source) do
