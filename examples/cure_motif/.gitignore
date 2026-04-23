@@ -1,0 +1,7 @@
+/_build/
+/deps/
+/doc/
+/.cure-trace/
+erl_crash.dump
+mix.lock
+Cure.lock

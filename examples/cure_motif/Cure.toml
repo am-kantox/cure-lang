@@ -1,0 +1,29 @@
+[project]
+name          = "cure_motif"
+version       = "0.1.0"
+source_paths  = ["cure_src"]
+
+[dependencies]
+
+[compiler]
+type_check = false
+optimize   = false
+
+[application]
+name         = "cure_motif"
+vsn          = "0.1.0"
+description  = "Cure motif showcase: length-indexed step sequencer with a typed envelope FSM"
+applications = ["logger"]
+start_phases = []
+
+[application.env]
+bpm           = 120
+steps_per_beat = 4
+channel       = 0
+voice_count   = 4
+
+[release]
+name         = "cure_motif"
+vsn          = "0.1.0"
+include_erts = false
+applications = []

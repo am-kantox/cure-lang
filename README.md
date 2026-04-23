@@ -414,6 +414,14 @@ See the `examples/` directory for sample Cure programs:
   `on_phase :warm_cache`), end-to-end message passing between actors
   through the Melquiades Operator `<-|`, `Std.App` environment reads,
   and `cure release` packaging
+- `cure_motif/` -- length-indexed step sequencer showcase: refinement
+  types for every MIDI-domain primitive, `Std.Vector`-backed
+  `Pattern(n)` helpers with observable length claims, an
+  `@record`-annotated callback-mode `Envelope` FSM, `Cure.Temporal`
+  liveness proofs over the FSM graph, a three-actor supervision tree
+  (`Clock`, `Sequencer`, `Voice`), a Melquiades-relay sequencer, an
+  `app CureMotif` container, and an Elixir-side ASCII piano-roll
+  renderer driven by `CureMotif.Demo.run/0`
 
 Compile and run:
 

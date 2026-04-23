@@ -124,7 +124,11 @@ emit braille/ASCII art of the structure. Optionally
 
 ### 20. Music from FSMs (`cure sing`)
 Map states to MIDI notes, transitions to note changes, replay an
-execution trace as a melody.
+execution trace as a melody. Adjacent: `examples/cure_motif/` ships a
+length-indexed step sequencer with an `@record`-annotated envelope
+FSM, a three-actor supervision tree, `Cure.Temporal` liveness proofs,
+and an ASCII piano-roll renderer -- the "FSM as music" half of the
+idea already exists in runnable form.
 
 ### 21. WASM playground  [v0.27.0]
 Compile `Cure.Types.Checker` + parser to WASM and publish as
