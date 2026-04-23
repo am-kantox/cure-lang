@@ -112,8 +112,10 @@ defmodule Cure.Compiler.Parser do
         parse_program(state, [node | acc])
 
       %Token{type: :doc_comment} ->
-        # Collect consecutive doc comments, attach to next definition
-        {doc_text, state} = collect_doc_comments(state)
+        # Collect consecutive doc comments (including blocks separated by
+        # blank-line gaps when no statement intervenes), attach to next
+        # definition.
+        {doc_text, state} = collect_all_doc_comments(state)
         state = skip_newlines(state)
 
         case peek(state) do
@@ -3788,7 +3790,12 @@ defmodule Cure.Compiler.Parser do
         parse_block_body(state, [node | acc])
 
       %Token{type: :doc_comment} ->
-        {doc_text, state} = collect_doc_comments(state)
+        # Collect consecutive doc comment blocks -- including ones
+        # separated by blank-line gaps -- so that prose split across
+        # paragraphs (or intermixed with plain `#` comments the lexer
+        # drops) still attaches to the following definition as a
+        # single docstring.
+        {doc_text, state} = collect_all_doc_comments(state)
         state = skip_newlines(state)
 
         case peek(state) do
@@ -3950,6 +3957,40 @@ defmodule Cure.Compiler.Parser do
       _ ->
         doc = acc |> Enum.reverse() |> Enum.join("\n")
         {doc, state}
+    end
+  end
+
+  # Collect every consecutive `:doc_comment` block, merging blocks
+  # separated by blank-line gaps (or by plain `#` comments, which the
+  # lexer drops when `preserve_comments: false`) with a paragraph
+  # break. Used by `parse_program/2` and `parse_block_body/2` where any
+  # leftover doc-comment tokens ahead of the next statement must bind
+  # to that statement -- otherwise the parser would try to recurse
+  # into `parse_expr/2` on a `:doc_comment` prefix and raise an
+  # "unexpected doc_comment" error.
+  defp collect_all_doc_comments(state) do
+    {first, state} = collect_doc_comments(state)
+    collect_all_doc_comments(state, first)
+  end
+
+  defp collect_all_doc_comments(state, acc) do
+    state_after_ws = skip_newlines(state)
+
+    case peek(state_after_ws) do
+      %Token{type: :doc_comment} ->
+        {next, state_after_ws} = collect_doc_comments(state_after_ws)
+
+        merged =
+          case {acc, next} do
+            {"", n} -> n
+            {a, ""} -> a
+            {a, n} -> a <> "\n\n" <> n
+          end
+
+        collect_all_doc_comments(state_after_ws, merged)
+
+      _ ->
+        {acc, state}
     end
   end
 
