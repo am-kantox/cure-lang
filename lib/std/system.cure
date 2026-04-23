@@ -1,27 +1,45 @@
 mod Std.System
-  ## System operations: time, process info, exit.
+  ## System operations: time, process identity, node info, exit.
+  ##
+  ## Light wrappers around `:erlang` and `:os` BIFs. `exit/1` halts
+  ## the whole BEAM node -- use with care.
+
+  ## Native monotonic-time reading in implementation-defined units.
+  ## Use for measuring durations (`a - b` is meaningful); not
+  ## wall-clock.
   @extern(:erlang, :system_time, 0)
   fn monotonic_time() -> Int
 
+  ## OS wall-clock time in `unit` (typically `:second`, `:millisecond`,
+  ## `:microsecond`, or `:nanosecond`).
   @extern(:os, :system_time, 1)
   fn system_time(unit: Atom) -> Int
 
+  ## Current millisecond timestamp since the Unix epoch.
   fn timestamp_ms() -> Int = system_time(:millisecond)
 
+  ## Current microsecond timestamp since the Unix epoch.
   fn timestamp_us() -> Int = system_time(:microsecond)
 
+  ## Pid of the calling process.
   @extern(:erlang, :self, 0)
   fn self() -> Pid
 
+  ## Atom name of the local node.
   @extern(:erlang, :node, 0)
   fn node() -> Atom
 
+  ## Query the VM with `:erlang.system_info/1`. Return type depends on
+  ## `key`; callers should narrow it via the wrappers below.
   @extern(:erlang, :system_info, 1)
   fn system_info(key: Atom) -> T
 
+  ## Running OTP release version (as a charlist, per the BIF).
   fn otp_version() -> T = system_info(:otp_release)
 
+  ## Number of logical processors available to the VM.
   fn cpu_count() -> Int = system_info(:logical_processors)
 
+  ## Halt the whole BEAM node with the given exit status.
   @extern(:erlang, :halt, 1)
   fn exit(code: Int) -> Atom

@@ -1,50 +1,76 @@
 mod Std.Math
-  ## Mathematical operations: abs, sqrt, pow, trig, rounding, min/max.
+  ## Mathematical operations.
+  ##
+  ## A thin veneer over Erlang's `:math` and `:erlang` BIFs plus a
+  ## handful of small integer helpers written in Cure. `Float`
+  ## functions (`sqrt`, `pow`, `log`, ...) operate on IEEE-754
+  ## doubles; integer helpers expect `Int`.
+
+  ## Absolute value. Implemented as `:erlang.abs/1`.
   @extern(:erlang, :abs, 1)
   fn abs(x: Int) -> Int
 
+  ## Square root; `:math.sqrt/1`.
   @extern(:math, :sqrt, 1)
   fn sqrt(x: Float) -> Float
 
+  ## `base` raised to `exp`; `:math.pow/2`.
   @extern(:math, :pow, 2)
   fn pow(base: Float, exp: Float) -> Float
 
+  ## Natural logarithm; `:math.log/1`.
   @extern(:math, :log, 1)
   fn log(x: Float) -> Float
 
+  ## Base-2 logarithm; `:math.log2/1`.
   @extern(:math, :log2, 1)
   fn log2(x: Float) -> Float
 
+  ## Base-10 logarithm; `:math.log10/1`.
   @extern(:math, :log10, 1)
   fn log10(x: Float) -> Float
 
+  ## Smallest integer float >= `x`; `:math.ceil/1`.
   @extern(:math, :ceil, 1)
   fn ceil(x: Float) -> Float
 
+  ## Greatest integer float <= `x`; `:math.floor/1`.
   @extern(:math, :floor, 1)
   fn floor(x: Float) -> Float
 
+  ## Round a float to the nearest integer using banker's rounding.
+  ## Implemented as `:erlang.round/1`.
   @extern(:erlang, :round, 1)
   fn round(x: Float) -> Int
 
+  ## The mathematical constant pi; `:math.pi/0`.
   @extern(:math, :pi, 0)
   fn pi() -> Float
 
+  ## Integer maximum.
   fn max(a: Int, b: Int) -> Int = if a >= b then a else b
 
+  ## Integer minimum.
   fn min(a: Int, b: Int) -> Int = if a <= b then a else b
 
+  ## Clamp `value` into the inclusive range `[lo, hi]`.
   fn clamp(value: Int, lo: Int, hi: Int) -> Int =
     if value < lo then lo else if value > hi then hi else value
 
+  ## Sign of `x`: `1` for positive, `0 - 1` for negative, `0` for zero.
   fn sign(x: Int) -> Int =
     if x > 0 then 1 else if x < 0 then 0 - 1 else 0
 
+  ## Additive inverse.
   fn negate(x: Int) -> Int = 0 - x
 
+  ## `true` when `x` is even.
   fn is_even(x: Int) -> Bool = x % 2 == 0
 
+  ## `true` when `x` is odd.
   fn is_odd(x: Int) -> Bool = x % 2 != 0
 
+  ## Integer division that returns `0` on divide-by-zero instead of
+  ## raising. Truncates toward zero otherwise.
   fn safe_div(a: Int, b: Int) -> Int =
     if b == 0 then 0 else a / b

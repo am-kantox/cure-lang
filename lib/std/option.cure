@@ -1,44 +1,62 @@
 mod Std.Option
-  ## Option type operations: some, none, map, flat_map, unwrap.
+  ## Standalone `Option(T)` helpers.
+  ##
+  ## Parallel to the Option half of `Std.Core`, kept separate so that
+  ## callers can `use Std.Option` without pulling in the rest of the
+  ## core combinators. `Option(T)` lowers to `{:some, v}` / `{:none}`
+  ## on the BEAM.
+
+  ## Build a `Some(value)` Option.
   fn some(value: T) -> Option(T) = Some(value)
 
+  ## The empty Option.
   fn none() -> Option(T) = None()
 
+  ## `true` when the option holds a value.
   fn is_some(opt: Option(T)) -> Bool =
     match opt
       Some(_) -> true
       None() -> false
 
+  ## `true` when the option is empty.
   fn is_none(opt: Option(T)) -> Bool =
     match opt
       Some(_) -> false
       None() -> true
 
+  ## Extract the value; returns `default` on `None`.
   fn unwrap(opt: Option(T), default: T) -> T =
     match opt
       Some(v) -> v
       None() -> default
 
+  ## Functorial map; preserves `None`.
   fn map(opt: Option(T), f: T -> U) -> Option(U) =
     match opt
       Some(v) -> Some(f(v))
       None() -> None()
 
+  ## Monadic bind; short-circuits on `None`.
   fn flat_map(opt: Option(T), f: T -> Option(U)) -> Option(U) =
     match opt
       Some(v) -> f(v)
       None() -> None()
 
+  ## Unwrap-or-default. Useful as a pipeline terminal.
   fn or_else(opt: Option(T), default: T) -> T =
     match opt
       Some(v) -> v
       None() -> default
 
+  ## Keep the value only when `pred` accepts it; otherwise drop to
+  ## `None`.
   fn filter(opt: Option(T), pred: T -> Bool) -> Option(T) =
     match opt
       Some(v) -> if pred(v) then Some(v) else None()
       None() -> None()
 
+  ## Pair two Options. Returns `Some(%[va, vb])` when both sides are
+  ## `Some`, `None` otherwise.
   fn zip(a: Option(T), b: Option(U)) -> Option(Tuple) =
     match a
       None() -> None()

@@ -1,52 +1,76 @@
 mod Std.Core
-  ## Identity, composition, boolean, comparison, Result, and Option operations.
+  ## Identity, composition, booleans, comparison, and the `Result` /
+  ## `Option` sum types.
+  ##
+  ## These are the most commonly used combinators in Cure programs.
+  ## `Result(T, E)` and `Option(T)` lower to `{:ok, v}` / `{:error, e}`
+  ## and `{:some, v}` / `{:none}` respectively so they round-trip with
+  ## Elixir and Erlang without wrappers.
 
-  ## Returns its argument unchanged.
+  # -- Combinators ------------------------------------------------------------
+
+  ## Identity function: returns its argument unchanged.
   fn identity(x: T) -> T = x
 
   ## Right-to-left function composition.
+  ## `compose(f, g)(x)` is `f(g(x))`.
   fn compose(f: B -> C, g: A -> B) -> (A -> C) =
     fn(x) -> f(g(x))
 
-  ## Applies a function to a value (flip of apply).
+  ## Apply a function to a value, reads left-to-right; flip of `apply/2`.
+  ## Useful to express `|>`-style pipelines as plain calls.
   fn pipe(x: T, f: T -> U) -> U = f(x)
 
-  ## Applies a function to a value.
+  ## Apply a function to a value. `apply(f, x)` is the same as `f(x)`,
+  ## but passing `apply` itself as a value is sometimes useful.
   fn apply(f: T -> U, x: T) -> U = f(x)
 
-  ## Returns a function that always returns x.
+  ## Return a function that ignores its argument and always returns `x`.
   fn const(x: T) -> (U -> T) =
     fn(_y) -> x
 
   # -- Boolean operations -----------------------------------------------------
 
+  ## Logical negation.
   fn bool_not(x: Bool) -> Bool = if x then false else true
 
+  ## Short-circuit logical AND.
   fn bool_and(x: Bool, y: Bool) -> Bool = if x then y else false
 
+  ## Short-circuit logical OR.
   fn bool_or(x: Bool, y: Bool) -> Bool = if x then true else y
 
+  ## Logical exclusive-or.
   fn bool_xor(x: Bool, y: Bool) -> Bool =
     if x then bool_not(y) else y
 
   # -- Comparison operations --------------------------------------------------
 
+  ## Structural equality (`x == y`).
   fn eq(x: T, y: T) -> Bool = x == y
 
+  ## Structural inequality (`x != y`).
   fn ne(x: T, y: T) -> Bool = x != y
 
+  ## Strict less-than (`x < y`).
   fn lt(x: T, y: T) -> Bool = x < y
 
+  ## Less-than-or-equal (`x <= y`).
   fn le(x: T, y: T) -> Bool = x <= y
 
+  ## Strict greater-than (`x > y`).
   fn gt(x: T, y: T) -> Bool = x > y
 
+  ## Greater-than-or-equal (`x >= y`).
   fn ge(x: T, y: T) -> Bool = x >= y
 
+  ## Pointwise minimum using the primitive `<=` ordering.
   fn min(x: T, y: T) -> T = if x <= y then x else y
 
+  ## Pointwise maximum using the primitive `>=` ordering.
   fn max(x: T, y: T) -> T = if x >= y then x else y
 
+  ## Clamp `value` into the inclusive range `[lo, hi]`.
   fn clamp(value: T, lo: T, hi: T) -> T =
     if value < lo then lo else if value > hi then hi else value
 
@@ -54,45 +78,57 @@ mod Std.Core
   # Result is represented as Ok(value) -> {:ok, value}
   #                          Error(reason) -> {:error, reason}
 
+  ## Build an `Ok(value)` Result.
   fn ok(value: T) -> Result(T, E) = Ok(value)
 
+  ## Build an `Error(reason)` Result.
   fn error(reason: E) -> Result(T, E) = Error(reason)
 
+  ## `true` when the result is in the `Ok` arm.
   fn is_ok(result: Result(T, E)) -> Bool =
     match result
       Ok(_) -> true
       Error(_) -> false
 
+  ## `true` when the result is in the `Error` arm.
   fn is_error(result: Result(T, E)) -> Bool =
     match result
       Ok(_) -> false
       Error(_) -> true
 
+  ## Extract the value from an `Ok`, falling back to `default` on `Error`.
   fn unwrap_ok(result: Result(T, E), default: T) -> T =
     match result
       Ok(v) -> v
       Error(_) -> default
 
+  ## Extract the reason from an `Error`, falling back to `default` on `Ok`.
   fn unwrap_error(result: Result(T, E), default: E) -> E =
     match result
       Ok(_) -> default
       Error(e) -> e
 
+  ## Map over the `Ok` arm; passes `Error` through unchanged.
   fn map_ok(result: Result(T, E), f: T -> U) -> Result(U, E) =
     match result
       Ok(v) -> Ok(f(v))
       Error(e) -> Error(e)
 
+  ## Map over the `Error` arm; passes `Ok` through unchanged.
   fn map_error(result: Result(T, E), f: E -> F) -> Result(T, F) =
     match result
       Ok(v) -> Ok(v)
       Error(e) -> Error(f(e))
 
+  ## Monadic bind over the `Ok` arm; short-circuits on `Error`.
+  ## Chain fallible steps as `and_then(result, f)`.
   fn and_then(result: Result(T, E), f: T -> Result(U, E)) -> Result(U, E) =
     match result
       Ok(v) -> f(v)
       Error(e) -> Error(e)
 
+  ## Recover from an `Error` by calling `f` on the reason; `Ok` is
+  ## passed through.
   fn or_else(result: Result(T, E), f: E -> Result(T, F)) -> Result(T, F) =
     match result
       Ok(v) -> Ok(v)
@@ -102,35 +138,43 @@ mod Std.Core
   # Option is represented as Some(value) -> {:some, value}
   #                          None()      -> {:none}
 
+  ## Build a `Some(value)` Option.
   fn some(value: T) -> Option(T) = Some(value)
 
+  ## The empty Option.
   fn none() -> Option(T) = None()
 
+  ## `true` when the option holds a value.
   fn is_some(opt: Option(T)) -> Bool =
     match opt
       Some(_) -> true
       None() -> false
 
+  ## `true` when the option is empty.
   fn is_none(opt: Option(T)) -> Bool =
     match opt
       Some(_) -> false
       None() -> true
 
+  ## Extract the value from a `Some`, falling back to `default` on `None`.
   fn unwrap(opt: Option(T), default: T) -> T =
     match opt
       Some(v) -> v
       None() -> default
 
+  ## Functorial map on `Option`. `None()` is preserved.
   fn map_option(opt: Option(T), f: T -> U) -> Option(U) =
     match opt
       Some(v) -> Some(f(v))
       None() -> None()
 
+  ## Monadic bind on `Option`; short-circuits on `None`.
   fn flat_map_option(opt: Option(T), f: T -> Option(U)) -> Option(U) =
     match opt
       Some(v) -> f(v)
       None() -> None()
 
+  ## Unwrap-or-default; an alias used by `Std.Match`.
   fn option_or(opt: Option(T), default: T) -> T =
     match opt
       Some(v) -> v

@@ -15,7 +15,7 @@ mod Std.Json
   ##
   ## - `Null`        <-> JSON `null`
   ## - `Bool(b)`     <-> JSON `true` / `false`
-  ## - `Num(n)`      <-> JSON number (always a Float at runtime)
+  ## - `Num(n)`      <-> JSON number (always a `Float` at runtime)
   ## - `Str(s)`      <-> JSON string
   ## - `Arr(xs)`     <-> JSON array
   ## - `Obj(kvs)`    <-> JSON object (ordered list of `JsonPair`)
@@ -27,15 +27,18 @@ mod Std.Json
     | Arr(List(Value))
     | Obj(List(JsonPair))
 
+  ## Encode a `Value` as a JSON string.
   @extern(:cure_std_json, :encode, 1)
   fn encode(v: Value) -> String
 
+  ## Decode a JSON string into a `Value`. Returns `Error(msg)` on
+  ## malformed input.
   @extern(:cure_std_json, :decode, 1)
   fn decode(src: String) -> Result(Value, String)
 
   # -- Construction helpers ----------------------------------------------------
 
-  ## Widen a Cure `Int` to a JSON number Value (integer path).
+  ## Widen a Cure `Int` to a JSON number `Value` via the integer path.
   @extern(:cure_std_json, :num_of_int, 1)
   fn num_of_int(n: Int) -> Value
 

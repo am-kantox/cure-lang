@@ -3418,8 +3418,22 @@ defmodule Cure.Compiler.Parser do
   # want to interpret the leading `##` block as the container's own doc
   # (e.g. `mod Name`). Returns the doc separately so the caller can
   # attach it to the container meta instead of the first body statement.
+  #
+  # The lexer doesn't emit `:indent` for doc-comment-only lines, so a
+  # module whose first body definition is preceded by its own `##`
+  # block has a token stream of the shape
+  #
+  #     [mod, Name, newline, doc_module..., doc_first..., indent, def...]
+  #
+  # `collect_leading_docs/1` honours blank-line gaps and only consumes
+  # the contiguous module-doc run, leaving `doc_first` in the stream.
+  # To let parsing continue into the indented body, we look past any
+  # further doc comments when searching for `:indent`, and feed the
+  # first-definition doc back in via `attach_leading_doc/2` so it
+  # binds to the first body statement.
   defp parse_definition_block_with_lead_doc(state) do
     {leading_doc, state} = collect_leading_docs(state)
+    {pending_first_doc, state} = collect_leading_docs(state)
     {leading_comments, state} = collect_leading_line_comments(state)
 
     case peek(state) do
@@ -3429,6 +3443,7 @@ defmodule Cure.Compiler.Parser do
         state = expect_dedent(state)
 
         stmts = prepend_line_comments(stmts, leading_comments)
+        stmts = attach_leading_doc(stmts, pending_first_doc)
 
         {stmts, leading_doc, state}
 
@@ -3913,15 +3928,24 @@ defmodule Cure.Compiler.Parser do
   # -- Doc Comment Helpers -----------------------------------------------------
 
   defp collect_doc_comments(state) do
-    collect_doc_comments(state, [])
+    collect_doc_comments(state, [], nil)
   end
 
-  defp collect_doc_comments(state, acc) do
+  # Collect a contiguous run of `:doc_comment` tokens, using the source
+  # line numbers already on the tokens to break on a blank-line gap.
+  # Blank lines don't produce tokens (the lexer eats them silently), so
+  # consecutive doc comments appear adjacent in the stream; compare
+  # their source lines to tell `## foo\n## bar` (adjacent, line delta 1
+  # for single-line `##` tokens) from `## foo\n\n## bar` (separated,
+  # line delta 2+). A gap terminates the run so the next `##` block
+  # binds to the following definition rather than to the leading doc.
+  defp collect_doc_comments(state, acc, prev_line) do
     case peek(state) do
-      %Token{type: :doc_comment, value: text} ->
+      %Token{type: :doc_comment, value: text, line: line}
+      when prev_line == nil or line - prev_line <= 1 ->
         state = advance(state)
         state = skip_newlines(state)
-        collect_doc_comments(state, [text | acc])
+        collect_doc_comments(state, [text | acc], line)
 
       _ ->
         doc = acc |> Enum.reverse() |> Enum.join("\n")

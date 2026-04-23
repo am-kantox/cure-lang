@@ -1,34 +1,40 @@
 mod Std.Io
   ## Standard I/O operations for printing to stdout.
+  ##
+  ## Wall-clock stdout primitives. Every entry that actually writes
+  ## carries the `! Io` effect so callers are forced to declare it
+  ## in their own signatures.
 
-  ## Print a string to stdout without trailing newline.
+  ## Print a string to stdout without a trailing newline.
+  ## Wraps `:io.put_chars/1`.
   @extern(:io, :put_chars, 1)
   fn put_chars(text: String) -> Atom ! Io
 
-  ## Print a string to stdout with trailing newline.
+  ## Print a string to stdout with a trailing newline.
   fn println(text: String) -> Atom ! Io =
     put_chars(text <> "\n")
 
-  ## Print a string to stdout without trailing newline.
+  ## Print a string to stdout without a trailing newline. Alias for
+  ## `put_chars/1`; kept for readability at call sites.
   fn print(text: String) -> Atom ! Io =
     put_chars(text)
 
-  # Print a value converted to string (integers)
+  ## Render an integer as its decimal string (`:erlang.integer_to_binary/1`).
   @extern(:erlang, :integer_to_binary, 1)
   fn int_to_string(n: Int) -> String
 
-  # Print a value converted to string (floats)
+  ## Render a float as its decimal string (`:erlang.float_to_binary/1`).
   @extern(:erlang, :float_to_binary, 1)
   fn float_to_string(f: Float) -> String
 
-  # Print a value converted to string (atoms)
+  ## Render an atom as its name (`:erlang.atom_to_binary/1`).
   @extern(:erlang, :atom_to_binary, 1)
   fn atom_to_string(a: Atom) -> String
 
-  # Print an integer followed by newline
+  ## Print an integer followed by a newline.
   fn print_int(n: Int) -> Atom =
     println(int_to_string(n))
 
-  # Print a float followed by newline
+  ## Print a float followed by a newline.
   fn print_float(f: Float) -> Atom =
     println(float_to_string(f))

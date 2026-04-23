@@ -1,39 +1,40 @@
 mod Std.Supervisor
   ## Start, stop, and introspect Cure supervisor trees.
-  #
-  # Each Cure `sup` container compiles to a loaded BEAM module that
-  # implements the `:supervisor` behaviour. The functions below
-  # delegate to `Cure.Sup.Runtime`, which wraps `:supervisor` with a
-  # tiny ETS registry so a tree can be reached by its compiled module
-  # atom without threading pids through user code.
+  ##
+  ## Each Cure `sup` container compiles to a loaded BEAM module that
+  ## implements the `:supervisor` behaviour. The functions below
+  ## delegate to `Cure.Sup.Runtime`, which wraps `:supervisor` with
+  ## a tiny ETS registry so a tree can be reached by its compiled
+  ## module atom without threading pids through user code.
 
-  # Start a compiled Cure supervisor module. Returns the top-level
-  # supervisor pid on success.
+  ## Start a compiled Cure supervisor module. Returns the top-level
+  ## supervisor pid on success.
   @extern(Elixir.Cure.Sup.Builtins, :sup_start, 1)
   fn start(sup_module: Atom) -> Pid
 
-  # Start a compiled Cure supervisor with an explicit initial argument
-  # that is threaded into its `init/1` callback.
+  ## Start a compiled Cure supervisor with an explicit initial
+  ## argument that is threaded into its `init/1` callback.
   @extern(Elixir.Cure.Sup.Builtins, :sup_start_with, 2)
   fn start_with(sup_module: Atom, init: Any) -> Pid
 
-  # Stop a running supervisor tree.
+  ## Stop a running supervisor tree.
   @extern(Elixir.Cure.Sup.Builtins, :sup_stop, 1)
   fn stop(sup_module: Atom) -> Atom
 
-  # Return the list of `{id, child_pid, type, modules}` tuples for the
-  # supervisor's direct children.
+  ## Return the list of `%[id, child_pid, type, modules]` tuples for
+  ## the supervisor's direct children.
   @extern(Elixir.Cure.Sup.Builtins, :sup_which_children, 1)
   fn which_children(sup_module: Atom) -> List(Tuple)
 
-  # Count children grouped by type.
+  ## Count children grouped by type, as `%{type => count}`.
   @extern(Elixir.Cure.Sup.Builtins, :sup_count_children, 1)
   fn count_children(sup_module: Atom) -> Map
 
-  # Look up a running supervisor's pid by its compiled module atom.
+  ## Look up a running supervisor's pid by its compiled module atom.
+  ## Returns `nil` when no such tree is running.
   @extern(Elixir.Cure.Sup.Builtins, :sup_lookup, 1)
   fn lookup(sup_module: Atom) -> Pid
 
-  # List every supervisor tree the runtime is currently tracking.
+  ## List every supervisor tree the runtime is currently tracking.
   @extern(Elixir.Cure.Sup.Builtins, :sup_list, 0)
   fn list() -> List(Atom)

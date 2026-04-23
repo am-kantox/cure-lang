@@ -1,28 +1,46 @@
 mod Std.Ord
-  ## Ordering protocol for comparing ordered values.
+  ## Ordering protocol: three-way compare plus total-order helpers.
+  ##
+  ## The `compare/2` callback returns one of `:lt`, `:eq`, `:gt`.
+  ## Derived `lt`, `le`, `gt`, `ge` helpers build on that.
+
+  ## Total ordering over `T`.
   proto Ord(T)
+    ## `:lt` when `a < b`, `:gt` when `a > b`, `:eq` otherwise.
     fn compare(a: T, b: T) -> Atom
 
+  ## `Ord` impl for `Int`.
   impl Ord for Int
+    ## Integer three-way compare.
     fn compare(a: Int, b: Int) -> Atom =
       if a < b then :lt else if a > b then :gt else :eq
 
+  ## `Ord` impl for `Float`.
   impl Ord for Float
+    ## Float three-way compare (NaNs follow BEAM's term-order).
     fn compare(a: Float, b: Float) -> Atom =
       if a < b then :lt else if a > b then :gt else :eq
 
+  ## `Ord` impl for `String`. Uses byte-wise ordering of the binary.
   impl Ord for String
+    ## String three-way compare.
     fn compare(a: String, b: String) -> Atom =
       if a < b then :lt else if a > b then :gt else :eq
 
+  ## `Ord` impl for `Atom`. Uses BEAM atom ordering.
   impl Ord for Atom
+    ## Atom three-way compare.
     fn compare(a: Atom, b: Atom) -> Atom =
       if a < b then :lt else if a > b then :gt else :eq
 
+  ## Strict less-than derived from `compare/2`.
   fn lt(a: T, b: T) -> Bool = compare(a, b) == :lt
 
+  ## Less-than-or-equal derived from `compare/2`.
   fn le(a: T, b: T) -> Bool = compare(a, b) != :gt
 
+  ## Strict greater-than derived from `compare/2`.
   fn gt(a: T, b: T) -> Bool = compare(a, b) == :gt
 
+  ## Greater-than-or-equal derived from `compare/2`.
   fn ge(a: T, b: T) -> Bool = compare(a, b) != :lt

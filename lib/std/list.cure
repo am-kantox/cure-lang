@@ -1,10 +1,18 @@
 mod Std.List
-  ## List operations: length, head, tail, map, filter, fold, and more.
+  ## Eager, persistent, singly-linked lists.
+  ##
+  ## All operations are recursive over cons cells; mutation is not
+  ## possible. Helpers come in five flavours: queries, access,
+  ## construction, transformations, and search. Everything is
+  ## polymorphic in the element type `T`.
+
   # -- Basic queries ----------------------------------------------------------
 
+  ## Length of `list` as an `Int`. Delegates to `:erlang.length/1`.
   @extern(:erlang, :length, 1)
   fn length(list: List(T)) -> Int
 
+  ## `true` when `list` has no elements.
   fn is_empty(list: List(T)) -> Bool =
     match list
       [] -> true
@@ -12,16 +20,19 @@ mod Std.List
 
   # -- Head / Tail ------------------------------------------------------------
 
+  ## First element of `list`; returns `default` when empty.
   fn head(list: List(T), default: T) -> T =
     match list
       [h | _] -> h
       [] -> default
 
+  ## All-but-the-first elements of `list`; empty list yields `[]`.
   fn tail(list: List(T)) -> List(T) =
     match list
       [_ | t] -> t
       [] -> []
 
+  ## Last element of `list`; returns `default` when empty.
   fn last(list: List(T), default: T) -> T =
     match list
       [] -> default
@@ -30,20 +41,25 @@ mod Std.List
 
   # -- Construction -----------------------------------------------------------
 
+  ## Prepend `elem` onto `list` (the Cure-level spelling of `[elem | list]`).
   fn cons(elem: T, list: List(T)) -> List(T) = [elem | list]
 
+  ## Concatenate two lists. Linear in `length(a)`.
   fn append(a: List(T), b: List(T)) -> List(T) =
     match a
       [] -> b
       [h | t] -> [h | append(t, b)]
 
+  ## Concatenate a list of lists into a single flat list.
   fn concat(lists: List(List(T))) -> List(T) =
     match lists
       [] -> []
       [h | t] -> append(h, concat(t))
 
+  ## Reverse `list`; tail-recursive via a private accumulator.
   fn reverse(list: List(T)) -> List(T) = reverse_acc(list, [])
 
+  ## Private accumulator helper for `reverse/1`.
   local fn reverse_acc(list: List(T), acc: List(T)) -> List(T) =
     match list
       [] -> acc
@@ -51,30 +67,40 @@ mod Std.List
 
   # -- Transformations --------------------------------------------------------
 
+  ## Map `f` over every element of `list`.
   fn map(list: List(T), f: T -> U) -> List(U) =
     match list
       [] -> []
       [h | t] -> [f(h) | map(t, f)]
 
+  ## Keep elements of `list` for which `pred(elem)` returns `true`.
   fn filter(list: List(T), pred: T -> Bool) -> List(T) =
     match list
       [] -> []
       [h | t] ->
         if pred(h) then [h | filter(t, pred)] else filter(t, pred)
 
+  ## Left fold. `f` is curried: `f(elem)(acc) -> acc`.
+  ## Reduces `list` starting from the head.
   fn foldl(list: List(T), acc: U, f: T -> U -> U) -> U =
     match list
       [] -> acc
       [h | t] -> foldl(t, f(h)(acc), f)
 
+  ## Right fold. `f` is curried: `f(elem)(acc) -> acc`.
+  ## Builds up the result from the tail toward the head; not
+  ## tail-recursive, so expect O(length) stack on very long lists.
   fn foldr(list: List(T), acc: U, f: T -> U -> U) -> U =
     match list
       [] -> acc
       [h | t] -> f(h)(foldr(t, acc, f))
 
+  ## Map `f` over `list` and flatten one level of nesting.
   fn flat_map(list: List(T), f: T -> List(U)) -> List(U) =
     concat(map(list, f))
 
+  ## Combine two lists element-wise using `f`. Stops at the shorter list.
+  ## `f` is curried: `f(a)(b) -> c`.
   fn zip_with(a: List(T), b: List(U), f: T -> U -> V) -> List(V) =
     match a
       [] -> []
@@ -85,22 +111,27 @@ mod Std.List
 
   # -- Access -----------------------------------------------------------------
 
+  ## 0-based random access. Returns `default` when `idx` is out of range.
   fn nth(list: List(T), idx: Int, default: T) -> T =
     match list
       [] -> default
       [h | t] -> if idx == 0 then h else nth(t, idx - 1, default)
 
+  ## First `n` elements; `[]` when `n <= 0`.
   fn take(list: List(T), n: Int) -> List(T) =
     if n <= 0 then [] else take_rest(list, n)
 
+  ## Private recursive step for `take/2`.
   local fn take_rest(list: List(T), n: Int) -> List(T) =
     match list
       [] -> []
       [h | t] -> [h | take(t, n - 1)]
 
+  ## Drop the first `n` elements; returns `list` unchanged when `n <= 0`.
   fn drop(list: List(T), n: Int) -> List(T) =
     if n <= 0 then list else drop_rest(list, n)
 
+  ## Private recursive step for `drop/2`.
   local fn drop_rest(list: List(T), n: Int) -> List(T) =
     match list
       [] -> []
@@ -108,21 +139,25 @@ mod Std.List
 
   # -- Search -----------------------------------------------------------------
 
+  ## `true` when `elem` appears in `list` (structural equality).
   fn contains(list: List(T), elem: T) -> Bool =
     match list
       [] -> false
       [h | t] -> if h == elem then true else contains(t, elem)
 
+  ## First element satisfying `pred`; returns `default` when nothing matches.
   fn find(list: List(T), pred: T -> Bool, default: T) -> T =
     match list
       [] -> default
       [h | t] -> if pred(h) then h else find(t, pred, default)
 
+  ## `true` when at least one element satisfies `pred`.
   fn any(list: List(T), pred: T -> Bool) -> Bool =
     match list
       [] -> false
       [h | t] -> if pred(h) then true else any(t, pred)
 
+  ## `true` when every element satisfies `pred` (vacuously true for `[]`).
   fn all(list: List(T), pred: T -> Bool) -> Bool =
     match list
       [] -> true
@@ -130,11 +165,13 @@ mod Std.List
 
   # -- Destructuring helpers (v0.18.0) ---------------------------------------
 
+  ## Split `list` into `%[head, tail]`; empty list maps to `%[[], []]`.
   fn uncons(list: List(T)) -> Tuple =
     match list
       [h | t] -> %[h, t]
       []      -> %[[], []]
 
+  ## Like `uncons/1`, but substitutes `default` for the head when empty.
   fn split_first(list: List(T), default: T) -> Tuple =
     match list
       [h | t] -> %[h, t]
@@ -142,11 +179,14 @@ mod Std.List
 
   # -- Misc -------------------------------------------------------------------
 
+  ## Sum of an `Int` list, left-folded.
   fn sum(list: List(Int)) -> Int =
     foldl(list, 0, fn(x) -> fn(acc) -> acc + x)
 
+  ## Product of an `Int` list, left-folded.
   fn product(list: List(Int)) -> Int =
     foldl(list, 1, fn(x) -> fn(acc) -> acc * x)
 
+  ## Count of elements satisfying `pred`.
   fn count(list: List(T), pred: T -> Bool) -> Int =
     foldl(list, 0, fn(x) -> fn(acc) -> if pred(x) then acc + 1 else acc)

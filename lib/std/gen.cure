@@ -1,63 +1,74 @@
 mod Std.Gen
   ## Tiny stateless generator API for property-based testing (v0.19.0).
-  ## Generators are plain zero-argument lambdas returning a fresh value on
-  ## every call. Randomness is delegated to Erlang's `:rand` module.
+  ##
+  ## Generators are plain zero-argument lambdas returning a fresh
+  ## value on every call. Randomness is delegated to Erlang's `:rand`
+  ## module. Used in tandem with `Std.Test.forall/3` to drive
+  ## property-based tests, with optional shrinkers below.
   # -- Primitive randomness ---------------------------------------------------
 
+  ## Private wrapper over `:rand.uniform/1`; returns an integer in
+  ## `[1, n]`.
   @extern(:rand, :uniform, 1)
   local fn rand_uniform(n: Int) -> Int
 
+  ## Seed the PRNG. Thin wrapper over `:rand.seed/2`; returns the new
+  ## state tuple.
   @extern(:rand, :seed, 2)
   fn seed(_alg: Atom, _seed: Tuple) -> Tuple
 
   # -- Scalar generators ------------------------------------------------------
 
-  ## Uniformly choose an integer in the inclusive range [lo, hi].
+  ## Uniformly choose an integer in the inclusive range `[lo, hi]`.
+  ## Falls back to `lo` when `hi <= lo`.
   fn int_in(lo: Int, hi: Int) -> Int =
     if hi <= lo then lo else rand_uniform(hi - lo + 1) + lo - 1
 
-  ## A fair Bool.
+  ## A fair `Bool`: 50/50.
   fn bool() -> Bool =
     rand_uniform(2) == 1
 
-  ## A constant generator that always returns the given value.
+  ## A constant "generator" that always returns the given value.
   fn constant(v: T) -> T = v
 
   # -- Combinators ------------------------------------------------------------
 
-  ## Pick an element from a non-empty list.
+  ## Pick an element uniformly from a non-empty list of integers.
+  ## Returns `default` for an empty list.
   fn one_of(list: List(Int), default: Int) -> Int =
     match list
       []     -> default
       [h | _] -> Std.List.nth(list, rand_uniform(Std.List.length(list)) - 1, h)
 
-  ## Generate a list of `n` integers in [lo, hi].
+  ## Generate a list of exactly `n` integers in `[lo, hi]`.
   fn list_of_int(n: Int, lo: Int, hi: Int) -> List(Int) =
     if n <= 0 then [] else [int_in(lo, hi) | list_of_int(n - 1, lo, hi)]
 
-  ## Generate a list of length up to `max_len` (inclusive), filled with
-  ## integers in [lo, hi]. Good default shrink is "shorter list".
+  ## Generate a list of length up to `max_len` (inclusive), filled
+  ## with integers in `[lo, hi]`. A good default shrink is "shorter
+  ## list".
   fn list_int(max_len: Int, lo: Int, hi: Int) -> List(Int) =
     let len = int_in(0, max_len)
     list_of_int(len, lo, hi)
 
   # -- Shrinking (v0.23.0) ----------------------------------------------------
 
-  ## Produce a list of "smaller" candidate values for `v`. The returned
-  ## list is ordered from most aggressive shrink (halve to zero) to
-  ## least aggressive (subtract one). Empty list means "already minimal".
+  ## Produce a list of "smaller" candidate values for `v`. The
+  ## returned list is ordered from most aggressive shrink (halve to
+  ## zero) to least aggressive (subtract one). Empty list means
+  ## "already minimal".
   ##
-  ## Used by `Std.Test.forall/3` when a property fails to iteratively
-  ## narrow down the counterexample.
+  ## Used by `Std.Test.forall_shrunk/3` when a property fails, to
+  ## iteratively narrow down the counterexample.
   @extern(:cure_std_gen, :shrink_int, 1)
   fn shrink_int(v: Int) -> List(Int)
 
-  ## Shrink a list by dropping elements. Shortest candidates come first.
+  ## Shrink a list by dropping elements. Shortest candidates come
+  ## first.
   @extern(:cure_std_gen, :shrink_list, 1)
   fn shrink_list(xs: List(Int)) -> List(List(Int))
 
-  ## Default polymorphic shrinker delegate; dispatches on the runtime
-  ## shape of `v` and returns the empty list for types with no defined
-  ## shrink.
+  ## Default polymorphic shrinker; dispatches on the runtime shape of
+  ## `v` and returns the empty list for types with no defined shrink.
   @extern(:cure_std_gen, :shrink, 1)
   fn shrink(v: T) -> List(T)

@@ -1,16 +1,17 @@
 mod Std.Regex
   ## Regular expressions for Cure (v0.27.0).
   ##
-  ## Thin wrapper over OTP's `:re` module. A `Regex` value is an opaque
-  ## handle returned by `compile/1`; every operation takes either a
-  ## `Regex` or a raw pattern string (for one-off queries). Patterns
-  ## supplied as strings are compiled on each call; hot paths should
-  ## memoise a `compile/1` result at the caller's discretion.
+  ## Thin wrapper over OTP's `:re` module. A `Regex` value is an
+  ## opaque handle returned by `compile/1`; every operation takes
+  ## either a `Regex` or a raw pattern string (for one-off queries).
+  ## Patterns supplied as strings are compiled on each call; hot
+  ## paths should memoise a `compile/1` result at the caller's
+  ## discretion.
   ##
   ## The `@regex "..."` compile-time decorator (recognised by
   ## `Cure.Stdlib.CompileAssert`) hoists pattern validation into the
-  ## compiler: a malformed pattern surfaces as `E060 Regex Invalid` at
-  ## build time rather than at call time.
+  ## compiler: a malformed pattern surfaces as `E060 Regex Invalid`
+  ## at build time rather than at call time.
   ##
   ## The runtime module is `:cure_std_regex`.
 
@@ -18,9 +19,9 @@ mod Std.Regex
   rec Regex
     handle: T
 
-  ## Capture result for a successful run. `groups` carries the numbered
-  ## captures from the first non-whole-match onward; `whole` is the full
-  ## matched slice.
+  ## Capture result for a successful run. `groups` carries the
+  ## numbered captures from the first non-whole-match onward;
+  ## `whole` is the full matched slice.
   rec Matched
     whole: String
     groups: List(String)
@@ -32,22 +33,24 @@ mod Std.Regex
 
   # -- Compilation ------------------------------------------------------------
 
-  ## Compile a pattern string into an opaque Regex handle.
+  ## Compile a pattern string into an opaque `Regex` handle.
+  ## Returns `Error(InvalidPattern(_))` when the pattern is invalid.
   @extern(:cure_std_regex, :compile, 1)
   fn compile(pattern: String) -> Result(Regex, RegexError)
 
-  ## Compile and unwrap; raises at runtime if the pattern is invalid.
-  ## Prefer `compile/1` plus explicit Result handling in library code.
+  ## Compile and unwrap; raises `ArgumentError` at runtime if the
+  ## pattern is invalid. Prefer `compile/1` plus explicit `Result`
+  ## handling in library code.
   @extern(:cure_std_regex, :compile_bang, 1)
   fn compile_bang(pattern: String) -> Regex
 
   # -- Matching ---------------------------------------------------------------
 
-  ## True when the input matches the regex at least once.
+  ## `true` when the input matches the regex at least once.
   @extern(:cure_std_regex, :is_match, 2)
   fn is_match(r: Regex, input: String) -> Bool
 
-  ## Return the first match. `None` when the pattern does not match.
+  ## Return the first match. `None()` when the pattern does not match.
   @extern(:cure_std_regex, :run, 2)
   fn run(r: Regex, input: String) -> Option(Matched)
 
@@ -55,8 +58,8 @@ mod Std.Regex
   @extern(:cure_std_regex, :scan, 2)
   fn scan(r: Regex, input: String) -> List(Matched)
 
-  ## Replace every match with the provided replacement string.
-  ## Backreferences like `\1`, `\2` are supported inside the replacement.
+  ## Replace every match with `replacement`. Backreferences like
+  ## `\1`, `\2`, ... are honoured inside `replacement`.
   @extern(:cure_std_regex, :replace, 3)
   fn replace(r: Regex, input: String, replacement: String) -> String
 

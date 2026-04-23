@@ -20,15 +20,15 @@ mod Std.CRDT
   ##   - `LWWRegister(T)` -- last-write-wins register.
   ##   - `MVRegister(T)`  -- multi-value register (set of concurrent writes).
   ##
-  ## All CRDTs carry a `node_id` to tag mutations so merges can reconcile
-  ## conflicting updates deterministically.
+  ## All CRDTs carry a `node_id` to tag mutations so merges can
+  ## reconcile conflicting updates deterministically.
 
   ## Grow-only counter. Per-replica counts are summed on read.
   rec GCounter
     counts: T
 
-  ## Positive/negative counter -- two GCounters, one for increments and
-  ## one for decrements. `value` returns `sum(p) - sum(n)`.
+  ## Positive/negative counter -- two `GCounter`s, one for increments
+  ## and one for decrements. `pn_value` returns `sum(p) - sum(n)`.
   rec PNCounter
     p: GCounter
     n: GCounter
@@ -53,76 +53,102 @@ mod Std.CRDT
 
   # -- GCounter ---------------------------------------------------------------
 
+  ## Empty `GCounter`.
   @extern(:cure_std_crdt, :g_empty, 0)
   fn g_empty() -> GCounter
 
+  ## Increment `c` by `by` on replica `node` (positive numbers only).
   @extern(:cure_std_crdt, :g_increment, 3)
   fn g_increment(c: GCounter, node: Atom, by: Int) -> GCounter
 
+  ## Current value of the `GCounter`: sum of per-replica counts.
   @extern(:cure_std_crdt, :g_value, 1)
   fn g_value(c: GCounter) -> Int
 
+  ## Merge two `GCounter`s by taking the per-replica max.
   @extern(:cure_std_crdt, :g_merge, 2)
   fn g_merge(a: GCounter, b: GCounter) -> GCounter
 
   # -- PNCounter --------------------------------------------------------------
 
+  ## Empty `PNCounter`.
   @extern(:cure_std_crdt, :pn_empty, 0)
   fn pn_empty() -> PNCounter
 
+  ## Increment by `by` on replica `node`.
   @extern(:cure_std_crdt, :pn_increment, 3)
   fn pn_increment(c: PNCounter, node: Atom, by: Int) -> PNCounter
 
+  ## Decrement by `by` on replica `node`.
   @extern(:cure_std_crdt, :pn_decrement, 3)
   fn pn_decrement(c: PNCounter, node: Atom, by: Int) -> PNCounter
 
+  ## Current value: `sum(p) - sum(n)`.
   @extern(:cure_std_crdt, :pn_value, 1)
   fn pn_value(c: PNCounter) -> Int
 
+  ## Merge two `PNCounter`s component-wise.
   @extern(:cure_std_crdt, :pn_merge, 2)
   fn pn_merge(a: PNCounter, b: PNCounter) -> PNCounter
 
   # -- ORSet ------------------------------------------------------------------
 
+  ## Empty `ORSet`.
   @extern(:cure_std_crdt, :or_empty, 0)
   fn or_empty() -> ORSet
 
+  ## Add `elem` to the set on replica `node`; tags the addition with a
+  ## fresh unique identifier so it survives a concurrent remove.
   @extern(:cure_std_crdt, :or_add, 3)
   fn or_add(s: ORSet, node: Atom, elem: T) -> ORSet
 
+  ## Remove `elem` from the set; only removes tags this replica has
+  ## observed, so concurrent re-adds from other replicas are retained.
   @extern(:cure_std_crdt, :or_remove, 2)
   fn or_remove(s: ORSet, elem: T) -> ORSet
 
+  ## List of current elements.
   @extern(:cure_std_crdt, :or_value, 1)
   fn or_value(s: ORSet) -> List(T)
 
+  ## Merge two `ORSet`s via tag union.
   @extern(:cure_std_crdt, :or_merge, 2)
   fn or_merge(a: ORSet, b: ORSet) -> ORSet
 
   # -- LWWRegister ------------------------------------------------------------
 
+  ## Empty `LWWRegister` bound to `node`.
   @extern(:cure_std_crdt, :lww_empty, 1)
   fn lww_empty(node: Atom) -> LWWRegister
 
+  ## Write `value` with timestamp `stamp` from replica `node`.
   @extern(:cure_std_crdt, :lww_set, 4)
   fn lww_set(r: LWWRegister, value: T, stamp: Int, node: Atom) -> LWWRegister
 
+  ## Current value of the register.
   @extern(:cure_std_crdt, :lww_value, 1)
   fn lww_value(r: LWWRegister) -> T
 
+  ## Merge by selecting the side with the higher timestamp; ties
+  ## break on node id.
   @extern(:cure_std_crdt, :lww_merge, 2)
   fn lww_merge(a: LWWRegister, b: LWWRegister) -> LWWRegister
 
   # -- MVRegister -------------------------------------------------------------
 
+  ## Empty `MVRegister`.
   @extern(:cure_std_crdt, :mv_empty, 0)
   fn mv_empty() -> MVRegister
 
+  ## Write `value` on replica `node` with timestamp `stamp`; concurrent
+  ## writes are retained.
   @extern(:cure_std_crdt, :mv_write, 4)
   fn mv_write(r: MVRegister, value: T, stamp: Int, node: Atom) -> MVRegister
 
+  ## List of currently-live values.
   @extern(:cure_std_crdt, :mv_values, 1)
   fn mv_values(r: MVRegister) -> List(T)
 
+  ## Merge by taking the union of non-dominated writes.
   @extern(:cure_std_crdt, :mv_merge, 2)
   fn mv_merge(a: MVRegister, b: MVRegister) -> MVRegister

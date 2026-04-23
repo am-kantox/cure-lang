@@ -12,7 +12,7 @@ mod Std.Iter
   ## Elixir's `Stream` and lets the caller resume after every step.
   # -- Constructors -----------------------------------------------------------
 
-  ## An empty iterator.
+  ## An iterator that is immediately exhausted.
   fn empty() -> Atom -> Any =
     fn(_) -> None()
 
@@ -27,18 +27,21 @@ mod Std.Iter
   fn range(lo: Int, hi: Int) -> Atom -> Any =
     fn(_) -> range_step(lo, hi)
 
+  ## Private: single step of the `range/2` iterator.
   local fn range_step(lo: Int, hi: Int) -> Any =
     if lo > hi then None() else Some(%[lo, range(lo + 1, hi)])
 
   # -- Consumers --------------------------------------------------------------
 
-  ## Left fold. `f` is a curried function `elem -> acc -> acc`.
+  ## Left fold an iterator. `f` is a curried function
+  ## `elem -> acc -> acc`.
   fn fold(it: Atom -> Any, acc: T, f: Any -> T -> T) -> T =
     match it(:step)
       None()          -> acc
       Some(%[x, rest]) -> fold(rest, f(x)(acc), f)
 
   ## Take at most `n` values from the iterator as a plain list.
+  ## Safe to call on infinite iterators.
   fn take(it: Atom -> Any, n: Int) -> List(Any) =
     match n
       0 -> []
@@ -47,8 +50,8 @@ mod Std.Iter
           None()          -> []
           Some(%[x, rest]) -> [x | take(rest, n - 1)]
 
-  ## Materialise an iterator as a list. Non-terminating iterators never
-  ## return; guard with `take/2` when unsure.
+  ## Materialise an iterator as a list. Non-terminating iterators
+  ## never return; guard with `take/2` when unsure.
   fn to_list(it: Atom -> Any) -> List(Any) =
     match it(:step)
       None()          -> []

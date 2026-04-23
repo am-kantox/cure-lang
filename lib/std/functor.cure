@@ -1,8 +1,19 @@
 mod Std.Functor
-  ## Functor protocol for mapping over structures.
+  ## Functor protocol for structures that support `fmap`.
+  ##
+  ## A functor is any container that admits a structure-preserving
+  ## map. The built-in impl for `List` delegates to `Std.List.map/2`;
+  ## additional impls can be declared for user-defined container
+  ## types.
+
+  ## `Functor(F)` lifts an arbitrary function `A -> B` to an
+  ## endo-transformation on a container `F`.
   proto Functor(F)
+    ## Apply `f` to every element inside the functorial `container`.
     fn fmap(container: F, f: A -> B) -> F
 
+  ## `Functor` impl for `List`: delegates to `Std.List.map/2`.
   impl Functor for List
+    ## Map `f` over every element of `container`.
     fn fmap(container: List, f: A -> B) -> List =
       Std.List.map(container, f)

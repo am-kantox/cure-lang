@@ -1,46 +1,47 @@
 mod Std.Process
   ## Raw process primitives: links, monitors, trap_exit.
-  #
-  # These wrappers call `:erlang` BIFs directly via `@extern`; they do
-  # not go through the actor runtime, so they work on any BEAM process
-  # (actors, FSMs, or plain `spawn/1` results).
-  #
-  # The monitor reference returned by `monitor/1` has the new `Ref`
-  # primitive type introduced for typed concurrency; see
-  # `docs/TYPE_SYSTEM.md`.
+  ##
+  ## These wrappers call `:erlang` BIFs directly via `@extern`; they
+  ## do not go through the actor runtime, so they work on any BEAM
+  ## process (actors, FSMs, or plain `spawn/1` results).
+  ##
+  ## The monitor reference returned by `monitor/1` uses the `Ref`
+  ## primitive type introduced for typed concurrency; see
+  ## `docs/TYPE_SYSTEM.md`.
 
-  # Link the calling process to `pid`. Exits from either side propagate
-  # as `:EXIT` messages.
+  ## Link the calling process to `pid`. Exits from either side
+  ## propagate as `:EXIT` messages.
   @extern(:erlang, :link, 1)
   fn link(pid: Pid) -> Atom
 
-  # Undo a previous `link/1`.
+  ## Undo a previous `link/1`.
   @extern(:erlang, :unlink, 1)
   fn unlink(pid: Pid) -> Atom
 
-  # Install a process monitor. Returns the `Ref` that identifies the
-  # monitor; the caller will later receive
-  # `{:DOWN, ref, :process, pid, reason}` when the monitored process
-  # terminates.
+  ## Install a process monitor. Returns the `Ref` that identifies the
+  ## monitor; the caller will later receive
+  ## `{:DOWN, ref, :process, pid, reason}` when the monitored process
+  ## terminates.
   @extern(Elixir.Cure.Process.Builtins, :proc_monitor, 1)
   fn monitor(pid: Pid) -> Ref
 
-  # Remove a previously installed monitor.
+  ## Remove a previously installed monitor.
   @extern(:erlang, :demonitor, 1)
   fn demonitor(ref: Ref) -> Bool
 
-  # Toggle trap_exit on the caller. Returns the previous value.
+  ## Toggle `trap_exit` on the caller. Returns the previous value;
+  ## once enabled, exit signals arrive as regular `:EXIT` messages.
   @extern(Elixir.Cure.Process.Builtins, :proc_trap_exit, 1)
   fn trap_exit(flag: Bool) -> Bool
 
-  # Send `reason` as an exit signal to `pid`.
+  ## Send `reason` as an exit signal to `pid`.
   @extern(:erlang, :exit, 2)
   fn exit(pid: Pid, reason: Atom) -> Atom
 
-  # Return the caller's own pid.
+  ## Return the caller's own pid.
   @extern(:erlang, :self, 0)
   fn self() -> Pid
 
-  # Is `pid` still alive on this node?
+  ## Is `pid` still alive on this node?
   @extern(:erlang, :is_process_alive, 1)
   fn is_alive(pid: Pid) -> Bool

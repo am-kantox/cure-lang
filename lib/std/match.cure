@@ -1,19 +1,28 @@
 mod Std.Match
   ## Convenience helpers built on top of v0.18.0 deep destructuring.
-  ## Every function here is implemented with nested patterns as a smoke
-  ## test for the new pattern engine.
+  ##
+  ## Every function here is implemented with nested patterns and
+  ## serves as a smoke test for the pattern engine. They also double
+  ## as lightweight convenience utilities when you want a single-call
+  ## `unwrap`, `head/tail`, etc.
+
   # -- Pair / Tuple -----------------------------------------------------------
 
+  ## Return a pair unchanged when it destructures as `%[a, b]`;
+  ## otherwise return the argument as-is.
   fn unpack_pair(t: Tuple) -> Tuple =
     match t
       %[a, b] -> %[a, b]
       _       -> t
 
+  ## First element of a tuple; handles pairs and singletons.
   fn fst(t: Tuple) -> T =
     match t
       %[a, _] -> a
       %[a]    -> a
 
+  ## Second element of a tuple; handles pairs and triples (returning
+  ## the middle entry for the latter).
   fn snd(t: Tuple) -> T =
     match t
       %[_, b]    -> b
@@ -21,16 +30,21 @@ mod Std.Match
 
   # -- Lists ------------------------------------------------------------------
 
+  ## Split `list` into `%[head, tail]`, falling back to
+  ## `%[default, []]` for an empty list.
   fn head_tail(list: List(T), default: T) -> Tuple =
     match list
       [h | t] -> %[h, t]
       []      -> %[default, []]
 
+  ## `%[head, tail]` for non-empty lists; `%[[], []]` for empty.
   fn uncons(list: List(T)) -> Tuple =
     match list
       [h | t] -> %[h, t]
       []      -> %[[], []]
 
+  ## Extract the first two elements of `list` as `%[h1, h2, rest]`,
+  ## padding with `default` when there are fewer.
   fn first_two(list: List(T), default: T) -> Tuple =
     match list
       [h1 | t1] ->
@@ -41,11 +55,13 @@ mod Std.Match
 
   # -- Options / Results ------------------------------------------------------
 
+  ## Extract the value from an `Ok`; falls back to `default` on `Error`.
   fn unwrap_ok(r: Result(T, E), default: T) -> T =
     match r
       Ok(v)    -> v
       Error(_) -> default
 
+  ## Extract the value from a `Some`; falls back to `default` on `None`.
   fn unwrap_some(o: Option(T), default: T) -> T =
     match o
       Some(v) -> v

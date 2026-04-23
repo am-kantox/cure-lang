@@ -1,73 +1,103 @@
 mod Std.String
-  ## String operations: length, concat, split, trim, case conversion.
+  ## String (UTF-8 binary) operations: length, concat, split, trim,
+  ## case conversion, and integer/float/atom parsing.
+  ##
+  ## `String` is Erlang's binary type. `length/1` reports the byte
+  ## size; case conversion and trimming go through OTP's Unicode-aware
+  ## `:string` module. Numeric parsers raise on malformed input,
+  ## matching the underlying BIFs.
+
   # -- Basic operations -------------------------------------------------------
 
+  ## Byte length of `s`; delegates to `:erlang.byte_size/1`. This is not
+  ## grapheme count: multi-byte code points contribute more than one.
   @extern(:erlang, :byte_size, 1)
   fn length(s: String) -> Int
 
+  ## `true` when `s` is the empty string.
   fn is_empty(s: String) -> Bool = s == ""
 
+  ## Concatenate two strings; uses the `<>` binary operator.
   fn concat(a: String, b: String) -> String = a <> b
 
   # -- Case conversion --------------------------------------------------------
 
+  ## Lower-case `s` using Unicode case folding (`:string.lowercase/1`).
   @extern(:string, :lowercase, 1)
   fn downcase(s: String) -> String
 
+  ## Upper-case `s` using Unicode case folding (`:string.uppercase/1`).
   @extern(:string, :uppercase, 1)
   fn upcase(s: String) -> String
 
   # -- Trim -------------------------------------------------------------------
 
+  ## Strip leading and trailing whitespace (`:string.trim/1`).
   @extern(:string, :trim, 1)
   fn trim(s: String) -> String
 
+  ## Strip leading whitespace only.
   @extern(:string, :trim_leading, 1)
   fn trim_leading(s: String) -> String
 
+  ## Strip trailing whitespace only.
   @extern(:string, :trim_trailing, 1)
   fn trim_trailing(s: String) -> String
 
   # -- Conversion -------------------------------------------------------------
 
+  ## Render an `Int` as its canonical decimal string.
   @extern(:erlang, :integer_to_binary, 1)
   fn from_int(n: Int) -> String
 
+  ## Render a `Float` as its canonical decimal string.
   @extern(:erlang, :float_to_binary, 1)
   fn from_float(f: Float) -> String
 
+  ## Render an `Atom` as its name; no `:` prefix is added.
   @extern(:erlang, :atom_to_binary, 1)
   fn from_atom(a: Atom) -> String
 
+  ## Parse `s` as a base-10 integer. Raises on bad input.
   @extern(:erlang, :binary_to_integer, 1)
   fn to_int(s: String) -> Int
 
+  ## Parse `s` as a float. Raises on bad input.
   @extern(:erlang, :binary_to_float, 1)
   fn to_float(s: String) -> Float
 
+  ## Convert `s` to an atom. Raises on bad encoding; beware atom-table
+  ## exhaustion in long-running nodes if `s` is attacker-controlled.
   @extern(:erlang, :binary_to_atom, 1)
   fn to_atom(s: String) -> Atom
 
   # -- Split / Join -----------------------------------------------------------
 
+  ## Split `s` on every occurrence of `sep`. Uses `:binary.split/2`.
   @extern(:binary, :split, 2)
   fn split(s: String, sep: String) -> List(String)
 
   # -- Repeat -----------------------------------------------------------------
 
+  ## Return `s` concatenated with itself `n` times (`:binary.copy/2`).
   @extern(:binary, :copy, 2)
   fn repeat(s: String, n: Int) -> String
 
   # -- Reverse (via charlist) -------------------------------------------------
 
+  ## Reverse `s`. Operates on the underlying charlist, so the result is
+  ## byte-reversed rather than grapheme-reversed.
   fn reverse(s: String) -> String =
     list_to_binary(lists_reverse(binary_to_list(s)))
 
+  ## Private helper: binary -> list of codepoints.
   @extern(:erlang, :binary_to_list, 1)
   local fn binary_to_list(s: String) -> List(Int)
 
+  ## Private helper: reverse a list using `:lists.reverse/1`.
   @extern(:lists, :reverse, 1)
   local fn lists_reverse(l: List(T)) -> List(T)
 
+  ## Private helper: list of codepoints -> binary.
   @extern(:erlang, :list_to_binary, 1)
   local fn list_to_binary(l: List(Int)) -> String

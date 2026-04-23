@@ -11,13 +11,13 @@ mod Std.Time
   ## offset; any other shape yields `Error(InvalidFormat(_))`.
   ##
   ## All functions are pure from Cure's point of view: the `now/0` and
-  ## `utc_now/0` wall-clock readers carry the `Io` effect so callers are
-  ## forced to declare it.
+  ## `utc_now/0` wall-clock readers carry the `Io` effect so callers
+  ## are forced to declare it.
   ##
   ## Runtime companion: `:cure_std_time` (see
-  ## `lib/cure/stdlib/cure_std_time.ex`). Every external call here maps
-  ## directly to a one-line wrapper in that module, so the surface
-  ## remains small and auditable.
+  ## `lib/cure/stdlib/cure_std_time.ex`). Every external call here
+  ## maps directly to a one-line wrapper in that module, so the
+  ## surface remains small and auditable.
 
   ## A point in time, stored as Unix epoch microseconds.
   rec Instant
@@ -35,7 +35,7 @@ mod Std.Time
 
   # -- Wall clock -------------------------------------------------------------
 
-  ## Current wall-clock time as an Instant.
+  ## Current wall-clock time as an `Instant`.
   @extern(:cure_std_time, :now, 0)
   fn now() -> Instant ! Io
 
@@ -46,51 +46,55 @@ mod Std.Time
   # -- ISO 8601 ---------------------------------------------------------------
 
   ## Parse an ISO 8601 timestamp. Accepts `Z`, `+HH:MM`, or `-HH:MM`
-  ## offsets; fractional seconds up to microsecond precision are honoured.
+  ## offsets; fractional seconds up to microsecond precision are
+  ## honoured. Returns `Error(InvalidFormat(_))` on any other shape.
   @extern(:cure_std_time, :parse_iso8601, 1)
   fn parse_iso8601(s: String) -> Result(Instant, ParseError)
 
-  ## Format an Instant as an ISO 8601 UTC string with `Z` suffix.
+  ## Format an `Instant` as an ISO 8601 UTC string with a `Z` suffix.
+  ## A zero microsecond component is suppressed.
   @extern(:cure_std_time, :format_iso8601, 1)
   fn format_iso8601(i: Instant) -> String
 
   # -- Arithmetic -------------------------------------------------------------
 
-  ## Shift an Instant forward by a Duration. Use negative durations to
-  ## go backward.
+  ## Shift an `Instant` forward by a `Duration`. Use negative
+  ## durations to go backward.
   @extern(:cure_std_time, :add, 2)
   fn add(i: Instant, d: Duration) -> Instant
 
-  ## Difference between two Instants: `diff(a, b) == a - b`.
+  ## Difference between two Instants as a `Duration`:
+  ## `diff(a, b) == a - b`.
   @extern(:cure_std_time, :diff, 2)
   fn diff(a: Instant, b: Instant) -> Duration
 
-  ## Project an Instant into the named time zone; returns an ISO 8601
-  ## string with the appropriate offset. Pass `"UTC"` for epoch offset 0.
+  ## Project an `Instant` into the named time zone; returns an
+  ## ISO 8601 string with the appropriate offset. Pass `"UTC"` for
+  ## epoch offset 0, or e.g. `"+02:00"` / `"-05:00"`.
   @extern(:cure_std_time, :zone, 2)
   fn zone(i: Instant, name: String) -> Result(String, ParseError)
 
   # -- Unix conversions -------------------------------------------------------
 
-  ## Unix seconds since the epoch for an Instant. Truncates sub-second
-  ## precision toward zero.
+  ## Unix seconds since the epoch for an `Instant`. Truncates
+  ## sub-second precision toward zero.
   @extern(:cure_std_time, :to_unix, 1)
   fn to_unix(i: Instant) -> Int
 
-  ## Promote Unix seconds into an Instant at second granularity.
+  ## Promote Unix seconds into an `Instant` at second granularity.
   @extern(:cure_std_time, :of_unix, 1)
   fn of_unix(s: Int) -> Instant
 
   # -- Duration helpers -------------------------------------------------------
 
-  ## Build a Duration from a whole number of milliseconds.
+  ## Build a `Duration` from a whole number of milliseconds.
   fn millis(n: Int) -> Duration = Duration{micros: n * 1000}
 
-  ## Build a Duration from a whole number of seconds.
+  ## Build a `Duration` from a whole number of seconds.
   fn seconds(n: Int) -> Duration = Duration{micros: n * 1000000}
 
-  ## Build a Duration from a whole number of minutes.
+  ## Build a `Duration` from a whole number of minutes.
   fn minutes(n: Int) -> Duration = Duration{micros: n * 60000000}
 
-  ## Build a Duration from a whole number of hours.
+  ## Build a `Duration` from a whole number of hours.
   fn hours(n: Int) -> Duration = Duration{micros: n * 3600000000}

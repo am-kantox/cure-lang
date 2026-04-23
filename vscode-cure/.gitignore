@@ -1,0 +1,3 @@
+vscode-cure-*.vsix
+/out/
+/node_modules/
