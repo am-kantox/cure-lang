@@ -108,7 +108,7 @@ Or via the Mix task:
 mix cure.compile_stdlib
 ```
 
-This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 30 modules (~320 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, the dependent-type helpers `Std.Equal` and `Std.Refine`, the v0.18.0 destructuring helpers in `Std.Match`, the v0.19.0 additions `Std.Proof`, `Std.Gen`, and `Std.Iter`, the v0.21.0 `Std.Access` lens kit, the v0.23.0 additions `Std.Json` (runtime companion to `@derive(JSON)`) and `Std.Http` (thin `:httpc` wrapper returning `Result(Response, HttpError)`), and the v0.25.0 supervision trio `Std.Actor`, `Std.Process`, and `Std.Supervisor`.
+This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib ships 33+ modules (`Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, `Std.Equal`, `Std.Refine`, `Std.Match`, `Std.Proof`, `Std.Gen`, `Std.Iter`, `Std.Access`, `Std.Json`, `Std.Http`, `Std.Actor`, `Std.Process`, `Std.Supervisor`, `Std.App`, `Std.Time`, `Std.Regex`, `Std.CRDT`, and more). As of v0.29.0 every module carries a module-level `## Examples` block; browse the rendered docs at [cure-lang.org/stdlib](/stdlib) or run `cure doc` locally to produce the same two-pane layout under `_build/cure/doc/`.
 
 ## Other CLI commands
 
@@ -227,3 +227,6 @@ module.my_function(args)
 - [Actors](/actors) -- typed supervision trees, the Melquiades Operator, `actor` and `sup` containers (v0.25.0)
 - [Applications](/applications) -- first-class OTP applications and BEAM releases, the `app` container, `Cure.toml` `[application]` / `[release]` sections, `cure release`, `Std.App` (v0.26.0)
 - [REPL](/repl) -- the raw-mode REPL (v0.24.0): key bindings, meta-commands, themes, history, reverse search
+- [Standard Library](/stdlib) -- auto-generated docs for every `Std.*` module, extracted from `.cure` sources with the same two-pane layout `cure doc` produces locally (v0.29.0)
+- [Tooling](/tooling) -- CLI reference including `cure doc` (ExDoc-like two-pane layout, `[doc]` config, `--title` / `--main` / `--extras` flags), LSP, and MCP
+- [`docs/DOC.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/DOC.md) -- on-disk reference for the `cure doc` pipeline, `Cure.Doc.Markdown`, placeholder interpolation, and the REPL Markdown renderer (v0.29.0)

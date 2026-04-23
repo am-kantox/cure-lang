@@ -7,6 +7,18 @@ BEAM module; external calls use `@extern(:module, :fun, arity)` to punch
 through to `:erlang`, OTP, or the dedicated `Cure.*.Builtins` helpers in
 `lib/cure/stdlib/`.
 
+## Viewing the stdlib
+
+- **On the web** -- [cure-lang.org/stdlib](https://cure-lang.org/stdlib) renders every `Std.*` module from the same `.cure` sources, grouped by topic. A single module page lives at `/stdlib/<Module>` with a GitHub "View source" link and anchored entries for every public function / type / protocol.
+- **Locally** -- `cure doc` produces the same layout under `_build/cure/doc/`. The tree is self-contained (HTML + one CSS + one JS file) so the output can be zipped up or served from any static host. See [`docs/DOC.md`](DOC.md) for the configuration reference.
+- **In the REPL** -- `:doc Std.List.map` pulls the `##` comments and renders them as ANSI using `Cure.REPL.Markdown`.
+
+Since v0.29.0, every module below carries a module-level `## Examples`
+block in its source doc comments, and four high-traffic `Std.Core`
+functions (`compose`, `map_ok`, `and_then`, `map_option`) also carry
+per-function examples. Every example round-trips through
+`mix cure.compile_stdlib` without modification.
+
 The documentation below is organised by topic:
 
 - [Core utilities](#core-utilities)  -- `Std.Core`, `Std.Io`, `Std.Show`,

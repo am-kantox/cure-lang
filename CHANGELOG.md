@@ -4,6 +4,177 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.29.0] -- Make Documentation Great
+
+v0.29.0 is the documentation release. Nothing else was the primary
+target. Every compiler module, the REPL, the website, the editor
+plugins, the Hex docs, and the escript's own `cure doc` output were
+pulled up to the same bar: real explanations, real examples, real
+cross-links. The compiler surface itself is quiet -- one parser fix
+for doc-comment merging -- but the result is a codebase where every
+public surface is now discoverable in the place a reader would expect
+to find it.
+
+### Added -- `cure doc`: ExDoc-like two-pane layout
+
+`cure doc` now produces a full documentation site, not a per-module
+HTML fragment. The new layout mirrors ExDoc's shape: a persistent
+left sidebar lists orphan pages and every extracted module, the right
+pane shows the selected page with anchored entries for every public
+function, type, and protocol, and a small vanilla-JS bundle wires up
+a `prefers-color-scheme` theme toggle and a keyboard-focusable
+(`/`) filter over the sidebar.
+
+- **`[doc]` section in `Cure.toml`** drives the layout. Supported
+  keys: `main` (landing-page slug), `title`, `extras` (array of
+  relative Markdown paths turned into orphan pages), `logo`,
+  `source_url`, `source_ref`.
+- **`[doc.groups_for_modules]`** lets the sidebar group the module
+  list. Unassigned modules land in a trailing `"Other"` bucket so
+  nothing is silently dropped.
+- **`Cure.Doc.Markdown`** -- new module. Thin wrapper over the
+  NIF-free `:md` library with two escript-safe extras: placeholder
+  interpolation (`{{cure_version}}`, `{{cure_vversion}}`) and
+  Makeup-powered syntax highlighting for `cure`, `elixir`, and
+  `erlang` fenced code blocks.
+- **`--title`, `--main`, `--extras`** CLI switches on `cure doc`
+  override the matching `[doc]` keys per invocation. `--extras` is
+  repeatable.
+- **Project-root extras discovery.** Relative paths in `[doc].extras`
+  resolve against the directory that contains `Cure.toml`, so the
+  same configuration works from any sub-directory.
+- **Anchored entries.** Every public function, type, and protocol
+  inside a module page gets a stable `#fn-<name>`, `#type-<name>`,
+  `#proto-<name>` anchor. Sources URLs link back to
+  `github.com/am-kantox/cure-lang/blob/main/lib/std/<module>.cure`
+  at the right symbol.
+
+### Added -- Stdlib Examples blocks
+
+Every module under `lib/std/` now carries a module-level
+`## Examples` block in its `##` doc comments, showcasing idiomatic
+usage. Four high-traffic `Std.Core` functions also carry per-function
+examples: `compose`, `map_ok`, `and_then`, `map_option`.
+
+All examples round-trip through `mix cure.compile_stdlib` without
+modification -- the Examples blocks are valid Cure, not hand-waved
+pseudo-code.
+
+### Added -- `/stdlib` site integration
+
+The Cure website now renders stdlib docs as first-class pages,
+identical to what `cure doc` would produce from the same sources:
+
+- **`CureSite.Stdlib`** -- compile-time bundle of every `Std.*`
+  module, extracted from `cure/lib/std/*.cure` at
+  `site/` compile time. Module doc maps are keyed by name and
+  grouped via a curated `@groups_for_modules` list. Modules added
+  in future releases that are not in the curated list fall into
+  the trailing `"Other"` bucket.
+- **`CureSiteWeb.StdlibController`** + `stdlib_html/` templates --
+  `/stdlib` lists every module, `/stdlib/:module` renders a single
+  module page with a DaisyUI-styled two-pane layout and a GitHub
+  "View source" link. The old hand-written
+  `site/priv/pages/standard-library.md` is removed;
+  `/standard-library` now 301-redirects to `/stdlib` via the new
+  `CureSiteWeb.RedirectController`.
+- **Navigation** -- the "Standard Library" sidebar entry points at
+  `/stdlib`.
+
+### Added -- REPL Markdown renderer upgrade
+
+`Cure.REPL.Markdown` was a flat line-renderer; it is now a small
+block-aware parser that produces richer ANSI output in `:help` and
+`:doc` commands:
+
+- Fenced code blocks (` ```lang...``` `) and indented code blocks.
+- Bullet lists (`-`, `*`) and numbered lists (`1.`).
+- Blockquotes (`> `).
+- Inline backtick code, `**bold**`, `*italic*`, and `[text](url)`
+  links rendered as `text (url)`.
+- Horizontal rules (`---`, `***`) and blank-line paragraph
+  separation.
+
+The renderer remains NIF-free so `:help` keeps working inside the
+escript (unlike the richer Marcli/MDEx path).
+
+### Fixed -- Parser: consecutive doc-comment blocks across blank lines
+
+`collect_all_doc_comments/1,2` now merges consecutive `##` blocks
+separated by blank-line gaps (or by plain `#` comments dropped by the
+lexer) with a paragraph break, and then binds the merged text to the
+following definition. Previously, the second block was left dangling
+as a stray `:doc_comment` token that would trip `parse_expr/2` with
+an `unexpected doc_comment` error.
+
+### Added -- Editor and highlighter alignment
+
+- **`highlightjs-cure/`** -- ship a highlight.js language
+  description for Cure, a demo page, and a minified bundle
+  (`dist/cure.min.js`). Suitable for any site that uses highlight.js
+  to syntax-highlight `.cure` snippets in blog posts and READMEs.
+- **`vicure/`** -- vim/neovim plugin updated to Cure 0.28.2 grammar:
+  `syntax/cure.vim`, `indent/cure.vim`, `ftplugin/cure.vim`,
+  `ftdetect/cure.vim`, matching tests, and refreshed README /
+  CHANGELOG.
+- **`vscode-cure/`** -- the VS Code extension's TextMate grammar
+  (`syntaxes/cure.tmLanguage.json`), language configuration, and
+  entry point are re-aligned with the same Cure 0.28.2 grammar so
+  highlighting, auto-indent, and bracket matching keep parity with
+  vicure.
+
+### Added -- REPL top-level declarations and signatures
+
+The REPL session surface introduced during v0.28.1 and v0.28.2 is
+promoted into a documented release surface:
+
+- **`Cure.REPL.Session`** -- accumulates top-level declarations
+  (`fn`, `local fn`, `type` ADT and alias, `rec`, `proto`, `impl`,
+  `proof`) between submissions, synthesises a stable
+  `:"Cure.Repl.Session"` module on the fly, and auto-prepends
+  `use Repl.Session` to every expression module the REPL compiles.
+  Redefinitions replace the matching entry in place, keyed by kind
+  + name + arity.
+- **`:defs` meta-command** lists installed declarations. `:reset`
+  now also clears the session and unloads the synthesised module.
+- **`Cure.Types.Checker.infer_expr/2`** grows an `:extra_bindings`
+  keyword option. `Cure.REPL.Session.signatures/1` projects public
+  `fn` entries into the `{name, {:fun, param_types, ret_type}}`
+  shape the checker expects, and `:t` / `:effects` in the REPL now
+  show the declared type/effects for session fns rather than
+  `Any`.
+
+### Added -- Documentation (on disk)
+
+- **`docs/DOC.md`** -- authoritative on-disk reference for the new
+  `cure doc` pipeline: `[doc]` / `[doc.groups_for_modules]`
+  tables, `--title` / `--main` / `--extras` flags, Cure.Doc.Markdown
+  placeholder interpolation and Makeup highlighting, the generated
+  HTML layout, and the REPL markdown renderer.
+- **`docs/TUTORIAL.md`** -- new Chapter 13 "Documenting your
+  modules" walks through `##` doc comments, `## Examples` blocks,
+  `Cure.toml [doc]` configuration, and `cure doc`.
+- **`docs/LANGUAGE_SPEC.md`** -- doc-comment grammar clarified:
+  consecutive `##` blocks separated by blank lines merge with a
+  paragraph break, `###` fences accept full Markdown with placeholder
+  interpolation.
+- **`docs/STDLIB.md`** -- introduction reworked to reference
+  `/stdlib` on the website and the Examples blocks under each
+  module.
+- **`site/priv/pages/tooling.md`** -- `cure doc` section updated to
+  the v0.29.0 surface.
+- **`site/priv/pages/roadmap.md`** -- new Implemented: v0.29.0 entry.
+- **`site/priv/posts/2026/04-23-cure-v0.29.0.md`** -- release blog
+  post.
+
+### Changed
+
+- `mix.exs` version bumped to `0.29.0`; `docs/DOC.md` added to the
+  docs extras list.
+- `extra_applications` unchanged; the doc pipeline uses
+  `:inets` / `:ssl` / `:crypto` already declared for the registry
+  client.
+
 ## [0.28.0] -- Talk Back
 
 v0.28.0 closes feedback loops. The compiler now emits all parse errors

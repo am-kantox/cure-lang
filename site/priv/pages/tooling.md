@@ -85,15 +85,56 @@ cure test
 
 **`cure doc [path|dir]`** -- Generate HTML documentation from `.cure` files.
 
+As of v0.29.0 the generator produces an ExDoc-like two-pane site. A
+persistent left sidebar lists orphan pages (`[doc].extras`) and every
+extracted module (optionally grouped via `[doc.groups_for_modules]`);
+the right pane renders the selected page with anchored entries for
+every public function, type, and protocol, a local table of contents,
+a `prefers-color-scheme` theme toggle, and a keyboard-focusable (`/`)
+filter over the sidebar. Module docstrings are parsed as Markdown
+(via the NIF-free `:md` library, wrapped by `Cure.Doc.Markdown`) with
+Makeup-powered syntax highlighting for `cure` / `elixir` / `erlang`
+fenced code blocks.
+
 ```bash
-cure doc                         # documents all .cure files in lib/
-cure doc lib/std/ --output-dir _build/cure/doc --title "Cure Stdlib"
+cure doc                         # documents lib/**/*.cure and lib/std/*.cure
+cure doc lib/std/ -o _build/cure/doc --title "Cure Stdlib"
+cure doc --main MyLib.Core --extras README.md --extras CHANGELOG.md
 ```
 
 Options:
 
-- `--output-dir DIR` -- output directory (default: `_build/cure/doc`)
-- `--title TITLE` -- project title for the index page
+- `--output-dir DIR` (`-o`) -- output directory (default: `_build/cure/doc`)
+- `--title TITLE` -- title shown in the sidebar; overrides `[doc].title`
+- `--main SLUG` -- landing-page slug (module name or extra slug)
+- `--extras PATH` -- repeatable; prepended Markdown files turned into
+  orphan pages
+
+The `[doc]` table in `Cure.toml` drives the rest of the layout
+(`main`, `title`, `extras`, `logo`, `source_url`, `source_ref`, plus
+`[doc.groups_for_modules]`). Placeholders `{{cure_version}}` and
+`{{cure_vversion}}` are substituted inside every docstring before
+rendering.
+
+The full reference lives at
+[`docs/DOC.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/DOC.md).
+
+### `/stdlib` on the Cure website (v0.29.0)
+
+The Cure website ships the same documentation layout for the
+standard library. `CureSite.Stdlib` walks `cure/lib/std/*.cure` at
+site-compile time; `CureSiteWeb.StdlibController` serves `/stdlib`
+(the index) and `/stdlib/:module` (one page per module) with a
+DaisyUI-styled two-pane layout and a GitHub "View source" link.
+The old hand-written `/standard-library` 301-redirects to `/stdlib`.
+
+### highlight.js language description (v0.29.0)
+
+`highlightjs-cure/` in the repository ships a highlight.js
+language description for Cure (`src/languages/cure.js`) plus a demo
+page and a minified bundle (`dist/cure.min.js`). Drop it into any
+highlight.js-backed site to syntax-highlight `.cure` snippets in
+blog posts and READMEs without pulling in Makeup.
 
 **`cure fmt [path|dir]`** -- Format `.cure` source files in place.
 

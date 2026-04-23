@@ -1,9 +1,10 @@
 # Cure Tutorial
-A guided tour of Cure for newcomers. Thirteen short chapters take you
-from an empty directory to a working project that uses dependent
-types, deep destructuring, binary parsing, FSMs, a typed supervision
-tree, a full OTP application, the REPL, and the type checker as a
-writing tool.
+A guided tour of Cure for newcomers. Fourteen short chapters take
+you from an empty directory to a working project that uses
+dependent types, deep destructuring, binary parsing, FSMs, a typed
+supervision tree, a full OTP application, the REPL, the type
+checker as a writing tool, and finally a browsable documentation
+site produced from your own `.cure` sources.
 ## 1. Hello, Cure
 Install Cure (from the repo root):
 ```bash
@@ -184,6 +185,108 @@ fsm Turnstile with Integer
 ```
 The compiler verifies reachability and deadlock freedom and emits a
 runnable `gen_statem` (or `GenServer` in callback mode) BEAM module.
+## 13. Documenting your modules
+`cure doc` produces a browsable, ExDoc-like documentation site from
+your `.cure` sources. The layout has a persistent left sidebar with
+every module (optionally grouped) and any orphan pages you want to
+ship, and a right pane that renders the selected page with a local
+table of contents plus anchored entries for every public function,
+type, and protocol.
+
+### `##` doc comments
+`##` comments on the line above a `mod`, `fn`, `type`, `rec`, or
+`proto` definition attach as its docstring. Consecutive `##` blocks
+separated by blank lines are merged into a single paragraph-separated
+body, so you can write a docstring the way you would write regular
+prose:
+```cure
+mod Std.List
+  ## Eager, persistent, singly-linked lists.
+  ##
+  ## Every operation recurses over cons cells; there are no runtime
+  ## arrays underneath.
+```
+
+### `## Examples` blocks
+Convention: end a module-level (or important function-level) docstring
+with an `## Examples` section containing fenced `cure` code. The
+Markdown renderer syntax-highlights the block via Makeup, and the
+examples themselves round-trip through `mix cure.compile_stdlib` --
+something the Cure stdlib under `lib/std/` now enforces across every
+shipped module.
+```cure
+mod MyApp.Math
+  ## Right-to-left function composition.
+  ## `compose(f, g)(x)` is `f(g(x))`.
+  ##
+  ## ## Examples
+  ##
+  ## ```cure
+  ## let add1 = fn(x: Int) -> Int = x + 1
+  ## let neg  = fn(x: Int) -> Int = 0 - x
+  ## compose(neg, add1)(3)             # => -4
+  ## ```
+  fn compose(f: B -> C, g: A -> B) -> (A -> C) =
+    fn(x) -> f(g(x))
+```
+
+### `Cure.toml [doc]` configuration
+The `[doc]` table drives the generated layout. None of its keys are
+required; adding them progressively enhances the output.
+```toml
+[project]
+name    = "my_lib"
+version = "0.1.0"
+
+[doc]
+main       = "README"
+title      = "My Library"
+extras     = ["README.md", "CHANGELOG.md"]
+source_url = "https://github.com/you/my_lib"
+source_ref = "main"
+
+[doc.groups_for_modules]
+"Core"        = ["MyLib.Core"]
+"Accessories" = ["MyLib.Json", "MyLib.Http"]
+```
+- `main` picks the landing page. It can be either a module name
+  (`MyLib.Core`) or an extra slug (`README` matches `README.md`).
+- `extras` paths resolve relative to the directory that contains
+  `Cure.toml`, so the same configuration keeps working from any
+  sub-directory.
+- `source_url` / `source_ref` attach GitHub "View source" links to
+  every module page.
+- `[doc.groups_for_modules]` groups the sidebar. Modules not listed
+  in any group fall into a trailing `"Other"` bucket so nothing is
+  silently dropped.
+
+Every CLI flag overrides the corresponding key per invocation:
+```bash
+cure doc --title "Release Preview" \
+         --main MyLib.Core \
+         --extras CHANGELOG.md
+```
+`--extras` is repeatable.
+
+### Placeholder interpolation
+Inside `##` blocks and extras, the strings `{{cure_version}}` and
+`{{cure_vversion}}` are substituted for the current Cure version and
+its `v`-prefixed form. Useful when a docstring wants to pin itself to
+the compiler that produced it.
+
+### Running it
+```bash
+cure doc                         # document everything under lib/
+cure doc lib/my_lib/ -o docs/    # document a sub-tree to a custom path
+cure doc --main MyLib.Core       # pick a landing module
+```
+The output is a self-contained HTML tree (HTML + one CSS + one JS
+file), so you can zip it up or host it from any static server. The
+REPL's `:doc` command pulls the same sources through
+`Cure.REPL.Markdown` for ANSI output.
+
+See `docs/DOC.md` for the authoritative reference.
+
 ## Where to next
 - `docs/LANGUAGE_SPEC.md` -- syntax reference.
 - `docs/TYPE_SYSTEM.md` -- type checker details.
@@ -193,5 +296,7 @@ runnable `gen_statem` (or `GenServer` in callback mode) BEAM module.
   Melquiades Operator `<-|` (v0.25.0).
 - `docs/APP.md` -- `app` containers, `Cure.toml` `[application]` /
   `[release]` sections, and the `cure release` subcommand (v0.26.0).
+- `docs/DOC.md` -- `cure doc` pipeline, `[doc]` config, placeholder
+  interpolation, Makeup highlighting, REPL Markdown renderer (v0.29.0).
 - `docs/STDLIB.md` -- standard library API.
 - `docs/PACKAGE_REGISTRY.md` -- design notes for the eventual Cure registry.

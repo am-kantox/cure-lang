@@ -14,6 +14,34 @@ and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
 FSM compilation with structural verification, effect system, documentation
 generator, formatter, stdlib, CLI, CI, and example programs.
 
+v0.29.0 themes itself "Make Documentation Great" and is the
+documentation release. `cure doc` now produces an ExDoc-like
+two-pane site driven by a new `[doc]` section in `Cure.toml`
+(`main`, `title`, `extras`, `[doc.groups_for_modules]`); module docs
+render as Markdown (via the NIF-free `:md` library) with
+Makeup-powered syntax highlighting for `cure` / `elixir` / `erlang`
+fenced code. Every module under `lib/std/` carries a module-level
+`## Examples` block, four high-traffic `Std.Core` functions carry
+per-function examples, and the Cure website ships `/stdlib` and
+`/stdlib/:module` pages (`CureSite.Stdlib` bundles the same `.cure`
+sources at site compile time). The REPL's `:help` / `:doc` output
+graduates to a block-aware Markdown-to-ANSI renderer, the parser
+merges consecutive `##` doc-comment blocks across blank-line gaps, a
+standalone highlight.js language description ships under
+`highlightjs-cure/`, and both the Vim (`vicure/`) and VS Code
+(`vscode-cure/`) plugins are re-aligned with the current grammar.
+See [`docs/DOC.md`](docs/DOC.md) for the `cure doc` reference and
+[`docs/TUTORIAL.md`](docs/TUTORIAL.md) Chapter 13 for a walkthrough.
+
+v0.28.0 shipped "Talk Back" -- parser error recovery
+(`E063`), "did you mean?" suggestions everywhere,
+`cure fmt --dry-run`, `cure bless` (Socratic type-error assistant),
+`@record` + `cure replay` (FSM time-travel), a Playground with
+live type-checking and a sandboxed evaluator, and a type-checker
+bug fix for ill-typed polymorphic lambdas. v0.28.1 and v0.28.2
+followed with REPL top-level declarations (`Cure.REPL.Session`)
+and session-signature installation into the type-checker env.
+
 v0.27.0 themes itself "See Your System Breathe" and adds the
 observability and verification surface around v0.26.0's OTP
 applications. It ships `Cure.OTel` (OpenTelemetry-compatible span
@@ -402,7 +430,8 @@ cure check examples/protocols.cure
 - [FSM Guide](docs/FSM_GUIDE.md) -- FSM definition, compilation, runtime, verification
 - [Supervision](docs/SUPERVISION.md) -- typed actors, `sup` containers, the Melquiades Operator, links and monitors (v0.25.0)
 - [Applications](docs/APP.md) -- `app` containers, `Cure.toml` `[application]` / `[release]` sections, the `cure release` subcommand, and `Std.App` (v0.26.0)
-- [Standard Library](docs/STDLIB.md) -- API reference for the stdlib modules
+- [Documentation Tooling](docs/DOC.md) -- `cure doc` pipeline, `[doc]` config, placeholder interpolation, Makeup highlighting, REPL Markdown renderer (v0.29.0)
+- [Standard Library](docs/STDLIB.md) -- API reference for the stdlib modules (every module now ships a `## Examples` block)
 
 ## Building
 

@@ -1152,6 +1152,57 @@ for the full narrative.
   v0.27.0 surface.
 - **1451 tests.** 5 new error codes (E056--E062).
 
+## Implemented: v0.29.0 -- Make Documentation Great
+
+The documentation release. `cure doc`, the REPL, the stdlib, the
+website, and the editor plugins all pulled up to the same bar. See
+the [v0.29.0 release post](/blog/cure-v0.29.0) for the full
+narrative.
+
+- **`cure doc` two-pane layout** -- ExDoc-like HTML site driven by a
+  new `[doc]` table in `Cure.toml`
+  (`main`, `title`, `extras`, `logo`, `source_url`, `source_ref`,
+  plus `[doc.groups_for_modules]`). Anchored entries for every
+  public function / type / protocol; `/`-focusable sidebar filter;
+  `prefers-color-scheme` theme toggle. `--title`, `--main`,
+  `--extras` CLI flags.
+- **`Cure.Doc.Markdown`** -- NIF-free Markdown-to-HTML pipeline
+  (`Md.generate/1` + Makeup highlighting for `cure` / `elixir` /
+  `erlang` fences + `{{cure_version}}` / `{{cure_vversion}}`
+  placeholder interpolation). Safe inside the escript (where the
+  `marcli` / `MDEx` NIF path is not loadable).
+- **Stdlib Examples blocks** -- every module under `lib/std/` now
+  carries a module-level `## Examples` block; four high-traffic
+  `Std.Core` functions (`compose`, `map_ok`, `and_then`,
+  `map_option`) carry per-function examples. All round-trip through
+  `mix cure.compile_stdlib`.
+- **`/stdlib` site integration** -- `CureSite.Stdlib` bundles every
+  `Std.*` module at site-compile time; `CureSiteWeb.StdlibController`
+  serves `/stdlib` (index) and `/stdlib/:module` (single-module
+  page) with a DaisyUI-styled two-pane layout and a GitHub
+  "View source" link. `/standard-library` redirects to `/stdlib`.
+- **REPL Markdown renderer upgrade** -- `Cure.REPL.Markdown`
+  gains a block-aware parser (fenced code, lists, blockquotes,
+  indented code, inline links, horizontal rules, paragraph breaks)
+  while staying NIF-free.
+- **Parser fix** -- consecutive `##` doc-comment blocks separated
+  by blank lines are now merged into a single docstring with a
+  paragraph break (`collect_all_doc_comments/1,2`).
+- **Editor and highlighter alignment** -- `highlightjs-cure/`
+  ships a highlight.js language description plus a minified
+  bundle; `vicure/` and `vscode-cure/` are re-aligned with the
+  Cure 0.28.2 grammar (syntax, indent, ftplugin, ftdetect, tests,
+  README / CHANGELOG).
+- **REPL session and signatures** -- `Cure.REPL.Session`
+  accumulates top-level declarations (`fn`, `type`, `rec`, `proto`,
+  `impl`, `proof`); `Cure.Types.Checker.infer_expr/2` gains an
+  `:extra_bindings` option so session fns show their real type in
+  `:t` and `:effects` (promoted from v0.28.1 / v0.28.2).
+- **`docs/DOC.md`** -- authoritative on-disk reference for the
+  whole doc pipeline; `docs/TUTORIAL.md` Chapter 13 "Documenting
+  your modules" walks through docstrings, Examples, `[doc]`
+  configuration, and running `cure doc`.
+
 ## Implemented: v0.28.0 -- Talk Back
 
 Feedback loops closed at every level. See the [v0.28.0 release post](/blog/cure-v0.28.0)

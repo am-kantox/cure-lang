@@ -3946,10 +3946,28 @@ defmodule Cure.Compiler.Parser do
   # for single-line `##` tokens) from `## foo\n\n## bar` (separated,
   # line delta 2+). A gap terminates the run so the next `##` block
   # binds to the following definition rather than to the leading doc.
-  defp collect_doc_comments(state, acc, prev_line) do
+  #
+  # Split into two clauses so the integer arithmetic on `prev_line` is
+  # never evaluated against `nil`; dialyzer (rightly) rejects
+  # `line - prev_line` in the combined-guard form because it narrows
+  # `prev_line` to `nil` across the first entry call.
+  defp collect_doc_comments(state, acc, nil) do
+    case peek(state) do
+      %Token{type: :doc_comment, value: text, line: line} ->
+        state = advance(state)
+        state = skip_newlines(state)
+        collect_doc_comments(state, [text | acc], line)
+
+      _ ->
+        doc = acc |> Enum.reverse() |> Enum.join("\n")
+        {doc, state}
+    end
+  end
+
+  defp collect_doc_comments(state, acc, prev_line) when is_integer(prev_line) do
     case peek(state) do
       %Token{type: :doc_comment, value: text, line: line}
-      when prev_line == nil or line - prev_line <= 1 ->
+      when line - prev_line <= 1 ->
         state = advance(state)
         state = skip_newlines(state)
         collect_doc_comments(state, [text | acc], line)

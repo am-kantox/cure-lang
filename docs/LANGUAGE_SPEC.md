@@ -39,11 +39,26 @@ events.
 
 - `# ...` -- line comment.
 - `## text` -- single-line doc comment. One per line; attached to the
-  following definition.
+  following definition. Consecutive `##` blocks separated by a
+  blank-line gap (or by plain `#` comments that the lexer drops) are
+  merged into a single docstring with a paragraph break between
+  blocks (v0.29.0: `Cure.Compiler.Parser.collect_all_doc_comments/1,2`).
+  This lets you write a long docstring in natural paragraphs without
+  leaving orphan `:doc_comment` tokens ahead of the next definition.
 - `###\n...\n###` -- fenced multi-line doc comment. Opens on a line
   whose first three non-whitespace characters are `###`; closes on the
   next line whose first three non-whitespace characters are `###`.
   Leading indentation common to every body line is stripped.
+- **Docstring body grammar.** Doc-comment bodies are Markdown: `cure`
+  doc tooling (`Cure.Doc.Markdown`, `cure doc`, the REPL's `:doc` /
+  `:help` output, and the Cure website's `/stdlib/:module` pages) pipe
+  the body through the NIF-free `:md` library. Fenced code blocks
+  carrying a known language (`cure`, `elixir`, `erlang`) are
+  syntax-highlighted via Makeup; unknown languages pass through with a
+  stable `language-<lang>` class for downstream CSS. The strings
+  `{{cure_version}}` and `{{cure_vversion}}` are substituted for the
+  running Cure version before parsing so release-sensitive copy can
+  travel inside docstrings.
 
 ### Operators (by precedence, low to high)
 
