@@ -55,6 +55,7 @@ defmodule CureSite.MixProject do
        compile: false,
        depth: 1},
       {:nimble_publisher, "~> 1.0", runtime: false},
+      {:mdex, "~> 0.12"},
       {:makeup, "~> 1.0"},
       {:makeup_cure, ">= 0.0.0"},
       {:makeup_elixir, ">= 0.0.0", runtime: false},

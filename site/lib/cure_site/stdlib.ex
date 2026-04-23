@@ -2,7 +2,8 @@ defmodule CureSite.Stdlib do
   @moduledoc """
   Compile-time bundle of the Cure standard library, extracted from the
   actual `.cure` sources shipped in `cure/lib/std/` and turned into
-  Earmark-rendered HTML ready for `stdlib_html/*.heex` to splice in.
+  `MDEx`-rendered HTML (via `CureSite.MarkdownConverter`) ready for
+  `stdlib_html/*.heex` to splice in.
 
   Walking the filesystem at compile time means two things:
 
@@ -148,15 +149,14 @@ defmodule CureSite.Stdlib do
   Render the supplied markdown to HTML using the same converter the
   rest of the site uses. Accepts `nil` so templates can blindly render
   missing docstrings.
+
+  Delegates to `CureSite.MarkdownConverter.to_html/1`, which is
+  runtime-safe: it routes through `MDEx` (a direct runtime dependency)
+  and `Makeup.Registry` instead of `Earmark` or `NimblePublisher`,
+  both of which were only available transitively through
+  `:nimble_publisher` and therefore missing from the production
+  release.
   """
   @spec markdown_to_html(String.t() | nil) :: String.t()
-  def markdown_to_html(nil), do: ""
-  def markdown_to_html(""), do: ""
-
-  def markdown_to_html(body) when is_binary(body) do
-    body
-    |> CureSite.MarkdownConverter.interpolate_placeholders()
-    |> Earmark.as_html!()
-    |> NimblePublisher.highlight([:makeup_cure, :makeup_elixir, :makeup_erlang])
-  end
+  defdelegate markdown_to_html(body), to: CureSite.MarkdownConverter, as: :to_html
 end
