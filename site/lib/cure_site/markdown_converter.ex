@@ -43,13 +43,6 @@ defmodule CureSite.MarkdownConverter do
 
   @default_highlighters [:makeup_cure, :makeup_elixir, :makeup_erlang]
 
-  # MDEx (comrak) emits fenced code blocks as
-  #   `<pre><code class="language-foo">escaped-body</code></pre>`,
-  # while Earmark and plain CommonMark renderers drop the `language-`
-  # prefix. The regex accepts both forms so we can stay agnostic if
-  # the renderer ever changes.
-  @code_block_regex ~r|<pre><code\s+class="(?:language-)?(?<lang>[^"\s]+)">(?<body>[^<]*)</code></pre>|
-
   @doc """
   `NimblePublisher` `:html_converter` callback.
 
@@ -136,7 +129,14 @@ defmodule CureSite.MarkdownConverter do
   defp highlight_code_blocks(html, []), do: html
 
   defp highlight_code_blocks(html, _highlighters) do
-    Regex.replace(@code_block_regex, html, fn _full, lang, escaped_body ->
+    # MDEx (comrak) emits fenced code blocks as
+    #   `<pre><code class="language-foo">escaped-body</code></pre>`,
+    # while Earmark and plain CommonMark renderers drop the `language-`
+    # prefix. The regex accepts both forms so we can stay agnostic if
+    # the renderer ever changes.
+    code_block_regex = ~r|<pre><code\s+class="(?:language-)?(?<lang>[^"\s]+)">(?<body>[^<]*)</code></pre>|
+
+    Regex.replace(code_block_regex, html, fn _full, lang, escaped_body ->
       case Makeup.Registry.fetch_lexer_by_name(lang) do
         {:ok, {lexer, lexer_opts}} ->
           highlighted =
