@@ -122,7 +122,97 @@ defmodule Cure.JohnTest do
       assert [entry] = snap.logs
       assert entry.path =~ "example.log"
       assert entry.size > 0
-      assert entry.tail =~ "line 3"
+      assert entry.kind == :log
+      assert entry.content =~ "line 3"
+    end
+
+    test "erl_crash.dump is summarised rather than tailed", %{root: root} do
+      File.write!(Path.join(root, "erl_crash.dump"), """
+      =erl_crash_dump:0.5
+      Mon Apr 14 10:00:00 2026
+      Slogan: eheap_alloc: Cannot allocate 1234567 bytes of memory (of type "heap").
+      System version: Erlang/OTP 27 [erts-15.0] [source] [64-bit] [smp:16:16] [jit]
+      Compiled: Fri Mar 21 18:13:23 2025
+      Taints: crypto,zlib
+      Atoms: 14723
+      Calling Thread: scheduler:1
+      =memory
+      total: 55738344
+      processes: 8388608
+      processes_used: 8388608
+      system: 47349736
+      atom: 629657
+      atom_used: 617923
+      binary: 65856
+      code: 17436712
+      ets: 1165104
+      =proc:<0.1.0>
+      blah
+      =proc:<0.2.0>
+      blah
+      =ets:<0.7.0>
+      =mod:elixir
+      =mod:erlang
+      =mod:kernel
+      """)
+
+      snap = John.collect(root: root)
+      assert [entry] = snap.logs
+      assert entry.path =~ "erl_crash.dump"
+      assert entry.kind == :crash_dump
+      assert %{fields: fields, counts: counts} = entry.content
+
+      as_map = Map.new(fields)
+      assert as_map["format"] == "=erl_crash_dump:0.5"
+      assert as_map["slogan"] =~ "Cannot allocate 1234567 bytes"
+      assert as_map["system"] =~ "Erlang/OTP 27"
+      assert as_map["atoms"] == "14723"
+      assert as_map["taints"] == "crypto,zlib"
+      assert as_map["memory total"] =~ ~r/\d/
+      assert as_map["memory processes"] =~ ~r/\d/
+      assert as_map["memory atom"] =~ ~r/\d/
+
+      counts_map = Map.new(counts)
+      assert counts_map["processes"] == 2
+      assert counts_map["ets tables"] == 1
+      assert counts_map["modules"] == 3
+    end
+
+    test "render/2 emits the crash-dump summary as Markdown bullets", %{root: root} do
+      File.write!(Path.join(root, "erl_crash.dump"), """
+      =erl_crash_dump:0.5
+      Slogan: test slogan
+      System version: test
+      Atoms: 42
+      =memory
+      total: 1024
+      """)
+
+      snap = John.collect(root: root)
+      md = John.render(snap, banner: false)
+
+      assert md =~ "## Recent logs"
+      assert md =~ "erl_crash.dump"
+      assert md =~ "**slogan**"
+      assert md =~ "test slogan"
+      # The raw file content must NOT appear inside a code fence --
+      # we now render the structured summary as bullets instead.
+      refute md =~ "```\n=erl_crash_dump"
+    end
+
+    test "ill-formed UTF-8 in logs does not crash the renderer", %{root: root} do
+      log_dir = Path.join(root, ".cure/logs")
+      File.mkdir_p!(log_dir)
+      # `0xC3 0x28` is an invalid UTF-8 sequence.
+      File.write!(Path.join(log_dir, "ugly.log"), <<"prefix ", 0xC3, 0x28, " suffix\n">>)
+
+      snap = John.collect(root: root)
+      assert [entry] = snap.logs
+      assert entry.kind == :log
+      # The invalid byte was replaced rather than propagated as-is.
+      assert String.valid?(entry.content)
+      assert entry.content =~ "prefix"
+      assert entry.content =~ "suffix"
     end
   end
 

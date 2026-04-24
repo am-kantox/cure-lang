@@ -327,7 +327,7 @@ defmodule Cure.John do
     deps_md =
       case t.dependencies do
         [] ->
-          "  _(no dependencies loaded)_"
+          "  *(no dependencies loaded)*"
 
         deps ->
           deps
@@ -375,7 +375,7 @@ defmodule Cure.John do
   end
 
   defp project_md(nil) do
-    section("Project", ["  _(no `Cure.toml` found in the current directory)_"])
+    section("Project", ["  *(no `Cure.toml` found in the current directory)*"])
   end
 
   defp project_md(%{error: reason}) do
@@ -386,7 +386,7 @@ defmodule Cure.John do
     deps_md =
       case proj.dependencies do
         [] ->
-          "  _(no dependencies declared)_"
+          "  *(no dependencies declared)*"
 
         deps ->
           deps
@@ -457,7 +457,7 @@ defmodule Cure.John do
   end
 
   defp runtime_md(nil) do
-    section("Runtime", ["  _(Cure runtime not available in this context)_"])
+    section("Runtime", ["  *(Cure runtime not available in this context)*"])
   end
 
   defp runtime_md(rt) do
@@ -521,7 +521,7 @@ defmodule Cure.John do
         lines
       end
 
-    section("Doctor", lines ++ ["", "_Run `cure doctor` for the full report._"])
+    section("Doctor", lines ++ ["", "*Run `cure doctor` for the full report.*"])
   end
 
   # ==========================================================================
@@ -551,44 +551,110 @@ defmodule Cure.John do
     )
     |> Enum.take(5)
     |> Enum.map(fn path ->
+      kind = classify_log(path)
+
       %{
         path: Path.relative_to_cwd(path),
         size: safe(fn -> File.stat!(path).size end, 0),
-        tail: tail_lines(path, 10)
+        kind: kind,
+        content: read_log_content(path, kind)
       }
     end)
   end
 
+  defp classify_log(path) do
+    case Path.basename(path) do
+      "erl_crash.dump" -> :crash_dump
+      _ -> if crash_dump_header?(path), do: :crash_dump, else: :log
+    end
+  end
+
+  defp crash_dump_header?(path) do
+    case read_prefix(path, 64) do
+      {:ok, head} -> String.starts_with?(head, "=erl_crash_dump:")
+      _ -> false
+    end
+  end
+
+  defp read_log_content(path, :crash_dump), do: summarize_crash_dump(path)
+  defp read_log_content(path, :log), do: tail_lines(path, 10)
+
   defp logs_md([]) do
-    section("Recent logs", ["  _(no log files found under `.cure/logs/`, `_build/cure/logs/`, or `erl_crash.dump`)_"])
+    section("Recent logs", ["  *(no log files found under `.cure/logs/`, `_build/cure/logs/`, or `erl_crash.dump`)*"])
   end
 
   defp logs_md(logs) do
     lines =
       logs
       |> Enum.flat_map(fn entry ->
-        body =
-          case entry.tail do
-            "" -> "_(empty)_"
-            t -> t
-          end
+        header = "### " <> entry.path <> "  (#{human_bytes(entry.size)})"
 
-        [
-          "### " <> entry.path <> "  (#{human_bytes(entry.size)})",
-          "",
-          "```",
-          body,
-          "```"
-        ]
+        case entry.kind do
+          :crash_dump -> crash_dump_block(header, entry.content)
+          :log -> log_tail_block(header, entry.content)
+        end
       end)
 
     section("Recent logs", lines)
+  end
+
+  defp crash_dump_block(header, %{fields: fields, counts: counts, note: note}) do
+    field_lines =
+      fields
+      |> Enum.reject(fn {_k, v} -> v in [nil, ""] end)
+      |> Enum.map(fn {k, v} -> kv(k, v) end)
+
+    count_lines =
+      counts
+      |> Enum.reject(fn {_k, v} -> v in [nil, 0] end)
+      |> Enum.map(fn {k, v} -> kv(k, v) end)
+
+    trailer =
+      if count_lines == [],
+        do: field_lines,
+        else: field_lines ++ ["", "**Section markers (sampled from prefix)**:", "" | count_lines]
+
+    body =
+      if field_lines == [] and count_lines == [] do
+        ["  *(crash dump did not expose any recognisable header fields)*"]
+      else
+        trailer
+      end
+
+    note_lines = if note, do: ["", "  *#{note}*"], else: []
+
+    [header, "" | body] ++ note_lines
+  end
+
+  defp crash_dump_block(header, other) when is_binary(other) do
+    # Falls through when `summarize_crash_dump/1` could not open / read
+    # the file; treat it like an opaque log tail so the section still
+    # renders rather than crashing the whole report.
+    log_tail_block(header, other)
+  end
+
+  defp log_tail_block(header, content) do
+    body =
+      case content do
+        "" -> "*(empty)*"
+        t when is_binary(t) -> sanitize_binary(t)
+        other -> inspect(other)
+      end
+
+    [
+      header,
+      "",
+      "```",
+      body,
+      "```"
+    ]
   end
 
   defp tail_lines(path, n) do
     case File.read(path) do
       {:ok, content} ->
         content
+        |> sanitize_binary()
         |> String.split("\n")
         |> Enum.reject(&(&1 == ""))
         |> Enum.take(-n)
@@ -600,15 +666,212 @@ defmodule Cure.John do
   end
 
   # ==========================================================================
+  # erl_crash.dump summarisation
+  # ==========================================================================
+  #
+  # An Erlang crash dump is a line-oriented text file. All the top-level
+  # header fields (`Slogan:`, `System version:`, `Atoms:`, the `=memory`
+  # section, ...) live in the first few kilobytes; process / ETS / module
+  # sections follow. We read a bounded prefix so a multi-GB dump never
+  # blows the heap when `john` runs, and we extract a structured
+  # summary rather than `tail`ing the file (whose process state contains
+  # binary blobs that display as `â` garbage in the terminal).
+  @crash_prefix_bytes 65_536
+
+  # Long values (an `io:put_chars` slogan carrying a multi-kilobyte
+  # byte literal, for instance) are truncated when extracted. That
+  # stops a single field from flooding the terminal while still
+  # leaving the first portion of the payload -- normally enough to
+  # identify the crash -- visible in the report.
+  @crash_value_max_chars 240
+
+  @spec summarize_crash_dump(String.t()) :: map() | String.t()
+  defp summarize_crash_dump(path) do
+    case read_prefix(path, @crash_prefix_bytes) do
+      {:ok, ""} ->
+        "(crash dump is empty)"
+
+      {:ok, head} ->
+        clean = sanitize_binary(head)
+        total_size = safe(fn -> File.stat!(path).size end, byte_size(head))
+        note = crash_dump_note(total_size, byte_size(head))
+
+        %{
+          fields: crash_dump_fields(clean),
+          counts: crash_dump_counts(clean),
+          note: note
+        }
+
+      :error ->
+        "(crash dump could not be read)"
+    end
+  end
+
+  defp crash_dump_note(total_size, head_size) when total_size > head_size do
+    "Only the first #{human_bytes(head_size)} of #{human_bytes(total_size)} were scanned for this summary; process/ETS/module counts below are lower bounds."
+  end
+
+  defp crash_dump_note(_total_size, _head_size), do: nil
+
+  defp crash_dump_fields(head) do
+    [
+      {"format", extract_first_line(head)},
+      {"dumped", extract_field(head, "Crash dump is written")},
+      {"slogan", extract_field(head, "Slogan")},
+      {"system", extract_field(head, "System version")},
+      {"compiled", extract_field(head, "Compiled")},
+      {"taints", extract_field(head, "Taints")},
+      {"atoms", extract_field(head, "Atoms")},
+      {"calling thread", extract_field(head, "Calling Thread")},
+      {"memory total", extract_memory(head, "total")},
+      {"memory processes", extract_memory(head, "processes")},
+      {"memory processes used", extract_memory(head, "processes_used")},
+      {"memory system", extract_memory(head, "system")},
+      {"memory atom", extract_memory(head, "atom")},
+      {"memory atom used", extract_memory(head, "atom_used")},
+      {"memory binary", extract_memory(head, "binary")},
+      {"memory code", extract_memory(head, "code")},
+      {"memory ets", extract_memory(head, "ets")}
+    ]
+  end
+
+  defp crash_dump_counts(head) do
+    [
+      {"processes", count_sections(head, "=proc:")},
+      {"ports", count_sections(head, "=port:")},
+      {"ets tables", count_sections(head, "=ets:")},
+      {"modules", count_sections(head, "=mod:")},
+      {"scheduler slots", count_sections(head, "=scheduler:")},
+      {"atoms sampled", count_sections(head, "=atoms")}
+    ]
+  end
+
+  # Reads an ISO-8601-ish line from the first line of the dump
+  # (`=erl_crash_dump:0.5`). Most dumps are happy to tell us their
+  # format version right up front.
+  defp extract_first_line(head) do
+    head
+    |> String.split("\n", parts: 2)
+    |> List.first()
+    |> case do
+      nil -> nil
+      "" -> nil
+      line -> String.trim(line)
+    end
+  end
+
+  # Header-style lookup: the first line of the crash dump that starts
+  # with `<Key>:` (up to a newline). Handles the leading whitespace
+  # variants OTP has shipped over the years. See
+  # `@crash_value_max_chars` for how long values are truncated.
+  defp extract_field(head, key) when is_binary(key) do
+    # Anchored, multi-line, case-sensitive.
+    case Regex.run(~r/^\s*#{Regex.escape(key)}\s*:\s*(.*)$/m, head, capture: :all_but_first) do
+      [value] ->
+        value
+        |> String.trim()
+        |> truncate_value(@crash_value_max_chars)
+
+      _ ->
+        nil
+    end
+  end
+
+  defp truncate_value(value, max) when is_binary(value) do
+    if String.length(value) > max do
+      String.slice(value, 0, max) <> " ..."
+    else
+      value
+    end
+  end
+
+  # The `=memory` block is a sequence of `<name>: <bytes>` pairs on
+  # their own lines. We anchor on the line after the `=memory` marker
+  # so we do not accidentally pick up fields named `total:` inside a
+  # `=proc:` section.
+  defp extract_memory(head, name) when is_binary(name) do
+    with [memory_block | _] <- Regex.run(~r/=memory\s*\n(.*?)(?=^=|\z)/ms, head, capture: :all_but_first),
+         [raw] <-
+           Regex.run(~r/^#{Regex.escape(name)}:\s*(\d+)\s*$/m, memory_block, capture: :all_but_first) do
+      case Integer.parse(raw) do
+        {bytes, _} -> human_bytes(bytes)
+        _ -> nil
+      end
+    else
+      _ -> nil
+    end
+  end
+
+  defp count_sections(head, marker) when is_binary(marker) do
+    head
+    |> String.split(marker)
+    |> length()
+    |> Kernel.-(1)
+    |> max(0)
+  end
+
+  defp read_prefix(path, bytes) do
+    case :file.open(to_charlist(path), [:read, :raw, :binary]) do
+      {:ok, io} ->
+        try do
+          case :file.read(io, bytes) do
+            {:ok, data} when is_binary(data) -> {:ok, data}
+            :eof -> {:ok, ""}
+            _ -> :error
+          end
+        after
+          _ = :file.close(io)
+        end
+
+      _ ->
+        :error
+    end
+  end
+
+  # Replace any bytes that are not valid UTF-8 with `?` so that the
+  # downstream Markdown pipeline (MDEx NIF or pure-Elixir fallback)
+  # does not choke on raw process-state blobs embedded in crash dumps
+  # or rotated log files. `:unicode.characters_to_binary/3` hands us
+  # `{:error, ok, <bad_byte, rest>}` on the first ill-formed byte; we
+  # drop that byte, swap in a literal `?`, and keep sanitising the
+  # remainder until the whole input is valid UTF-8.
+  defp sanitize_binary(bin) when is_binary(bin) do
+    case :unicode.characters_to_binary(bin, :utf8, :utf8) do
+      clean when is_binary(clean) ->
+        clean
+
+      {:error, ok, <<_bad::8, rest::binary>>} when is_binary(ok) ->
+        ok <> "?" <> sanitize_binary(rest)
+
+      {:incomplete, ok, _rest} when is_binary(ok) ->
+        ok
+
+      _ ->
+        for <<b <- bin>>, into: <<>>, do: <<safe_byte(b)>>
+    end
+  end
+
+  defp safe_byte(b) when b in 9..13 or b in 32..126, do: b
+  defp safe_byte(_), do: ??
+
+  # ==========================================================================
   # Markdown helpers
   # ==========================================================================
 
   defp banner_md(snapshot) do
+    # ASCII-only on purpose: the pure-Elixir Markdown fallback used
+    # inside the `cure` escript does not handle every Unicode
+    # punctuation character gracefully, and the Marcli path is happy
+    # with plain dashes too. Avoid em dashes so both pipelines render
+    # the banner cleanly in terminals that do not advertise UTF-8.
+    #
+    # Italics use `*...*` rather than `_..._` because the fallback
+    # inline renderer only knows the asterisk form.
     """
-    # Cure #{snapshot.cure.version}  \u2014  John
+    # Cure #{snapshot.cure.version}  --  John
 
-    _Named for **John Carbajal**, who taught the author that the most \
-    useful button on any dashboard is the one that shows everything._
+    *Named for **John Carbajal**, who taught the author that the most \
+    useful button on any dashboard is the one that shows everything.*
     """
     |> String.trim_trailing()
   end
