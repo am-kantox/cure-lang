@@ -91,9 +91,16 @@ defmodule Cure.REPL do
 
     # Load the compiled Cure stdlib BEAMs into the VM. By default this
     # loads all of them (preload_kind: :all), making Std.* callable from
-    # any expression. The helper is a no-op when `_build/cure/ebin` is
-    # absent (e.g. fresh clone or packaged escript without a compile step).
+    # any expression. The helper is a no-op when the bundled BEAMs and
+    # sources are both absent (e.g. a partial escript build).
     _ = Preload.preload(examples: false, kind: preload_kind)
+
+    # If any requested stdlib module is still not loaded after the
+    # preload, surface a diagnostic so the user understands why a
+    # `Std.X.y` call is about to raise `:undef`. Silent failures here
+    # used to be the primary symptom of the production REPL being
+    # shipped without `priv/ebin/`.
+    missing_preloads = missing_stdlib_modules(preload_kind)
 
     state = %__MODULE__{
       history: History.load(history_path),
@@ -110,6 +117,7 @@ defmodule Cure.REPL do
     cond do
       Keyword.get(opts, :raw, :auto) == false ->
         banner(state)
+        maybe_preload_warning(state, missing_preloads)
         legacy_loop(state)
 
       Terminal.tty?() ->
@@ -118,6 +126,7 @@ defmodule Cure.REPL do
             {:ok, saved} ->
               try do
                 banner(state)
+                maybe_preload_warning(state, missing_preloads)
                 raw_loop(state)
               after
                 Terminal.restore(saved)
@@ -127,6 +136,7 @@ defmodule Cure.REPL do
 
             {:error, reason} ->
               banner(state)
+              maybe_preload_warning(state, missing_preloads)
               raw_mode_warning(state, reason)
               legacy_loop(state)
           end
@@ -134,8 +144,43 @@ defmodule Cure.REPL do
 
       true ->
         banner(state)
+        maybe_preload_warning(state, missing_preloads)
         legacy_loop(state)
     end
+  end
+
+  # Return the list of stdlib modules that were requested by the
+  # preload kind but are not currently loadable. Empty list means the
+  # user will not run into `:undef` for a qualified stdlib call in
+  # this session.
+  defp missing_stdlib_modules(:none), do: []
+
+  defp missing_stdlib_modules(kind) do
+    Enum.reject(Preload.stdlib_modules(kind), fn module ->
+      case :code.is_loaded(module) do
+        {:file, _} -> true
+        _ -> Code.ensure_loaded?(module)
+      end
+    end)
+  end
+
+  defp maybe_preload_warning(_state, []), do: :ok
+
+  defp maybe_preload_warning(state, [_ | _] = missing) do
+    count = length(missing)
+
+    sample =
+      missing
+      |> Enum.take(3)
+      |> Enum.map_join(", ", &Atom.to_string/1)
+
+    suffix = if count > 3, do: ", ...", else: ""
+
+    render_info(
+      state,
+      "(stdlib preload degraded: #{count} module(s) missing -- #{sample}#{suffix}; " <>
+        "qualified calls will raise :undef. Check that priv/ebin/ is present in the release.)"
+    )
   end
 
   # Logger output interleaves badly with our raw-mode redraws: a stray
@@ -378,6 +423,23 @@ defmodule Cure.REPL do
         |> Map.put(:history, History.append(state.history, line))
         |> handle_meta(line)
 
+      # Bare `use Std.X` was previously routed to `evaluate/2`, where
+      # it compiled as the body of a synthetic `fn main() -> Any = use
+      # Std.X`. The parser treats `use` as an import directive, not an
+      # expression, so the function body collapsed to the literal
+      # `:undefined` atom and the REPL printed the confusing `=>
+      # :undefined`. The meta-command path (`:use Std.X`) already does
+      # the right thing -- install the module into `state.uses`,
+      # validate it against the stdlib bundle, and surface a
+      # friendly "imported Std.X" message -- so we sugar the bare form
+      # to it here. Multi-item forms (`use Std.{List, Map}`) also go
+      # through so the user gets a sensible error rather than the
+      # `:undefined` rabbit hole.
+      state.input_buffer == [] and bare_use?(line) ->
+        state
+        |> Map.put(:history, History.append(state.history, line))
+        |> handle_meta(":" <> line)
+
       true ->
         new_state = %{state | input_buffer: state.input_buffer ++ [line]}
         joined = Enum.join(new_state.input_buffer, "\n")
@@ -389,6 +451,16 @@ defmodule Cure.REPL do
         end
     end
   end
+
+  # `use <Ident>(.<Ident>)*` optionally followed by `.{...}` or just
+  # `.{...}` for the multi-item form. Greedy enough to catch the
+  # everyday imports a REPL user would type, strict enough to leave
+  # genuine expressions like `useful_thing(x)` alone.
+  defp bare_use?(line) when is_binary(line) do
+    Regex.match?(~r/^\s*use\s+[A-Z][A-Za-z0-9_]*(?:\.[A-Z][A-Za-z0-9_]*)*(?:\s*\.\s*\{[^}]*\})?\s*$/u, line)
+  end
+
+  defp bare_use?(_), do: false
 
   defp dispatch_buffer(%__MODULE__{input_buffer: []} = state), do: state
 

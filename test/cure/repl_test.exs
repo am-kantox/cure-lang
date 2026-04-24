@@ -156,6 +156,59 @@ defmodule Cure.REPLTest do
     end
   end
 
+  describe "bare `use` sugar" do
+    # Regression for the prod REPL: a bare `use Std.List` used to
+    # compile as an expression body, collapse to `:undefined`, and
+    # leave the user staring at `=> :undefined`. Now it routes
+    # through the `:use` meta-command and shows the real
+    # "imported ..." message.
+    setup do
+      Session.clear()
+      on_exit(&Session.clear/0)
+      :ok
+    end
+
+    test "a bare `use Std.List` installs the import like `:use Std.List`" do
+      {state, stdout, _stderr} =
+        submit_capture(REPL.__new_state__(), "use Std.List")
+
+      assert stdout =~ "imported Std.List"
+      assert "Std.List" in state.uses
+      refute stdout =~ ":undefined"
+    end
+
+    test "strips a leading `Cure.` prefix like the meta-command does" do
+      {state, stdout, _stderr} =
+        submit_capture(REPL.__new_state__(), "use Cure.Std.List")
+
+      assert stdout =~ "imported Std.List"
+      assert "Std.List" in state.uses
+    end
+
+    test "multi-item `use Std.{List, Map}` routes through the meta-command path" do
+      # The meta-command does not currently destructure the brace
+      # form, but sending it through the right dispatcher surfaces a
+      # sensible error instead of silently evaluating to :undefined.
+      {_state, stdout, stderr} =
+        submit_capture(REPL.__new_state__(), "use Std.{List, Map}")
+
+      refute stdout =~ ":undefined"
+      assert stdout <> stderr =~ ~r/imported|no stdlib module/
+    end
+
+    test "leaves genuine expressions like `useful_thing(1)` alone" do
+      # `useful_thing` is not a `use` statement; it must still reach
+      # the evaluator (which will error on the unresolved name).
+      {_state, _stdout, stderr} =
+        submit_capture(REPL.__new_state__(), "useful_thing(1)")
+
+      # Either a type/compile error is surfaced, or (if the env
+      # happens to resolve it) the evaluator runs; the only thing we
+      # assert is that we did NOT short-circuit into :use.
+      refute stderr =~ "no stdlib module"
+    end
+  end
+
   describe ":let meta-command" do
     setup do
       Session.clear()

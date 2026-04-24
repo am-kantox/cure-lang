@@ -102,7 +102,13 @@ defmodule Cure.MixProject do
       # in `:cure_site`) can locate them via `:code.priv_dir(:cure)`
       # in both dev and prod releases. See
       # `Mix.Tasks.Cure.BundleStdlib` and `Cure.Stdlib.Paths`.
-      compile: ["cure.bundle_stdlib", "compile"]
+      #
+      # After the regular Elixir `compile` step, `cure.bundle_stdlib_beams`
+      # uses the freshly-built `Cure.Compiler` to emit `Cure.Std.*.beam`
+      # into `priv/ebin/`. That directory rides along with every OTP
+      # release so the embedded REPL can call into the stdlib at runtime
+      # without relying on the build-time `_build/cure/ebin` artefact.
+      compile: ["cure.bundle_stdlib", "compile", "cure.bundle_stdlib_beams"]
     ]
   end
 
@@ -121,7 +127,12 @@ defmodule Cure.MixProject do
         "GitHub" => @source_url,
         "Changelog" => @source_url <> "/blob/main/CHANGELOG.md"
       },
-      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE docs)
+      # `priv/` is included so the hex tarball ships both the stdlib
+      # sources (`priv/std/*.cure`, used by the type checker) and the
+      # compiled stdlib BEAMs (`priv/ebin/Cure.Std.*.beam`, used by the
+      # REPL at runtime). See `Mix.Tasks.Cure.BundleStdlib` and
+      # `Mix.Tasks.Cure.BundleStdlibBeams`.
+      files: ~w(lib priv mix.exs README.md CHANGELOG.md LICENSE docs)
     ]
   end
 

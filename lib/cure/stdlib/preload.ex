@@ -60,7 +60,10 @@ defmodule Cure.Stdlib.Preload do
   historical behaviour.
   """
 
-  @default_stdlib_ebin "_build/cure/ebin"
+  alias Cure.Stdlib.Paths
+
+  require Logger
+
   @default_examples_ebin "_build/cure/ex_ebin"
 
   @stdlib_source_dir Path.expand("../../../lib/std", __DIR__)
@@ -152,16 +155,26 @@ defmodule Cure.Stdlib.Preload do
       Defaults to `:none` so callers must opt in.
     * `:examples` -- when `true`, also loads every `Cure.*.beam` found in
       the examples output directory. Defaults to `false`.
-    * `:stdlib_ebin` -- override the stdlib beam directory. Defaults to
-      `"_build/cure/ebin"`.
+    * `:stdlib_ebin` -- override the stdlib beam directory. When not
+      given, the full candidate list from `Cure.Stdlib.Paths.beam_dirs/0`
+      is searched in order (`:cure` env override, bundled
+      `priv/ebin`, legacy `_build/cure/ebin`). Passing a string here
+      collapses the search to just that directory for callers that
+      need deterministic behaviour (tests, scripts).
     * `:examples_ebin` -- override the examples beam directory. Defaults
       to `"_build/cure/ex_ebin"`.
+    * `:source_jit` -- when `true` (the default), any module in
+      `stdlib_modules(kind)` that failed to load from the BEAM
+      candidates is recompiled from its `.cure` source via
+      `Cure.Compiler.compile_and_load/2`. Disable for test harnesses
+      that want a hard failure if the BEAMs are missing.
   """
   @type option ::
           {:kind, kind()}
           | {:examples, boolean()}
           | {:stdlib_ebin, String.t()}
           | {:examples_ebin, String.t()}
+          | {:source_jit, boolean()}
 
   @doc """
   Return the canonical list of stdlib group atoms, in a stable order.
@@ -227,20 +240,49 @@ defmodule Cure.Stdlib.Preload do
   may not exist yet during a fresh `mix deps.compile`). Modules already
   loaded into the VM are left alone.
 
+  Resolution order for each module:
+
+    1. Iterate `Cure.Stdlib.Paths.beam_dirs/0` and load the first
+       matching `.beam`. When `:stdlib_ebin` is supplied explicitly,
+       only that directory is consulted.
+    2. Fall back to compiling the module from its `.cure` source in
+       `Cure.Stdlib.Paths.source_dir/0` via
+       `Cure.Compiler.compile_and_load/2`. Disable with
+       `source_jit: false`.
+
+  Source-JIT recovery guarantees that a release carrying the stdlib
+  *sources* but not the BEAMs is still functional; failures are
+  logged at `:debug` and swallowed, mirroring the BEAM-load path.
+
   See `t:option/0` for the accepted options. `:kind` defaults to `:none`
   so the caller must opt into loading.
   """
   @spec preload([option()]) :: :ok
   def preload(opts \\ []) do
     kind = Keyword.get(opts, :kind, :none)
-    stdlib_ebin = Keyword.get(opts, :stdlib_ebin, @default_stdlib_ebin)
     examples_ebin = Keyword.get(opts, :examples_ebin, @default_examples_ebin)
     include_examples? = Keyword.get(opts, :examples, false)
+    source_jit? = Keyword.get(opts, :source_jit, true)
 
-    load_stdlib(stdlib_ebin, kind)
+    candidate_dirs = stdlib_candidate_dirs(opts)
+
+    load_stdlib(candidate_dirs, kind)
+    if source_jit?, do: compile_missing_from_sources(kind)
     if include_examples?, do: load_cure_beams(examples_ebin)
 
     :ok
+  end
+
+  # Resolve the list of candidate BEAM directories for this preload
+  # call. A caller-supplied `:stdlib_ebin` collapses the search to a
+  # single directory (the legacy behaviour), while the default taps
+  # into `Cure.Stdlib.Paths.beam_dirs/0` so every layout known to the
+  # `Paths` module is consulted.
+  defp stdlib_candidate_dirs(opts) do
+    case Keyword.get(opts, :stdlib_ebin) do
+      nil -> Paths.beam_dirs()
+      dir when is_binary(dir) -> Enum.filter([dir], &File.dir?/1)
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -291,7 +333,12 @@ defmodule Cure.Stdlib.Preload do
         Map.to_list(map)
 
       _ ->
-        discover_from_beams(@default_stdlib_ebin)
+        # Walk every candidate BEAM directory and union the results.
+        # A module discovered in more than one directory keeps the
+        # first (highest-priority) entry, matching load order.
+        Paths.beam_dirs()
+        |> Enum.flat_map(&discover_from_beams/1)
+        |> Enum.uniq_by(fn {module, _group} -> module end)
     end
   end
 
@@ -328,12 +375,126 @@ defmodule Cure.Stdlib.Preload do
     end
   end
 
-  defp load_stdlib(ebin, kind) do
-    if File.dir?(ebin) do
-      Enum.each(stdlib_modules(kind), fn module ->
-        path = Path.join(ebin, "#{module}.beam")
-        load_if_present(module, path)
-      end)
+  # For each requested module, walk the candidate directories in
+  # order and load from the first one that has a readable `.beam`.
+  # Missing modules are left unloaded; the source-JIT fallback picks
+  # them up later.
+  defp load_stdlib([], _kind), do: :ok
+
+  defp load_stdlib(candidate_dirs, kind) do
+    Enum.each(stdlib_modules(kind), fn module ->
+      load_from_candidates(module, candidate_dirs)
+    end)
+  end
+
+  defp load_from_candidates(module, candidate_dirs) do
+    Enum.find_value(candidate_dirs, :not_found, fn dir ->
+      path = Path.join(dir, "#{module}.beam")
+
+      with true <- File.exists?(path),
+           :ok <- load_if_present(module, path) do
+        :ok
+      else
+        _ -> false
+      end
+    end)
+  end
+
+  # Compile any module in `stdlib_modules(kind)` that is still not
+  # loaded from its `.cure` source. This is the belt-and-braces
+  # fallback for deployments that carry the sources (`priv/std/`) but
+  # not the BEAMs (`priv/ebin/`). A failure on an individual module
+  # is logged at `:debug` and swallowed; the caller will get a
+  # `:undef` at call time, same as before.
+  @doc false
+  @spec compile_missing_from_sources(kind()) :: :ok
+  def compile_missing_from_sources(kind) do
+    case Paths.source_dir() do
+      nil ->
+        :ok
+
+      source_dir ->
+        if compiler_available?() do
+          Enum.each(stdlib_modules(kind), fn module ->
+            unless module_loaded?(module) do
+              jit_compile_module(module, source_dir)
+            end
+          end)
+        end
+
+        :ok
+    end
+  end
+
+  defp compiler_available? do
+    Code.ensure_loaded?(Cure.Compiler) and
+      function_exported?(Cure.Compiler, :compile_and_load, 2)
+  end
+
+  defp module_loaded?(module) do
+    case :code.is_loaded(module) do
+      {:file, _} -> true
+      _ -> Code.ensure_loaded?(module)
+    end
+  end
+
+  # Derive the stdlib source filename from the module atom. Our
+  # stdlib convention is `lib/std/<lowercased-last-segment>.cure`
+  # (e.g. `Cure.Std.List` -> `list.cure`). No deep search: a missing
+  # source is a hard miss.
+  defp jit_compile_module(module, source_dir) do
+    case source_path_for(module, source_dir) do
+      {:ok, path} ->
+        case File.read(path) do
+          {:ok, source} ->
+            try do
+              case Cure.Compiler.compile_and_load(source,
+                     file: path,
+                     emit_events: false,
+                     check_types: false
+                   ) do
+                {:ok, _module} ->
+                  :ok
+
+                {:error, reason} ->
+                  Logger.debug(fn ->
+                    "stdlib JIT: failed to compile #{module} from #{path}: #{inspect(reason)}"
+                  end)
+
+                  :ok
+              end
+            rescue
+              e ->
+                Logger.debug(fn ->
+                  "stdlib JIT: exception compiling #{module}: #{Exception.message(e)}"
+                end)
+
+                :ok
+            end
+
+          {:error, _reason} ->
+            :ok
+        end
+
+      :not_found ->
+        :ok
+    end
+  end
+
+  defp source_path_for(module, source_dir) do
+    basename =
+      module
+      |> Atom.to_string()
+      |> String.split(".")
+      |> List.last()
+      |> String.downcase()
+
+    path = Path.join(source_dir, basename <> ".cure")
+
+    if File.exists?(path) do
+      {:ok, path}
+    else
+      :not_found
     end
   end
 

@@ -6,12 +6,18 @@ defmodule Cure.Stdlib.PathsTest do
   alias Cure.Stdlib.Paths
 
   setup do
-    previous = Application.get_env(:cure, :stdlib_source_dir)
+    previous_src = Application.get_env(:cure, :stdlib_source_dir)
+    previous_beam = Application.get_env(:cure, :stdlib_beam_dir)
 
     on_exit(fn ->
-      case previous do
+      case previous_src do
         nil -> Application.delete_env(:cure, :stdlib_source_dir)
         value -> Application.put_env(:cure, :stdlib_source_dir, value)
+      end
+
+      case previous_beam do
+        nil -> Application.delete_env(:cure, :stdlib_beam_dir)
+        value -> Application.put_env(:cure, :stdlib_beam_dir, value)
       end
     end)
 
@@ -21,6 +27,47 @@ defmodule Cure.Stdlib.PathsTest do
   describe "bundle_destination/0" do
     test "points at priv/std relative to the current project" do
       assert Paths.bundle_destination() == Path.join(["priv", "std"])
+    end
+  end
+
+  describe "beam_bundle_destination/0" do
+    test "points at priv/ebin relative to the current project" do
+      assert Paths.beam_bundle_destination() == Path.join(["priv", "ebin"])
+    end
+  end
+
+  describe "beam_dirs/0" do
+    test "prepends the configured override when it exists" do
+      tmp = make_tmp!()
+
+      try do
+        Application.put_env(:cure, :stdlib_beam_dir, tmp)
+        dirs = Paths.beam_dirs()
+
+        assert List.first(dirs) == tmp
+      after
+        File.rm_rf!(tmp)
+      end
+    end
+
+    test "drops the configured override when the directory is missing" do
+      bogus = Path.join(System.tmp_dir!(), "cure_paths_beam_does_not_exist_#{unique()}")
+      Application.put_env(:cure, :stdlib_beam_dir, bogus)
+
+      refute bogus in Paths.beam_dirs()
+    end
+
+    test "returns only existing directories" do
+      assert Enum.all?(Paths.beam_dirs(), &File.dir?/1)
+    end
+  end
+
+  describe "beam_dir/0" do
+    test "returns the first element of beam_dirs/0" do
+      case Paths.beam_dirs() do
+        [] -> assert Paths.beam_dir() == nil
+        [first | _] -> assert Paths.beam_dir() == first
+      end
     end
   end
 

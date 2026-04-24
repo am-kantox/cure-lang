@@ -2,18 +2,24 @@ defmodule Cure.Stdlib.Paths do
   @moduledoc """
   Resolve well-known locations for the Cure standard library.
 
-  The stdlib lives in `lib/std/*.cure` inside the Cure repository, but
-  host applications that depend on `:cure` (for example
-  `:cure_site`) cannot rely on that path:
+  The stdlib lives in `lib/std/*.cure` (sources) and
+  `_build/cure/ebin/Cure.Std.*.beam` (compiled modules) inside the Cure
+  repository, but host applications that depend on `:cure` (for example
+  `:cure_site`) cannot rely on either of those paths:
 
     * their working directory is their own project root, not Cure's;
     * production releases strip the `lib/` source tree and keep only
-      compiled beams plus the `priv/` directory.
+      compiled beams plus the `priv/` directory;
+    * `_build/cure/ebin` is a build-time artefact and never ships
+      with an OTP release.
 
-  This module provides a single resolution function used by
-  `Cure.Types.Stdlib` (for `:t` signatures) and `Cure.REPL.Docs`
-  (for `:doc` rendering). It falls through the following candidates in
-  order:
+  This module provides resolution functions used by
+  `Cure.Types.Stdlib` (for `:t` signatures), `Cure.REPL.Docs` (for
+  `:doc` rendering), and `Cure.Stdlib.Preload` (for loading the BEAMs
+  that back qualified calls like `Std.List.map`). Both sources and
+  BEAMs fall through the same pattern of candidates:
+
+  ## Source directories (`source_dirs/0`, `source_dir/0`)
 
     1. `Application.get_env(:cure, :stdlib_source_dir)` -- explicit
        override configured by the host (useful for tests or unusual
@@ -26,10 +32,23 @@ defmodule Cure.Stdlib.Paths do
        legacy fallback, kept so Cure's own tests and scripts keep
        working when run straight from the repository checkout.
 
+  ## BEAM directories (`beam_dirs/0`, `beam_dir/0`)
+
+    1. `Application.get_env(:cure, :stdlib_beam_dir)` -- explicit
+       override (tests, alternative deployment layouts).
+    2. `<priv_dir>/ebin` -- the canonical bundled location, populated
+       by `Mix.Tasks.Cure.BundleStdlibBeams`. Rides along with OTP
+       releases the same way `priv/std` does.
+    3. `_build/cure/ebin` relative to the current working directory
+       -- the legacy `mix cure.compile_stdlib` output, kept so
+       checkouts that never produced a `priv/ebin/` bundle still work
+       in development.
+
   Only directories that actually exist on disk are returned.
   """
 
-  @legacy_cwd_relative Path.join(["lib", "std"])
+  @legacy_cwd_source Path.join(["lib", "std"])
+  @legacy_cwd_beam Path.join(["_build", "cure", "ebin"])
 
   @doc """
   Return every candidate stdlib source directory that currently exists,
@@ -38,7 +57,7 @@ defmodule Cure.Stdlib.Paths do
   """
   @spec source_dirs() :: [String.t()]
   def source_dirs do
-    [configured_dir(), bundled_dir(), @legacy_cwd_relative]
+    [configured_source_dir(), bundled_source_dir(), @legacy_cwd_source]
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
     |> Enum.filter(&File.dir?/1)
@@ -55,6 +74,33 @@ defmodule Cure.Stdlib.Paths do
   def source_dir, do: List.first(source_dirs())
 
   @doc """
+  Return every candidate stdlib BEAM directory that currently exists,
+  in search order. Used by `Cure.Stdlib.Preload` to locate compiled
+  `Cure.Std.*.beam` modules in both development checkouts and
+  packaged OTP releases. Callers that want a single canonical dir
+  should use `beam_dir/0`.
+  """
+  @spec beam_dirs() :: [String.t()]
+  def beam_dirs do
+    [configured_beam_dir(), bundled_beam_dir(), @legacy_cwd_beam]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+    |> Enum.filter(&File.dir?/1)
+  end
+
+  @doc """
+  Return the first existing stdlib BEAM directory, or `nil` when no
+  candidate is present on disk. A `nil` result means the stdlib
+  BEAMs were never bundled and no compile-time fallback exists; the
+  REPL will still function for type inference (sources handle that),
+  but any `Std.*.y` call will raise `:undef` until BEAMs are made
+  available or the source-JIT fallback in `Cure.Stdlib.Preload`
+  recovers them.
+  """
+  @spec beam_dir() :: String.t() | nil
+  def beam_dir, do: List.first(beam_dirs())
+
+  @doc """
   Default destination for `Mix.Tasks.Cure.BundleStdlib` and its
   consumers. Exposed as a function (rather than a module attribute)
   so tests can stub it without pulling in Mix machinery.
@@ -62,23 +108,62 @@ defmodule Cure.Stdlib.Paths do
   @spec bundle_destination() :: String.t()
   def bundle_destination, do: Path.join(["priv", "std"])
 
+  @doc """
+  Default destination for `Mix.Tasks.Cure.BundleStdlibBeams` and its
+  consumers. Mirrors `bundle_destination/0` but points at the
+  compiled-BEAM staging directory.
+  """
+  @spec beam_bundle_destination() :: String.t()
+  def beam_bundle_destination, do: Path.join(["priv", "ebin"])
+
   # ---------------------------------------------------------------------------
 
   @doc false
-  @spec configured_dir() :: String.t() | nil
-  def configured_dir do
+  @spec configured_source_dir() :: String.t() | nil
+  def configured_source_dir do
     case Application.get_env(:cure, :stdlib_source_dir) do
       dir when is_binary(dir) -> dir
       _ -> nil
     end
   end
 
+  # Back-compat alias for external callers that used the pre-`beam`
+  # naming. Deprecated but left in place to avoid churning every
+  # caller in the same changeset.
   @doc false
-  @spec bundled_dir() :: String.t() | nil
-  def bundled_dir do
+  @deprecated "Use configured_source_dir/0"
+  @spec configured_dir() :: String.t() | nil
+  def configured_dir, do: configured_source_dir()
+
+  @doc false
+  @spec bundled_source_dir() :: String.t() | nil
+  def bundled_source_dir do
     case :code.priv_dir(:cure) do
       {:error, _} -> nil
       priv -> Path.join(to_string(priv), "std")
+    end
+  end
+
+  @doc false
+  @deprecated "Use bundled_source_dir/0"
+  @spec bundled_dir() :: String.t() | nil
+  def bundled_dir, do: bundled_source_dir()
+
+  @doc false
+  @spec configured_beam_dir() :: String.t() | nil
+  def configured_beam_dir do
+    case Application.get_env(:cure, :stdlib_beam_dir) do
+      dir when is_binary(dir) -> dir
+      _ -> nil
+    end
+  end
+
+  @doc false
+  @spec bundled_beam_dir() :: String.t() | nil
+  def bundled_beam_dir do
+    case :code.priv_dir(:cure) do
+      {:error, _} -> nil
+      priv -> Path.join(to_string(priv), "ebin")
     end
   end
 end
