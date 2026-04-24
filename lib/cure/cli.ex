@@ -170,6 +170,9 @@ defmodule Cure.CLI do
         ["top"] ->
           cmd_top(opts)
 
+        ["john"] ->
+          cmd_john(opts)
+
         ["trace" | rest] ->
           cmd_trace(rest, opts)
 
@@ -192,7 +195,8 @@ defmodule Cure.CLI do
           known_commands = ~w(
             compile run check lsp stdlib version init deps test
             explain doc repl fmt watch new bench why doctor fix
-            publish search info keys release top trace synth bless replay help
+            publish search info keys release top trace synth bless replay
+            john help
           )
 
           suffix =
@@ -283,6 +287,23 @@ defmodule Cure.CLI do
     width = Keyword.get(opts, :width, 80)
     snapshot = Cure.Observe.Top.snapshot()
     IO.puts(Cure.Observe.Top.render(snapshot, width: width))
+  end
+
+  # -- john (everything, all at once) ------------------------------------------
+
+  defp cmd_john(opts) do
+    john_opts =
+      []
+      |> put_if(opts, :width)
+
+    _ = Cure.John.run(john_opts)
+  end
+
+  defp put_if(keyword, opts, key) do
+    case Keyword.fetch(opts, key) do
+      {:ok, value} -> Keyword.put(keyword, key, value)
+      :error -> keyword
+    end
   end
 
   defp cmd_trace([], _opts), do: error("Usage: cure trace Module.fun/arity")
@@ -1360,6 +1381,7 @@ defmodule Cure.CLI do
       top                  Print a runtime snapshot (supervisors / actors / FSMs)
       trace <M.f/a>        Typed tracer over :dbg (--duration N)
       synth                Synthesise typed-hole candidates (--goal T --ctx x=T)
+      john                 Print everything: VM stats, tooling, project, logs
       version              Show version
       help                 Show this help
 

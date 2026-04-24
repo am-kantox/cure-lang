@@ -716,6 +716,9 @@ defmodule Cure.REPL do
   defp handle_meta(state, ":mode " <> m), do: cmd_mode(state, String.trim(m))
   defp handle_meta(state, ":color " <> v), do: cmd_color(state, String.trim(v))
 
+  defp handle_meta(state, ":john"), do: cmd_john(state)
+  defp handle_meta(state, ":john " <> _), do: cmd_john(state)
+
   defp handle_meta(state, ":t " <> expr), do: cmd_type(state, expr)
   defp handle_meta(state, ":type " <> expr), do: cmd_type(state, expr)
   defp handle_meta(state, ":bless"), do: cmd_bless(state, nil)
@@ -731,7 +734,7 @@ defmodule Cure.REPL do
   defp handle_meta(state, other) do
     known_commands = ~w(
       :t :type :doc :effects :load :use :fmt :let :ast :time :bench
-      :theme :mode :color :history :search :save :edit :holes
+      :theme :mode :color :history :search :save :edit :holes :john
       :defs :reset :reload :help :imports :stdlib :quit :exit
     )
 
@@ -1218,6 +1221,17 @@ defmodule Cure.REPL do
     state
   end
 
+  # `:john` -- the everything-and-the-kitchen-sink diagnostic. Hands the
+  # real work to `Cure.John.run/1`, which already knows how to fall back
+  # from Marcli to the pure-Elixir Markdown renderer when MDEx is not
+  # loadable (escript, CI without the NIF, etc.). We pass the REPL's
+  # theme through so the fallback path matches the surrounding session
+  # and there is no jarring theme switch for users running `:john`.
+  defp cmd_john(state) do
+    Cure.John.run(theme: state.theme, ansi: state.color)
+    state
+  end
+
   defp help_markdown do
     """
     # Cure REPL
@@ -1248,6 +1262,7 @@ defmodule Cure.REPL do
     - `:mode emacs|vi` - switch editing mode
     - `:color on|off` - toggle colour output
     - `:clear` - clear the screen
+    - `:john` - print everything about Cure, the VM, and the project
     - `:help` / `:h` - show this help
     - `:quit` / `:q` / `:exit` - leave the REPL
 
