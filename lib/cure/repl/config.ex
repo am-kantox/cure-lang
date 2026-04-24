@@ -11,20 +11,25 @@ defmodule Cure.REPL.Config do
      file is present.
 
   Both files are optional. When neither exists (or TOML parsing fails),
-  `load/0` returns `defaults/0` unchanged so the REPL falls back to the
-  "explicit over implicit" behaviour of loading no stdlib modules.
+  `load/0` returns `defaults/0` unchanged.
 
   ## File format
 
-  The file is TOML 1.0, parsed via `:toml`. Currently the REPL only
-  looks at the `[stdlib]` section:
+  The file is TOML 1.0, parsed via `:toml`. The REPL reads the
+  `[stdlib]` section with two independent keys:
 
       # ./.cure.repl.toml or ~/.cure.repl.toml
       [stdlib]
+      # Which modules to load into the VM. Default: "all".
       # one of: "none" | "all" | ["core", "collections", ...]
-      preload = ["core", "collections"]
+      preload = "all"
 
-  The `preload` key is normalised to a `Cure.Stdlib.Preload.kind/0`:
+      # Which modules to auto-import (inject as `use Std.X`).
+      # Default: "none" -- prefer explicit `:use Mod` in the REPL.
+      # one of: "none" | "all" | ["core", "collections", ...]
+      imports = "none"
+
+  Both keys accept the same `Cure.Stdlib.Preload.kind/0` shape:
 
     * the string `"none"` -> `:none`
     * the string `"all"` -> `:all`
@@ -34,7 +39,8 @@ defmodule Cure.REPL.Config do
       atoms, duplicates stripped; unknown entries are dropped with a
       warning printed to `:stderr` so typos are visible but not fatal.
 
-  Absent or malformed values fall back to the default (`:none`).
+  Absent or malformed values fall back to their respective defaults
+  (`"all"` for `preload`, `"none"` for `imports`).
   """
 
   alias Cure.Stdlib.Preload
@@ -42,11 +48,11 @@ defmodule Cure.REPL.Config do
   @config_filename ".cure.repl.toml"
 
   @typedoc "Normalised REPL configuration."
-  @type t :: %{stdlib: Preload.kind()}
+  @type t :: %{preload: Preload.kind(), imports: Preload.kind()}
 
   @doc "The default config used when no `.cure.repl.toml` is present."
   @spec defaults() :: t()
-  def defaults, do: %{stdlib: :none}
+  def defaults, do: %{preload: :all, imports: :none}
 
   @doc """
   Load the REPL config, honouring the cwd-then-home precedence.
@@ -77,8 +83,11 @@ defmodule Cure.REPL.Config do
   @spec from_parsed(map()) :: t()
   def from_parsed(parsed) when is_map(parsed) do
     stdlib_section = Map.get(parsed, "stdlib", %{})
-    stdlib_kind = parse_stdlib(Map.get(stdlib_section, "preload"))
-    %{stdlib: stdlib_kind}
+    # Absent `preload` key defaults to "all" so the VM is always primed.
+    preload_kind = parse_stdlib(Map.get(stdlib_section, "preload", "all"))
+    # Absent `imports` key defaults to nil -> :none (explicit-over-implicit).
+    imports_kind = parse_stdlib(Map.get(stdlib_section, "imports"))
+    %{preload: preload_kind, imports: imports_kind}
   end
 
   def from_parsed(_other), do: defaults()

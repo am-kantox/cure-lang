@@ -73,16 +73,27 @@ defmodule Cure.REPL do
     mode = resolve_mode(opts)
     error_device = resolve_error_device(opts)
 
-    # Resolve the stdlib kind: explicit `:stdlib` option beats the
-    # `.cure.repl.toml` value, which beats the built-in default of
-    # `:none`. See `Cure.REPL.Config`.
+    # Two independent knobs read from `.cure.repl.toml` (or caller opts):
+    #
+    #   * `:preload` -- which stdlib BEAMs to load into the VM.
+    #     Defaults to `:all` so every Std.* module is callable out of
+    #     the box. Override via `[stdlib] preload` in `.cure.repl.toml`
+    #     or the `:preload` option passed to `Cure.REPL.start/1`.
+    #
+    #   * `:stdlib` -- which stdlib modules to auto-import (injected as
+    #     `use Std.X` in every REPL expression). Defaults to `:none`
+    #     (explicit-over-implicit). Override via `[stdlib] imports` in
+    #     `.cure.repl.toml` or the `:stdlib` option passed to
+    #     `Cure.REPL.start/1`.
     config = Config.load()
-    stdlib_kind = Keyword.get(opts, :stdlib, config.stdlib)
+    preload_kind = Keyword.get(opts, :preload, config.preload)
+    stdlib_kind = Keyword.get(opts, :stdlib, config.imports)
 
-    # Pre-load the compiled Cure stdlib (`_build/cure/ebin`) so expressions
-    # can reference the selected modules without an explicit `:load`. The
-    # helper is a no-op when the build directory is missing.
-    _ = Preload.preload(examples: false, kind: stdlib_kind)
+    # Load the compiled Cure stdlib BEAMs into the VM. By default this
+    # loads all of them (preload_kind: :all), making Std.* callable from
+    # any expression. The helper is a no-op when `_build/cure/ebin` is
+    # absent (e.g. fresh clone or packaged escript without a compile step).
+    _ = Preload.preload(examples: false, kind: preload_kind)
 
     state = %__MODULE__{
       history: History.load(history_path),

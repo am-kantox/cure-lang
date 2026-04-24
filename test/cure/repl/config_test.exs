@@ -8,8 +8,8 @@ defmodule Cure.REPL.ConfigTest do
   alias Cure.REPL.Config
 
   describe "defaults/0" do
-    test "returns the explicit-over-implicit fallback" do
-      assert Config.defaults() == %{stdlib: :none}
+    test "returns preload: :all, imports: :none" do
+      assert Config.defaults() == %{preload: :all, imports: :none}
     end
   end
 
@@ -82,19 +82,38 @@ defmodule Cure.REPL.ConfigTest do
 
   describe "from_parsed/1" do
     test "empty document yields the defaults" do
-      assert Config.from_parsed(%{}) == %{stdlib: :none}
+      assert Config.from_parsed(%{}) == %{preload: :all, imports: :none}
     end
 
     test "missing [stdlib] section yields the defaults" do
-      assert Config.from_parsed(%{"other" => %{"key" => "value"}}) == %{stdlib: :none}
+      assert Config.from_parsed(%{"other" => %{"key" => "value"}}) == %{preload: :all, imports: :none}
     end
 
     test "picks up the [stdlib] preload value" do
-      assert Config.from_parsed(%{"stdlib" => %{"preload" => "all"}}) == %{stdlib: :all}
-      assert Config.from_parsed(%{"stdlib" => %{"preload" => ["core"]}}) == %{stdlib: :core}
+      assert Config.from_parsed(%{"stdlib" => %{"preload" => "all"}}) ==
+               %{preload: :all, imports: :none}
+
+      assert Config.from_parsed(%{"stdlib" => %{"preload" => "none"}}) ==
+               %{preload: :none, imports: :none}
+
+      assert Config.from_parsed(%{"stdlib" => %{"preload" => ["core"]}}) ==
+               %{preload: :core, imports: :none}
 
       assert Config.from_parsed(%{"stdlib" => %{"preload" => ["core", "collections"]}}) ==
-               %{stdlib: [:core, :collections]}
+               %{preload: [:core, :collections], imports: :none}
+    end
+
+    test "picks up the [stdlib] imports value" do
+      assert Config.from_parsed(%{"stdlib" => %{"imports" => "all"}}) ==
+               %{preload: :all, imports: :all}
+
+      assert Config.from_parsed(%{"stdlib" => %{"imports" => ["core"]}}) ==
+               %{preload: :all, imports: :core}
+    end
+
+    test "preload and imports are independent" do
+      assert Config.from_parsed(%{"stdlib" => %{"preload" => "none", "imports" => "core"}}) ==
+               %{preload: :none, imports: :core}
     end
   end
 
@@ -137,7 +156,7 @@ defmodule Cure.REPL.ConfigTest do
     end
 
     test "returns defaults when neither file exists" do
-      assert Config.load() == %{stdlib: :none}
+      assert Config.load() == %{preload: :all, imports: :none}
     end
 
     test "reads ~/.cure.repl.toml when no cwd override is present", %{home: home} do
@@ -149,7 +168,7 @@ defmodule Cure.REPL.ConfigTest do
         """
       )
 
-      assert Config.load() == %{stdlib: :all}
+      assert Config.load() == %{preload: :all, imports: :none}
     end
 
     test "cwd file overrides the home-wide one", %{home: home, cwd: cwd} do
@@ -169,13 +188,25 @@ defmodule Cure.REPL.ConfigTest do
         """
       )
 
-      assert Config.load() == %{stdlib: :core}
+      assert Config.load() == %{preload: :core, imports: :none}
+    end
+
+    test "imports key is loaded from file", %{cwd: cwd} do
+      File.write!(
+        Path.join(cwd, ".cure.repl.toml"),
+        """
+        [stdlib]
+        imports = "core"
+        """
+      )
+
+      assert Config.load() == %{preload: :all, imports: :core}
     end
 
     test "malformed TOML falls back to defaults with a warning", %{cwd: cwd} do
       File.write!(Path.join(cwd, ".cure.repl.toml"), "this is =[not\n valid toml")
 
-      out = capture_io(:stderr, fn -> assert Config.load() == %{stdlib: :none} end)
+      out = capture_io(:stderr, fn -> assert Config.load() == %{preload: :all, imports: :none} end)
       assert out =~ "failed to parse"
     end
   end
