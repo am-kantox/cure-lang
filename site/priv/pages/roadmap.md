@@ -1152,6 +1152,36 @@ for the full narrative.
   v0.27.0 surface.
 - **1451 tests.** 5 new error codes (E056--E062).
 
+## Implemented: v0.30.0 -- John
+
+Every surface gets a new `john` button. Named in tribute to **John
+Carbajal**, whose knack for spotting the one line on a dashboard
+that actually mattered inspired the release. See the
+[v0.30.0 release post](/blog/cure-v0.30.0) for the full narrative.
+
+- **`mix cure.john`, `cure john`, `:john`** -- three surfaces,
+  one implementation. Each prints a panoramic Markdown-to-ANSI
+  diagnostic covering Cure application state, BEAM / OTP stats,
+  system info, tooling, the current Cure project (if any),
+  runtime snapshot, doctor severity counts, and tails of the most
+  recent log files.
+- **`Cure.John`** -- `collect/1` returns a plain Elixir map
+  (serialisable, assertable); `render/2` emits CommonMark;
+  `run/1` collect-renders-writes. All three are testable in
+  isolation.
+- **Marcli fallback** -- `run/1` renders through `Marcli.render/2`
+  when its MDEx NIF can load, and falls back to the pure-Elixir
+  `Cure.REPL.Markdown` renderer inside the escript (where the
+  NIF path is not loadable).
+- **CLI and REPL integration** -- `cure help`, `Cure.CLI`'s
+  `known_commands` list, and the REPL's `known_commands` list
+  all advertise `john` / `:john`, so a typo surfaces a
+  Levenshtein "Did you mean?" suggestion.
+- **Docs** -- new `docs/JOHN.md` on-disk reference (added to
+  the Hex docs extras), `:john` added to `docs/REPL.md` and the
+  site REPL reference, new v0.30.0 section in the Tooling page,
+  and a release blog post.
+
 ## Implemented: v0.29.0 -- Make Documentation Great
 
 The documentation release. `cure doc`, the REPL, the stdlib, the

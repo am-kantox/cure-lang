@@ -14,6 +14,17 @@ and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
 FSM compilation with structural verification, effect system, documentation
 generator, formatter, stdlib, CLI, CI, and example programs.
 
+v0.30.0 themes itself "John" -- a tribute to **John Carbajal**,
+whose knack for spotting the one line on a dashboard that actually
+mattered inspired the release's headline feature. `mix cure.john`,
+`cure john`, and the `:john` REPL meta-command all funnel into one
+panoramic diagnostic that gathers everything worth knowing about
+Cure, the BEAM VM, the project currently under the cursor, and the
+last few log entries, and prints it as Markdown-to-ANSI. See
+[`docs/JOHN.md`](docs/JOHN.md) for the authoritative reference.
+Everything else in v0.30.0 is quiet: a handful of bugfixes and
+documentation refreshes.
+
 v0.29.0 themes itself "Make Documentation Great" and is the
 documentation release. `cure doc` now produces an ExDoc-like
 two-pane site driven by a new `[doc]` section in `Cure.toml`
@@ -439,6 +450,7 @@ cure check examples/protocols.cure
 - [Supervision](docs/SUPERVISION.md) -- typed actors, `sup` containers, the Melquiades Operator, links and monitors (v0.25.0)
 - [Applications](docs/APP.md) -- `app` containers, `Cure.toml` `[application]` / `[release]` sections, the `cure release` subcommand, and `Std.App` (v0.26.0)
 - [Documentation Tooling](docs/DOC.md) -- `cure doc` pipeline, `[doc]` config, placeholder interpolation, Makeup highlighting, REPL Markdown renderer (v0.29.0)
+- [John](docs/JOHN.md) -- `mix cure.john`, `cure john`, and the `:john` REPL meta-command; collector / renderer / Marcli fallback reference (v0.30.0)
 - [Standard Library](docs/STDLIB.md) -- API reference for the stdlib modules (every module now ships a `## Examples` block)
 
 ## Building

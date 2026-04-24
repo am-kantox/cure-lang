@@ -4,6 +4,98 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.30.0] -- John
+
+v0.30.0 is the `john` release. The headline feature is a single
+panoramic diagnostic -- call it by any of three names, get the same
+report -- that gathers everything worth knowing about Cure, the BEAM
+VM it is running on, the project under the cursor, and the last few
+log entries, and prints it as Markdown-to-ANSI. Everything else is
+quiet: a handful of small bugfixes, documentation refreshes, and
+alignment between the CLI, the Mix task registry, and the REPL
+meta-command list.
+
+The feature is named in tribute to **John Carbajal**, who taught the
+author that the most useful button on any dashboard is the one that
+shows everything.
+
+### Added -- `john`: the everything-at-once diagnostic
+
+A single Markdown-rendered report exposed through three surfaces that
+all funnel into one implementation:
+
+- **`mix cure.john`** -- `Mix.Tasks.Cure.John`. Supports `--width`,
+  `--ansi` / `--no-ansi`, `--banner` / `--no-banner`, `--root PATH`.
+- **`cure john`** -- `Cure.CLI` subcommand. Same flags. Listed in
+  `cure help` alongside `cure top` and `cure doctor`.
+- **`:john`** -- `Cure.REPL` meta-command. Inherits the current
+  session's theme and colour state; listed in `:help` and in the
+  Levenshtein suggestion set so a typo surfaces a "Did you mean?".
+
+The collector (`Cure.John.collect/1`) produces a plain Elixir map --
+no PIDs, references, or functions -- so the result can be inspected
+in tests, serialised to JSON, or piped into a structured logger.
+Sections:
+
+- **Cure** -- version, escript entry point, application loaded /
+  started state, count of loaded stdlib modules, pipeline event-bus
+  size, protocol registry size, UTC snapshot timestamp.
+- **BEAM / OTP** -- Elixir / OTP / ERTS versions, full system banner,
+  scheduler topology (online / total / dirty CPU / dirty I/O),
+  logical processor count, process / port / atom counts with their
+  limits, ETS table count, memory breakdown (total / processes /
+  atom / binary / code / ETS / system), reductions, runtime,
+  wall-clock uptime, internal / external wordsize.
+- **System** -- OS family and version, architecture, hostname,
+  user, home, cwd, and selected environment variables (`LANG`,
+  `TERM`, `SHELL`, `PATH` entry count).
+- **Tooling** -- Elixir / OTP / Cure versions, plus the resolved
+  paths of `z3`, `git`, `make`, `cc` and the loaded versions of every
+  declared dependency.
+- **Project** -- when `Cure.toml` is present in the current
+  directory: name, version, root, source paths, lockfile status,
+  and the full dependency table with per-entry
+  `version` / `path` / `git` markers.
+- **Runtime** -- a condensed `Cure.Observe.Top` snapshot: supervisor
+  / actor / FSM counts plus the top five supervisors.
+- **Doctor** -- severity counters from `Cure.Doctor.run/1`
+  (info / warning / error) plus the overall `ok?` flag. The report
+  itself still lives behind `cure doctor` for the detail.
+- **Recent logs** -- tails of up to five log files under
+  `.cure/logs/*.log`, `_build/cure/logs/*`, or an `erl_crash.dump`
+  at the project root, sorted by mtime.
+
+`Cure.John.render/2` turns the map into CommonMark. `Cure.John.run/1`
+renders through `Marcli.render/2` when the MDEx NIF can load
+(`mix cure.john`, `iex -S mix`), and transparently falls back to
+`Cure.REPL.Markdown.render/2` when it cannot (most notably inside
+the bundled `cure` escript), so the three call sites always produce
+a human-readable report.
+
+### Added -- Documentation
+
+- **`docs/JOHN.md`** -- authoritative on-disk reference for the
+  `john` subcommand, Mix task, and REPL meta-command, plus the
+  `Cure.John.collect/1` / `Cure.John.render/2` / `Cure.John.run/1`
+  API and the fallback Marcli-to-pure-Elixir rendering path. Added
+  to `mix.exs` docs extras.
+- **`docs/REPL.md`** -- `:john` added to the Quit section next to
+  `:help` and `:quit`.
+- **`site/priv/pages/tooling.md`** -- new v0.30.0 section pointing
+  at `cure john` and at `docs/JOHN.md`.
+- **`site/priv/pages/repl.md`** -- `:john` added to the
+  meta-commands reference.
+- **`site/priv/pages/roadmap.md`** -- new Implemented: v0.30.0
+  entry above v0.29.0.
+- **`site/priv/posts/2026/04-24-cure-v0.30.0.md`** -- release blog
+  post.
+
+### Changed
+
+- `mix.exs` version bumped to `0.30.0`.
+- `cure help`, `Cure.CLI`'s `known_commands` list, and the REPL's
+  `known_commands` list now all advertise `john` / `:john`.
+
 ## [0.29.0] -- Make Documentation Great
 
 v0.29.0 is the documentation release. Nothing else was the primary

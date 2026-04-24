@@ -225,6 +225,44 @@ cure explain E010
 
 **`cure help`** -- Show usage information.
 
+## v0.30.0 additions
+
+### `cure john` -- everything-at-once diagnostic
+
+A single panoramic diagnostic that gathers everything worth knowing
+about Cure, the BEAM VM, the project currently in `pwd`, and the last
+few log entries, and prints it as Markdown-to-ANSI. Three surfaces
+funnel into one implementation:
+
+- `mix cure.john`
+- `cure john`
+- `:john` (REPL meta-command)
+
+```bash
+cure john                         # banner + every section, ANSI out
+cure john --width 120             # wider separators
+cure john --no-ansi --no-banner   # CI-friendly raw Markdown
+```
+
+Sections: Cure (version, app state, stdlib modules loaded, pipeline
+event-bus size, protocol registry size); BEAM / OTP (scheduler
+topology, memory breakdown, process / port / atom counts, reductions,
+uptime); System (OS, architecture, hostname, `LANG` / `TERM` /
+`SHELL`); Tooling (`z3` / `git` / `make` / `cc` presence plus loaded
+dependency versions); Project (when `Cure.toml` is present: name,
+version, source paths, lockfile status, dependency table); Runtime
+(condensed `cure top` snapshot); Doctor (severity counters); Recent
+logs (tails of `.cure/logs/` and `_build/cure/logs/`).
+
+Renders through `Marcli.render/2` when its MDEx NIF can load, and
+falls back to `Cure.REPL.Markdown.render/2` inside the escript.
+
+Named in tribute to **John Carbajal**. See
+[`docs/JOHN.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/JOHN.md)
+for the full reference.
+
+---
+
 ## v0.24.0 additions
 
 ### Interactive REPL rewrite

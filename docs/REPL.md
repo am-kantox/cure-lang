@@ -127,6 +127,11 @@ You can also start directly in vi mode via `CURE_REPL_MODE=vi cure repl`.
 - `:color on|off`                - toggle colour output
 - `:mode emacs|vi`               - switch editing mode
 
+### Diagnostics
+
+- `:john`                        - print everything about Cure, the VM,
+  the project, and the latest logs (see `docs/JOHN.md`)
+
 ### Quit
 
 - `:help` / `:h`                 - show help

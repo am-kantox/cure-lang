@@ -1,186 +1,142 @@
-# Cure v0.24.0 -- The REPL You Deserve
-*A full rewrite of the interactive REPL: raw-mode line editor, live
-syntax highlighting, persistent history, incremental reverse search,
-Tab completion, minimal vi mode, and Marcli-rendered help.*
+# Cure v0.30.0 -- John
+*A single panoramic diagnostic that gathers everything worth knowing
+about Cure, the BEAM VM, the project, and the last few log entries,
+exposed identically through a Mix task, an escript subcommand, and a
+REPL meta-command. Named in tribute to John Carbajal.*
 
 Cure is a dependently-typed programming language for the BEAM virtual
 machine with first-class finite state machines and SMT-backed
 verification.
 
-v0.23.0 closed out the ecosystem backlog: remote package registry,
-property-based shrinking, doctor / fix / telemetry / coverage. With
-the language surface stable and the packaging story shipped, v0.24.0
-steps back to the one piece of day-to-day UX that was still stuck in
-2022: the interactive REPL. The read-eval-print loop has been
-rewritten whole-cloth on top of a raw-mode terminal and a
-pure-function line editor; the compiler itself is untouched.
+v0.29.0 promoted the documentation surface to the same bar as the
+language itself. With the docs caught up, v0.30.0 steps sideways and
+gives the operator the one button that every dashboard has been quietly
+missing: show me everything.
 
-## Raw-mode terminal
+## Dedication
 
-`Cure.REPL.Terminal` puts stdin into `cbreak`/no-echo mode via `stty`
-and decodes raw byte streams into high-level key events. Supported
-inputs:
+`john` is named for **John Carbajal**, a colleague who taught the
+author that the most useful line in a fifty-page report is usually the
+one nobody thought to print. This release is for him, and for the idea
+that a diagnostic should first be overwhelming and only then selective.
 
-- Arrow keys (`Left`, `Right`, `Up`, `Down`) plus word-wise
-  `Ctrl+Left` / `Ctrl+Right`.
-- `Home` / `End` / `Delete` / `PgUp` / `PgDn`.
-- Every `Ctrl+<letter>` and `Alt+<char>` shortcut typical of a
-  readline-grade editor.
-- `F1` ... `F12` function keys.
-- Bracketed paste (so multi-line pastes arrive as a single event).
+## One feature, three surfaces, one implementation
 
-The terminal is restored on every exit path: normal `:quit`, EOF on
-an empty buffer, `Ctrl+C` on a non-empty buffer, uncaught exception,
-SIGINT / SIGTERM. The raw-mode fallback on a non-tty stdin
-(CI, pipes, `|` into `cure repl`) short-circuits to the legacy
-`IO.gets` loop so test automation is unaffected.
+Every call site produces the same report:
 
-## Pure-function line editor
+```bash
+mix cure.john                                     # from a project checkout
+cure john                                         # from the bundled escript
+```
 
-`Cure.REPL.LineEditor` is a stateless buffer -- every key event
-produces a new `%LineEditor{}` struct. That keeps the `raw_loop/2` a
-straight recursive match on events, and makes the whole editor
-trivially unit-testable.
+```text
+cure(1)> :john                                    # from inside the REPL
+```
 
-Supported operations:
+Flags (`--width`, `--ansi` / `--no-ansi`, `--banner` / `--no-banner`,
+`--root PATH`) are supported by both CLI surfaces; the REPL form
+inherits the current session's theme and colour state.
 
-- Cursor movement: one grapheme, one word (`Alt+B` / `Alt+F` /
-  `Ctrl+Left` / `Ctrl+Right`), start / end of line (`Ctrl+A` /
-  `Ctrl+E` or `Home` / `End`).
-- Editing: backspace / delete, kill to end (`Ctrl+K`), kill to start
-  (`Ctrl+U`), kill previous word (`Ctrl+W`), kill next word
-  (`Alt+D`), yank (`Ctrl+Y`), rotate yank (`Alt+Y`), transpose chars
-  (`Ctrl+T`), transpose words (`Alt+T`), upcase / downcase /
-  capitalise word (`Alt+U` / `Alt+L` / `Alt+C`).
-- Undo / redo (`Ctrl+_` / `Alt+_`) backed by an append-only history
-  of buffer snapshots.
-- A minimal vi normal mode (`:mode vi`): `h` / `j` / `k` / `l`,
-  `w` / `b` / `e`, `0` / `^` / `$`, `i` / `a` / `I` / `A`, `x`, `D`,
-  `C`, `u`.
+## What is in the report
 
-## Persistent history
+`Cure.John.collect/1` produces a plain Elixir map -- no PIDs,
+references, or functions -- so the data can be serialised, piped into
+a structured logger, or asserted against in tests:
 
-`Cure.REPL.History` tracks every submitted expression in memory and
-persists to `~/.cure_history` via atomic write-and-rename.
+- **Cure.** Version, escript entry, application loaded / started
+  state, loaded-stdlib-module count, pipeline event-bus size,
+  protocol registry size, UTC snapshot timestamp.
+- **BEAM / OTP.** Elixir / OTP / ERTS versions, the full system
+  banner, scheduler topology (online / total / dirty CPU / dirty I/O),
+  logical-processor count, process / port / atom counts with their
+  limits, ETS table count, memory breakdown (total / processes /
+  binary / code / ETS / atom / system), reductions, runtime,
+  wall-clock uptime, internal / external wordsize.
+- **System.** OS family and version, architecture, hostname, user,
+  home, cwd, and selected environment variables (`LANG`, `TERM`,
+  `SHELL`, `PATH` entry count).
+- **Tooling.** Resolved paths of `z3`, `git`, `make`, `cc`, plus
+  loaded versions of every declared dependency.
+- **Project.** When `Cure.toml` is present: name, version, root,
+  source paths, lockfile presence, and the full dependency table with
+  per-entry `version` / `path` / `git` markers. Absent
+  `Cure.toml` is not an error -- the section just reads "(no
+  `Cure.toml` found in the current directory)".
+- **Runtime.** A condensed `Cure.Observe.Top` snapshot (supervisor /
+  actor / FSM counts) plus the top five supervisors.
+- **Doctor.** Severity counters from `Cure.Doctor.run/1` (info /
+  warning / error) plus the overall `ok?` flag. The detail still
+  lives behind `cure doctor`.
+- **Recent logs.** Tails of up to five log files under
+  `.cure/logs/*.log`, `_build/cure/logs/*`, or `erl_crash.dump`,
+  sorted by mtime.
 
-- Consecutive duplicates are deduplicated: `foo` followed by `foo`
-  stores one entry.
-- The file is capped at the most recent 10,000 entries.
-- `Up` / `Down` step through history; the current draft is preserved,
-  so scrolling up and back down returns to the exact buffer and
-  cursor position you had.
+## Markdown rendering with a graceful fallback
 
-## Incremental reverse search
+`Cure.John.render/2` turns the map into CommonMark. `Cure.John.run/1`
+prints it by routing through `Marcli.render/2` when the richer
+renderer can load its MDEx NIF (plain Mix task, `iex -S mix`), and
+falls back to the pure-Elixir `Cure.REPL.Markdown.render/2` when it
+cannot. Inside the bundled `cure` escript the NIF path is not
+loadable; the fallback keeps `cure john` looking identical to
+`mix cure.john` across every environment.
 
-`Ctrl+R` opens an inverse-video status line with the usual readline
-semantics:
+## Public API
 
-- Each new keystroke narrows the match; `Ctrl+R` again moves to the
-  next older match; `Ctrl+S` flips direction to forward search.
-- `Enter` accepts the match and submits it immediately;
-  `Tab` / `ArrowLeft` / `ArrowRight` accept-and-edit it into the
-  main buffer for further editing.
-- `Ctrl+G` / `Esc` cancel and restore the original buffer.
+For programmatic consumers (tests, dashboards, structured loggers):
 
-## Live syntax highlighting
+- `Cure.John.collect/1` -- gather the full snapshot as a plain map.
+- `Cure.John.render/2` -- turn a snapshot into a Markdown string.
+- `Cure.John.run/1` -- collect + render + write, returning the
+  rendered string.
 
-`Cure.REPL.Highlight` pipes every buffer state through
-`Makeup.Lexers.CureLexer` and `Marcli.Formatter`, so expressions are
-re-rendered as ANSI-coloured Cure source on every keystroke. The
-highlighter caches by buffer hash so holding a key pressed doesn't
-re-tokenise on every frame.
+See [`docs/JOHN.md`](docs/JOHN.md) for the authoritative reference and
+the full option list.
 
-`Cure.REPL.Theme` ships three presets:
+## Quiet elsewhere
 
-- `:dark` -- default; optimised for dark terminal backgrounds.
-- `:light` -- inverted palette for light backgrounds.
-- `:mono` -- no ANSI colour at all; forced automatically when
-  `NO_COLOR` is set, when stdout is not a tty, or when `TERM=dumb`.
-
-Toggle at runtime with `:theme dark|light|mono` or `:color on|off`.
-
-## Tab completion
-
-`Cure.REPL.Completer` handles four categories in one pass:
-
-- Meta-commands: typing `:` and pressing `Tab` cycles through every
-  registered command.
-- File paths: inside `:load`, `:save`, `:edit`, completes against the
-  filesystem.
-- Loaded modules: inside `:use` and `:doc`, completes against
-  currently-loaded Cure modules.
-- Theme / mode / colour arguments, and Cure keywords in free form.
-
-## Meta-commands
-
-All existing meta-commands (`:t`, `:type`, `:effects`, `:load`,
-`:reload`, `:use`, `:holes`, `:env`, `:reset`, `:fmt`, `:help`,
-`:quit`) are preserved. v0.24.0 adds:
-
-- `:history [n]` -- print the last `n` entries (default 20).
-- `:search term` -- non-interactive history grep.
-- `:clear` -- clear the screen.
-- `:save path` -- write the session transcript to a file.
-- `:edit` -- open `$EDITOR` (or `$VISUAL`) on the current buffer.
-- `:time expr` -- evaluate and report elapsed wall time.
-- `:bench expr [n]` -- run `expr` `n` times; report min/avg/p95/max.
-- `:ast expr` -- dump the parsed AST.
-- `:theme dark|light|mono`, `:mode emacs|vi`, `:color on|off`.
-
-`:help` output is rendered through `Marcli.render/2`, so the
-key-bindings table arrives as ANSI-styled Markdown with proper
-boldface and alignment.
-
-## New dependencies
-
-Three small, focused libraries:
-
-- `{:marcli, "~> 0.3"}` -- Markdown-to-ANSI renderer and Makeup
-  token-to-ANSI formatter.
-- `{:makeup, "~> 1.2"}` -- explicit so `Makeup.Registry` is available
-  at runtime.
-- `{:makeup_cure, "~> 0.1"}` -- Cure language lexer for Makeup,
-  maintained alongside the compiler.
-
-All three are Hex packages with narrow surface areas; none pull in
-further transitive deps.
+Everything else in the release is housekeeping: `Cure.CLI` and the
+REPL's `known_commands` lists now carry `john` / `:john` so typos get
+a "Did you mean?" suggestion, `cure help` learnt the new subcommand,
+and a handful of small bugfixes shipped in the process. The compiler
+surface, the stdlib, the type checker, the FSM machinery, and the
+package-registry story are unchanged from v0.29.
 
 ## Documentation
 
-- `docs/REPL.md` -- authoritative key-bindings table, meta-command
-  reference, configuration, environment variables, vi-mode subset.
-- `site/priv/pages/repl.md` -- user-facing REPL reference on
-  [cure-lang.org](https://cure-lang.org) rendered through the same
-  markdown converter as the rest of the language guide.
-- A dedicated blog post under `site/priv/posts/2026/` describes the
-  motivation, the split-module architecture, and the design choices
-  behind the rewrite.
-
-## Non-goals
-
-- No structural editing / paredit-style features. The editor operates
-  on graphemes, not s-expressions.
-- No remote / networked REPL. `cure repl` drives a local BEAM VM.
-- No Windows console support. The raw-mode path relies on `stty` and
-  ANSI escape codes; Windows users fall back to the legacy line-mode
-  loop automatically.
-
-## What's next (v0.25.0)
-
-With the interactive cycle caught up, v0.25.0 returns to the type
-pipeline:
-
-- **Monomorphisation.** Specialise polymorphic functions whose call
-  sites all use concrete types.
-- **Profile-guided optimisation.** Feed profiler data into the
-  inliner and pattern-aware SMT encoder.
-- **IDE reach.** Ship first-class Helix and Zed configurations and
-  upgrade the VS Code extension to track the current LSP surface.
-- **REPL-level hot reload.** Recompile-and-rebind on every file save
-  for long-running REPL sessions.
+- `docs/JOHN.md` -- on-disk reference for the three surfaces plus the
+  `Cure.John` API and the rendering-fallback behaviour. Added to the
+  `mix.exs` docs extras list.
+- `docs/REPL.md` -- `:john` added to the meta-command table.
+- `site/priv/pages/tooling.md` -- new v0.30.0 section pointing at
+  `cure john` and cross-linking to `docs/JOHN.md`.
+- `site/priv/pages/repl.md` -- `:john` added to the meta-commands
+  reference.
+- `site/priv/pages/roadmap.md` -- new Implemented: v0.30.0 entry
+  above v0.29.0.
+- `site/priv/posts/2026/04-24-cure-v0.30.0.md` -- release blog post.
 
 ## Naming
 
-"The REPL You Deserve" -- the interactive loop was the one piece of
-UX that still felt 2022 after v0.23.0 shipped the registry story.
-v0.24.0 puts it on par with the rest of the language.
+"John" -- after John Carbajal, whose quiet talent for spotting the one
+thing that actually mattered in a screen full of numbers made the
+whole approach to this diagnostic obvious.
+
+## What's next
+
+The long-horizon items carry over unchanged:
+
+- **Monomorphisation.** Specialise polymorphic functions whose call
+  sites all use concrete types.
+- **Profile-guided optimisation.** Feed `Cure.Profiler` data into the
+  inliner and pattern-aware SMT encoder so hot paths get
+  specialisation and cold paths stay small.
+- **Time-travel for actors.** v0.28.0 added `@record` + `cure replay`
+  for FSMs. The actor surface still needs journal hooks and a
+  deterministic scheduler for reliable replay.
+- **First-class Cure notebook format (`.cnb`).** Literate programming
+  in Cure with type-checked code cells. The doc pipeline from
+  v0.29.0 already covers most of the machinery.
+- **WASM target.** Compile the Cure compiler via AtomVM so the
+  Playground's type checker and sandbox can run entirely in the
+  browser without a WebSocket round-trip.

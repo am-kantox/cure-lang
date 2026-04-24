@@ -148,6 +148,14 @@ Every meta-command is prefixed with `:`. Typing `:` and pressing
 - `:color on|off` -- toggle colour output
 - `:mode emacs|vi` -- switch editing mode
 
+### Diagnostics
+
+- `:john` (v0.30.0) -- print a panoramic diagnostic: Cure version,
+  BEAM / OTP stats, system info, tooling, project, runtime,
+  doctor summary, and the latest log tails. See the dedicated
+  [John reference](https://github.com/am-kantox/cure-lang/blob/main/docs/JOHN.md)
+  for the full list of sections and options.
+
 ### Quit
 
 - `:help` / `:h` -- show help (rendered via `Marcli.render/2`)
