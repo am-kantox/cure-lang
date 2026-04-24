@@ -456,11 +456,15 @@ defmodule Cure.REPL do
   # `.{...}` for the multi-item form. Greedy enough to catch the
   # everyday imports a REPL user would type, strict enough to leave
   # genuine expressions like `useful_thing(x)` alone.
+  #
+  # Only called from `submit/2`, which guarantees a binary input, so no
+  # catch-all clause is necessary. Dialyzer flags the previous
+  # `defp bare_use?(_), do: false` fallback as dead code (E4011 /
+  # `pattern_match_cov`) because the binary guard on the first clause
+  # already covers the full type of `line`.
   defp bare_use?(line) when is_binary(line) do
     Regex.match?(~r/^\s*use\s+[A-Z][A-Za-z0-9_]*(?:\.[A-Z][A-Za-z0-9_]*)*(?:\s*\.\s*\{[^}]*\})?\s*$/u, line)
   end
-
-  defp bare_use?(_), do: false
 
   defp dispatch_buffer(%__MODULE__{input_buffer: []} = state), do: state
 
