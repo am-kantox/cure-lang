@@ -265,10 +265,14 @@ defmodule Cure.Stdlib.Preload do
   end
 
   defp filter_by_groups(groups) do
-    wanted = MapSet.new(groups)
+    # A plain list suffices here: at most 9 known groups, so `group in
+    # wanted` is O(9) in the worst case. Using `MapSet` triggered a
+    # Dialyzer `call_without_opaque` warning on the follow-up
+    # `MapSet.member?/2` call.
+    wanted = Enum.uniq(groups)
 
     all_modules_with_groups()
-    |> Enum.filter(fn {_module, group} -> MapSet.member?(wanted, group) end)
+    |> Enum.filter(fn {_module, group} -> group in wanted end)
     |> Enum.map(fn {module, _group} -> module end)
     |> Enum.sort()
   end

@@ -183,11 +183,9 @@ defmodule Cure.REPL.Config do
   end
 
   defp decode_toml(binary) when is_binary(binary) do
-    case Toml.decode(binary) do
-      {:ok, decoded} -> {:ok, decoded}
-      {:error, reason} -> {:error, reason}
-      other -> {:error, {:unexpected, other}}
-    end
+    # `Toml.decode/1` only returns `{:ok, map}` or `{:error, reason}`;
+    # no catch-all clause is needed and Dialyzer flags one as unreachable.
+    Toml.decode(binary)
   end
 
   defp normalise_atom(value) when is_binary(value) do
