@@ -4,6 +4,61 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.30.2] -- `john`, polished
+
+Patch release that makes the three `john` surfaces render identically
+and keeps the task pleasant to re-run a hundred times a session.
+
+### Fixed
+
+- **`mix cure.john` no longer mojibakes its bullet markers.**
+  `Cure.John.run/1` now writes its rendered report through
+  `IO.write/2` rather than `IO.binwrite/2`. Under the Mix-owned
+  `:stdio` IO server, `binwrite` transcodes binaries byte-by-byte
+  as Latin-1 into UTF-8, which double-encoded every multi-byte glyph
+  Marcli emits -- most visibly its `U+25B8` bullet, which used to
+  surface as the now-infamous `U+00E2 U+00B8` (`a-circumflex + cedilla`)
+  pair in the terminal. `IO.write/2` goes through the Unicode-aware
+  path and passes the original UTF-8 bytes untouched.
+
+### Changed
+
+- **Tighter, repeatable banner.** The multi-line italic tribute
+  paragraph was dropped from every `john` surface so the report
+  stays welcome when run repeatedly during a debugging session.
+  The headline is now a single line:
+
+  ```
+  # Cure X.Y.Z  --  John  --  'What I need is visibility'
+  ```
+
+  The em dashes and curly quotes are literal Unicode (`U+2014`,
+  `U+2018`, `U+2019`). Marcli renders them as text, and
+  `Cure.REPL.Markdown.render/2` decodes them via its UTF-8 clause,
+  so both pipelines preserve the codepoints.
+
+## [0.30.1] -- `john` formatting follow-up
+
+Post-release polish for the `john` diagnostic. No feature changes.
+
+### Fixed
+
+- Structured `erl_crash.dump` summary extraction replaces the old
+  raw-tail view that flooded terminals with illegible process-state
+  blobs. Only the first 64 KiB of the dump are scanned; standard
+  header fields (`Slogan`, `System version`, `Atoms`, the `=memory`
+  block) and section counts (`=proc:`, `=ets:`, `=mod:` ...) are
+  rendered as Markdown bullets.
+- Log tails and crash-dump bodies are run through a UTF-8 sanitiser
+  that substitutes ill-formed bytes with `?`, so mid-line binary
+  payloads no longer break the downstream Markdown renderer.
+- Fallback renderer uses `*italic*` instead of `_italic_` because
+  `Cure.REPL.Markdown.render/2` only understands the asterisk form.
+- Removed the redundant catch-all clause in `Cure.REPL`'s
+  `bare_use?/1` that caused a dialyzer pattern-match warning.
+- Aligned REPL / CLI banners to ASCII-only punctuation for the
+  renderers that did not yet handle every Unicode dash.
+
 ## [0.30.0] -- John
 
 v0.30.0 is the `john` release. The headline feature is a single

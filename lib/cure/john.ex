@@ -147,8 +147,19 @@ defmodule Cure.John do
     snapshot = collect(opts)
     md = render(snapshot, opts)
     rendered = render_markdown(md, opts)
-    IO.binwrite(device, rendered)
-    IO.binwrite(device, "\n")
+    # `IO.write/2` is used here rather than `IO.binwrite/2` on purpose.
+    # Under the `mix cure.john` entry point Mix owns the `:stdio` IO
+    # server, and that server transcodes binaries handed to `binwrite`
+    # byte-by-byte as Latin-1 into UTF-8 -- which double-encodes any
+    # multi-byte glyph Marcli emits (notably its `\u25b8` bullet
+    # marker, which then shows up as the infamous `\u00e2\u00b8`
+    # mojibake pair). `IO.write/2` goes through the Unicode-aware
+    # `io_request` path instead and writes the original UTF-8 bytes
+    # untouched. The escript and REPL surfaces use the pure-Elixir
+    # Markdown fallback, which uses only ASCII bullets, so they were
+    # already safe; this aligns the Mix path.
+    IO.write(device, rendered)
+    IO.write(device, "\n")
     rendered
   end
 
@@ -858,22 +869,21 @@ defmodule Cure.John do
   # Markdown helpers
   # ==========================================================================
 
+  # The headline is the only surviving piece of the old dedication
+  # block. The longer italic paragraph was removed because `john`
+  # tends to be invoked repeatedly during a debugging session and a
+  # multi-line tribute grows tiresome fast. A single headline with
+  # John's tagline keeps the attribution without shouting.
+  #
+  # The em dashes below are literal U+2014. Both rendering paths
+  # handle them natively: Marcli (MDEx) treats them as plain inline
+  # text, and `Cure.REPL.Markdown.render/2` decodes the source
+  # byte-by-byte via a `<<c::utf8, rest::binary>>` clause, so the
+  # codepoint round-trips untouched. `Cure.John.run/1` now writes
+  # the rendered string via `IO.write/2`, so Mix's Unicode-aware
+  # stdio no longer double-encodes the bytes.
   defp banner_md(snapshot) do
-    # ASCII-only on purpose: the pure-Elixir Markdown fallback used
-    # inside the `cure` escript does not handle every Unicode
-    # punctuation character gracefully, and the Marcli path is happy
-    # with plain dashes too. Avoid em dashes so both pipelines render
-    # the banner cleanly in terminals that do not advertise UTF-8.
-    #
-    # Italics use `*...*` rather than `_..._` because the fallback
-    # inline renderer only knows the asterisk form.
-    """
-    # Cure #{snapshot.cure.version}  --  John
-
-    *Named for **John Carbajal**, who taught the author that the most \
-    useful button on any dashboard is the one that shows everything.*
-    """
-    |> String.trim_trailing()
+    "# Cure #{snapshot.cure.version}  \u2014  John  \u2014  \u2018What I need is visibility\u2019"
   end
 
   defp footer_md(width) do

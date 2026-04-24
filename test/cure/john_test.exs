@@ -233,11 +233,29 @@ defmodule Cure.JohnTest do
       assert md =~ "## Recent logs"
     end
 
-    test "banner: false suppresses the dedication block", %{root: root} do
+    test "banner headline carries John's tagline and em dashes", %{root: root} do
+      snap = John.collect(root: root)
+      md = John.render(snap, banner: true)
+
+      # Em dashes are literal U+2014 in the source so that both the
+      # Marcli (MDEx) path and the pure-Elixir fallback renderer keep
+      # them as text. See the comment above `banner_md/1`.
+      assert md =~ "\u2014  John  \u2014"
+      assert md =~ "What I need is visibility"
+      # The long italic tribute paragraph was removed because `john`
+      # is invoked many times per session.
+      refute md =~ "*Named for"
+    end
+
+    test "banner: false suppresses the headline", %{root: root} do
       snap = John.collect(root: root)
       md = John.render(snap, banner: false)
 
-      refute md =~ "John Carbajal"
+      refute md =~ "What I need is visibility"
+      # The headline line is `# Cure X.Y.Z  \u2014  John  \u2014  ...`.
+      # Guard against `## Cure` (the section heading) being a
+      # substring of any looser pattern.
+      refute md =~ ~r/^# Cure /m
       assert md =~ "## Cure"
     end
   end
