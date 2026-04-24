@@ -47,7 +47,6 @@ defmodule Mix.Tasks.Cure.BundleStdlibBeams do
   @shortdoc "Compile Cure stdlib sources into priv/ebin/"
 
   @source_dir Path.join(["lib", "std"])
-  @mod_regex ~r/^\s*(?:mod|proof|actor|fsm|sup|app)\s+([A-Za-z_][\w\.]*)/m
 
   @impl Mix.Task
   def run(_args) do
@@ -174,8 +173,10 @@ defmodule Mix.Tasks.Cure.BundleStdlibBeams do
   @doc false
   @spec module_name_from_source(String.t()) :: {:ok, String.t()} | :unknown
   def module_name_from_source(path) do
+    mod_regex = ~r/^\s*(?:mod|proof|actor|fsm|sup|app)\s+([A-Za-z_][\w\.]*)/m
+
     with {:ok, contents} <- File.read(path),
-         [_, declared] <- Regex.run(@mod_regex, contents) do
+         [_, declared] <- Regex.run(mod_regex, contents) do
       {:ok, declared}
     else
       _ -> :unknown
