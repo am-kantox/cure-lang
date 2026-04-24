@@ -194,11 +194,11 @@ line editor with live Cure syntax highlighting (via `makeup_cure` +
 completion, and a minimal vi mode:
 
 ```text
-cure(1)> fn add(a: Int, b: Int) -> Int = a + b
-=> #Function<...>
-cure(2)> :t add(1, 2)
-add(1, 2) : Int
-cure(3)> :bench add(1, 2) 10000
+cure(1)> fn add_ints(a: Int, b: Int) -> Int = a + b
+defined add/2
+cure(2)> :t add_ints(1, 2)
+add_ints(1, 2) : Int
+cure(3)> :bench Std.List.map([1, 2], fn (x) -> x + 1) 10000
 n=10000  min=1 us  avg=2 us  p95=3 us  max=42 us
 ```
 
