@@ -179,6 +179,8 @@ defmodule Mix.Tasks.Cure.Check.Examples do
     # Load only `Cure.*.beam` files by name (no `:code.add_patha`) so
     # stale lowercase artifacts under `_build/cure/ebin` cannot shadow
     # OTP modules like `:math` while the examples are being exercised.
-    Cure.Stdlib.Preload.preload(examples: true)
+    # Explicit `kind: :all` preserves the historical "load everything"
+    # behaviour now that `Preload.preload/1` defaults to `:none`.
+    Cure.Stdlib.Preload.preload(examples: true, kind: :all)
   end
 end

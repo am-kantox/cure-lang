@@ -594,7 +594,7 @@ defmodule Cure.StdlibTest do
 
   describe "Std.Access -- factories" do
     setup do
-      Cure.Stdlib.Preload.preload(examples: false)
+      Cure.Stdlib.Preload.preload(examples: false, kind: :all)
       m = compile_stdlib("access")
       on_exit(fn -> purge(m) end)
       %{m: m}
@@ -632,7 +632,7 @@ defmodule Cure.StdlibTest do
 
   describe "Std.Access -- Map impl (fetch/get/get_and_update/pop)" do
     setup do
-      Cure.Stdlib.Preload.preload(examples: false)
+      Cure.Stdlib.Preload.preload(examples: false, kind: :all)
       m = compile_stdlib("access")
       on_exit(fn -> purge(m) end)
       %{m: m}
@@ -689,7 +689,7 @@ defmodule Cure.StdlibTest do
 
   describe "Std.Access -- List (keyword) impl" do
     setup do
-      Cure.Stdlib.Preload.preload(examples: false)
+      Cure.Stdlib.Preload.preload(examples: false, kind: :all)
       m = compile_stdlib("access")
       on_exit(fn -> purge(m) end)
       %{m: m}
@@ -725,7 +725,7 @@ defmodule Cure.StdlibTest do
 
   describe "Std.Access -- nested helpers on maps" do
     setup do
-      Cure.Stdlib.Preload.preload(examples: false)
+      Cure.Stdlib.Preload.preload(examples: false, kind: :all)
       m = compile_stdlib("access")
       on_exit(fn -> purge(m) end)
       %{m: m}
@@ -778,7 +778,7 @@ defmodule Cure.StdlibTest do
 
   describe "Std.Access -- lens-style accessors (all/filter/at/elem_at)" do
     setup do
-      Cure.Stdlib.Preload.preload(examples: false)
+      Cure.Stdlib.Preload.preload(examples: false, kind: :all)
       m = compile_stdlib("access")
       on_exit(fn -> purge(m) end)
       %{m: m}

@@ -25,6 +25,9 @@ mod Std.Match
   ## unwrap_some(None(), "fallback")         # => "fallback"
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :collections
+
   # -- Pair / Tuple -----------------------------------------------------------
 
   ## Return a pair unchanged when it destructures as `%[a, b]`;

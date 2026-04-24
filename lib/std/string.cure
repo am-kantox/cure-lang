@@ -26,6 +26,9 @@ mod Std.String
   ## to_int("  -17 " |> trim)                # => -17
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :text
+
   # -- Basic operations -------------------------------------------------------
 
   ## Byte length of `s`; delegates to `:erlang.byte_size/1`. This is not

@@ -19,6 +19,9 @@ mod Std.Equal
   ## trans(refl(1), refl(1))                 # : Eq(Int, 1, 1)
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :core
+
   ## Reflexivity: `x` equals itself. Produces the runtime witness
   ## `:cure_refl` with type `Eq(T, x, x)`.
   fn refl(_x: T) -> Atom = :cure_refl

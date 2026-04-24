@@ -27,6 +27,9 @@ mod Std.Process
   ## trap_exit(true)
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :concurrency
+
   ## Link the calling process to `pid`. Exits from either side
   ## propagate as `:EXIT` messages.
   @extern(:erlang, :link, 1)

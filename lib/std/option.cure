@@ -25,6 +25,9 @@ mod Std.Option
   ## zip(some("Ada"), none())                # => None()
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :option
+
   ## Build a `Some(value)` Option.
   fn some(value: T) -> Option(T) = Some(value)
 

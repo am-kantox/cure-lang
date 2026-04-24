@@ -39,6 +39,56 @@ The documentation below is organised by topic:
 
 All source line references point at `lib/std/<module>.cure`.
 
+## Module groups and selective preload
+
+Every stdlib module carries a single nullary declaration near the top
+of its source that assigns it to a group:
+
+```cure path=null start=null
+fn __group__() -> Atom = :collections
+```
+
+`Cure.Stdlib.Preload` scans `lib/std/*.cure` at Elixir compile time
+(tracked via `@external_resource`), builds a static
+`%{module => group}` map, and exposes it through
+`Cure.Stdlib.Preload.module_groups/0`. The REPL, host applications,
+and test fixtures can then ask for a subset of the library via
+`Cure.Stdlib.Preload.stdlib_modules/1` or the identically-named
+`:kind` option on `Cure.Stdlib.Preload.preload/1`:
+
+- `:none` (the default everywhere) -- nothing is loaded.
+- `:all` -- every stdlib module is preloaded, matching the historical
+  behaviour of the CLI entry points (`cure run`, `cure compile`,
+  `mix cure.check.examples`).
+- a single group atom, or a list of them -- the union of the matching
+  modules is loaded.
+
+Known groups and their current membership (also the source of truth
+for `Cure.Stdlib.Preload.known_groups/0`):
+
+- `:core` -- `Std.Core`, `Std.Equal`, `Std.Eq`, `Std.Ord`, `Std.Show`,
+  `Std.Functor`, `Std.Refine`, `Std.Proof`. `Std.Proof` is the one
+  module that relies on the compile-time default (`:core`); `proof`
+  containers only admit `Eq(...)` returns, so no explicit
+  `__group__/0` lives in its source.
+- `:collections` -- `Std.List`, `Std.Map`, `Std.Set`, `Std.Vector`,
+  `Std.Pair`, `Std.Match`, `Std.Access`, `Std.Iter`.
+- `:text` -- `Std.String`, `Std.Regex`, `Std.Json`.
+- `:numeric` -- `Std.Math`.
+- `:system` -- `Std.Io`, `Std.System`, `Std.Time`, `Std.App`,
+  `Std.CRDT`.
+- `:concurrency` -- `Std.Actor`, `Std.Fsm`, `Std.Process`,
+  `Std.Supervisor`.
+- `:option` -- `Std.Option`, `Std.Result`.
+- `:test` -- `Std.Test`, `Std.Gen`.
+- `:network` -- `Std.Http`.
+
+The REPL reads a `.cure.repl.toml` file at startup (project-local
+wins over the home-wide fallback) and threads the resolved kind
+through `Cure.Stdlib.Preload.preload/1` and
+`Cure.REPL.Docs.default_uses/1`. See `docs/REPL.md` for the TOML
+shape and worked examples.
+
 ## Core utilities
 ### Std.Core
 Identity, composition, boolean operations, comparison, and both the

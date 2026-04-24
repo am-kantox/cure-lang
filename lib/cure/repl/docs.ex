@@ -412,10 +412,15 @@ defmodule Cure.REPL.Docs do
   @doc """
   Return the stdlib module names in Cure source form (e.g. `"Std.List"`),
   suitable for pre-populating the REPL's `state.uses` on startup.
+
+  Accepts the same `kind` argument as `Cure.Stdlib.Preload.stdlib_modules/1`
+  and delegates to it. Defaults to `:none` so callers must opt into a
+  non-empty selection (matching the "explicit over implicit" rule
+  applied to the rest of the preload surface).
   """
-  @spec default_uses() :: [String.t()]
-  def default_uses do
-    Preload.stdlib_modules()
+  @spec default_uses(Preload.kind()) :: [String.t()]
+  def default_uses(kind \\ :none) do
+    Preload.stdlib_modules(kind)
     |> Enum.map(&Atom.to_string/1)
     |> Enum.map(&strip_cure_prefix/1)
   end

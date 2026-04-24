@@ -24,6 +24,9 @@ mod Std.Map
   ## # => #{x: 1, y: 20, z: 30}
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :collections
+
   ## New empty map.
   @extern(:maps, :new, 0)
   fn new() -> Map

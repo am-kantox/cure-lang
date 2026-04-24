@@ -43,6 +43,9 @@ mod Std.Access
   ## update_in(users, [all(), key(:score)], fn(s) -> s + 1)
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :collections
+
   # -- FFI primitives --------------------------------------------------------
 
   ## Private: raise `reason` via `:erlang.error/1`.

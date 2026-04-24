@@ -33,9 +33,14 @@ defmodule Cure.REPL.DocsTest do
     end
   end
 
-  describe "default_uses/0" do
-    test "returns Cure-prefix-free stdlib names" do
-      defaults = Docs.default_uses()
+  describe "default_uses/1" do
+    test "defaults to :none and returns the empty list" do
+      assert Docs.default_uses() == []
+      assert Docs.default_uses(:none) == []
+    end
+
+    test ":all returns Cure-prefix-free stdlib names" do
+      defaults = Docs.default_uses(:all)
 
       assert is_list(defaults)
       assert "Std.Core" in defaults
@@ -44,11 +49,28 @@ defmodule Cure.REPL.DocsTest do
       refute Enum.any?(defaults, &String.starts_with?(&1, "Cure."))
     end
 
-    test "matches the Preload module list" do
-      defaults = Docs.default_uses()
-      preload_count = length(Cure.Stdlib.Preload.stdlib_modules())
+    test ":all matches the Preload module list" do
+      defaults = Docs.default_uses(:all)
+      preload_count = length(Cure.Stdlib.Preload.stdlib_modules(:all))
 
       assert length(defaults) == preload_count
+    end
+
+    test ":core returns only the core-tagged modules" do
+      core = Docs.default_uses(:core)
+
+      assert "Std.Core" in core
+      assert "Std.Eq" in core
+      assert "Std.Ord" in core
+      refute "Std.List" in core
+      refute "Std.Http" in core
+    end
+
+    test "a list of groups unions their membership" do
+      merged = Docs.default_uses([:core, :collections])
+      assert "Std.Core" in merged
+      assert "Std.List" in merged
+      refute "Std.Http" in merged
     end
   end
 

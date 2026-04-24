@@ -140,9 +140,50 @@ Programmatic options to `Cure.REPL.start/1`:
 - `:raw`           - `true`, `false`, or `:auto` (default); forces the raw-mode editor
 - `:theme`         - `:dark`, `:light`, `:mono`, or `:auto`
 - `:mode`          - `:emacs` or `:vi`
+- `:stdlib`        - which stdlib modules to auto-import on startup. Accepts
+  `:none` (default), `:all`, a single group atom, or a list of group atoms.
+  See `Cure.Stdlib.Preload.kind/0` for the full list.
 - `:error_device`  - `:stderr` (default) or `:stdio`; use `:stdio` when the
   REPL is hosted behind a custom group leader (e.g. the Yeesh IOServer)
   so compiler diagnostics reach the embedder
+
+### `.cure.repl.toml`
+
+The REPL reads a per-user / per-project configuration file at startup,
+following the same precedence as `iex` does for `.iex.exs`:
+
+1. `./.cure.repl.toml` (project-local override)
+2. `~/.cure.repl.toml` (user-wide fallback)
+
+Both files are optional. When both are missing the REPL uses the
+built-in defaults, which match the `:none` / explicit-over-implicit
+rule applied across the preload stack.
+
+The parser is `:toml` (pure-Erlang, escript-safe). Currently the only
+recognised section is `[stdlib]`:
+
+```toml
+# ./.cure.repl.toml or ~/.cure.repl.toml
+[stdlib]
+# one of: "none" | "all" | ["core", "collections", ...]
+preload = ["core", "collections"]
+```
+
+Accepted `preload` values:
+
+- `"none"` (default) -- no stdlib modules are auto-imported.
+- `"all"` -- every `Cure.Std.*` module is preloaded and added to
+  `state.uses`.
+- `"core"` (or any other single group name) -- preloads just that
+  group.
+- A TOML array of group names -- preloads the union of those groups.
+
+See `Cure.Stdlib.Preload.known_groups/0` for the list of valid group
+atoms (`:core`, `:collections`, `:text`, `:numeric`, `:system`,
+`:concurrency`, `:option`, `:test`, `:network`). Every stdlib module
+carries a `fn __group__() -> Atom = :<group>` declaration that assigns
+it to exactly one group; `docs/STDLIB.md` lists the current
+membership.
 
 ## Mix task
 

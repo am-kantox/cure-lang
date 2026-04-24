@@ -37,7 +37,7 @@ defmodule Cure.REPL do
   """
 
   alias Cure.Compiler.Printer
-  alias Cure.REPL.{Docs, History, LineEditor, Markdown, Render, Search, Session, Terminal, Theme}
+  alias Cure.REPL.{Config, Docs, History, LineEditor, Markdown, Render, Search, Session, Terminal, Theme}
   alias Cure.Stdlib.Preload
   alias Cure.Types.{Checker, Holes}
 
@@ -54,6 +54,7 @@ defmodule Cure.REPL do
             mode: :emacs,
             color: true,
             error_device: :stderr,
+            stdlib_kind: :none,
             running: true
 
   @type t :: %__MODULE__{}
@@ -72,10 +73,16 @@ defmodule Cure.REPL do
     mode = resolve_mode(opts)
     error_device = resolve_error_device(opts)
 
+    # Resolve the stdlib kind: explicit `:stdlib` option beats the
+    # `.cure.repl.toml` value, which beats the built-in default of
+    # `:none`. See `Cure.REPL.Config`.
+    config = Config.load()
+    stdlib_kind = Keyword.get(opts, :stdlib, config.stdlib)
+
     # Pre-load the compiled Cure stdlib (`_build/cure/ebin`) so expressions
-    # can reference `Std.List`, `Std.Math`, etc. without an explicit `:load`.
-    # The helper is a no-op when the build directory is missing.
-    _ = Preload.preload(examples: false)
+    # can reference the selected modules without an explicit `:load`. The
+    # helper is a no-op when the build directory is missing.
+    _ = Preload.preload(examples: false, kind: stdlib_kind)
 
     state = %__MODULE__{
       history: History.load(history_path),
@@ -85,7 +92,8 @@ defmodule Cure.REPL do
       mode: mode,
       color: theme.name != :mono,
       error_device: error_device,
-      uses: Docs.default_uses()
+      stdlib_kind: stdlib_kind,
+      uses: Docs.default_uses(stdlib_kind)
     }
 
     cond do
@@ -520,7 +528,7 @@ defmodule Cure.REPL do
   end
 
   defp handle_meta(state, ":env") do
-    defaults = MapSet.new(Docs.default_uses())
+    defaults = MapSet.new(Docs.default_uses(state.stdlib_kind))
     {stdlib, user} = Enum.split_with(state.uses, &MapSet.member?(defaults, &1))
 
     cond do
@@ -552,7 +560,7 @@ defmodule Cure.REPL do
       state
       | n: 1,
         loaded: [],
-        uses: Docs.default_uses(),
+        uses: Docs.default_uses(state.stdlib_kind),
         defs: [],
         holes: [],
         input_buffer: []

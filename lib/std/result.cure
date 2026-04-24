@@ -25,6 +25,9 @@ mod Std.Result
   ## flatten(ok(error(:inner)))              # => Error(:inner)
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :option
+
   ## Build an `Ok(value)` Result.
   fn ok(value: T) -> Result(T, E) = Ok(value)
 

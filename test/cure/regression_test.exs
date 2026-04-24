@@ -43,7 +43,9 @@ defmodule Cure.RegressionTest do
   defp preload_stdlib do
     # Use the shared helper: loading beams by name instead of adding the
     # build dirs to the code path prevents stale lowercase leftovers from
-    # shadowing OTP modules (notably `:math`) mid-suite.
-    Cure.Stdlib.Preload.preload(examples: true)
+    # shadowing OTP modules (notably `:math`) mid-suite. Explicit
+    # `kind: :all` preserves the historical "load everything" behaviour
+    # now that `Preload.preload/1` defaults to `:none`.
+    Cure.Stdlib.Preload.preload(examples: true, kind: :all)
   end
 end

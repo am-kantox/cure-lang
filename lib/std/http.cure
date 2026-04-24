@@ -26,6 +26,9 @@ mod Std.Http
   ## post("https://example.com/api", headers, body)
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :network
+
   ## HTTP response: status code, response headers, and body.
   rec Response
     status: Int

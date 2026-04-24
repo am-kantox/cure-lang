@@ -25,6 +25,9 @@ mod Std.Actor
   ## lookup("main-cache") == pid             # => true
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :concurrency
+
   ## Spawn a new actor instance from a compiled actor module atom.
   ## The spawning process is recorded as the actor's caller
   ## automatically; lifecycle hooks can reach it via

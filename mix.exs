@@ -74,6 +74,10 @@ defmodule Cure.MixProject do
       # Observability -- optional, used by Cure.Telemetry when loaded
       {:telemetry, "~> 1.3", optional: true},
 
+      # TOML -- pure-Erlang parser (no NIF, escript-safe) used by
+      # `Cure.REPL.Config` to load `.cure.repl.toml` on REPL start.
+      {:toml, "~> 0.7"},
+
       # Development and documentation
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:excoveralls, "~> 0.18", only: :test, runtime: false},

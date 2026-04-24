@@ -15,6 +15,9 @@ mod Std.Eq
   ## eq(:ok, :ok)                            # => true
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :core
+
   ## Equality between two `T` values.
   proto Eq(T)
     ## `true` when `a` equals `b`.

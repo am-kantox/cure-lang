@@ -17,6 +17,9 @@ mod Std.App
   ## get_env(:my_app, :port, 8080)           # => 4000
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :system
+
   ## Ensure the application and all of its dependencies are started.
   ## Returns `:ok` whether or not the application was already running.
   @extern(Elixir.Cure.App.Builtins, :ensure_all_started, 1)

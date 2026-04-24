@@ -17,6 +17,9 @@ mod Std.Supervisor
   ## stop(:"Cure.Sup.MyRoot")
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :concurrency
+
   ## Start a compiled Cure supervisor module. Returns the top-level
   ## supervisor pid on success.
   @extern(Elixir.Cure.Sup.Builtins, :sup_start, 1)

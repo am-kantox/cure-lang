@@ -482,7 +482,11 @@ defmodule Cure.CLI do
   # global Erlang code path, so stale leftover lowercase beams (e.g. a
   # pre-rename examples/math.cure -> math.beam) can't shadow OTP modules.
   defp preload_stdlib do
-    Cure.Stdlib.Preload.preload(examples: true)
+    # CLI entry points (`cure run`, `cure compile`) want every stdlib
+    # module available so user sources can `use Std.X` without thinking
+    # about groups. The REPL is the only caller with a narrower default
+    # (`:none`); see `Cure.REPL.start/1`.
+    Cure.Stdlib.Preload.preload(examples: true, kind: :all)
   end
 
   # -- check -------------------------------------------------------------------

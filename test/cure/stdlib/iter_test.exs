@@ -7,7 +7,7 @@ defmodule Cure.Stdlib.IterTest do
   @compile {:no_warn_undefined, :"Cure.Std.Iter"}
 
   setup_all do
-    Cure.Stdlib.Preload.preload(examples: false)
+    Cure.Stdlib.Preload.preload(examples: false, kind: :all)
     :ok
   end
 

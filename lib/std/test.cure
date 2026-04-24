@@ -28,6 +28,9 @@ mod Std.Test
   ## # => :ok
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :test
+
   ## Private: raise `reason` as an Erlang error.
   @extern(:erlang, :error, 1)
   local fn raise_error(reason: Atom) -> Atom

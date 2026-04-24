@@ -36,6 +36,9 @@ mod Std.List
   ##   _       -> Std.Io.println("empty")
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :collections
+
   # -- Basic queries ----------------------------------------------------------
 
   ## Length of `list` as an `Int`. Delegates to `:erlang.length/1`.

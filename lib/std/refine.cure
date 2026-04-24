@@ -20,6 +20,9 @@ mod Std.Refine
   ## probability?(0.9)                       # => true
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :core
+
   ## Non-zero integer (`Int` minus zero).
   type NonZero = {x: Int | x != 0}
 

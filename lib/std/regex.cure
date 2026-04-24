@@ -34,6 +34,9 @@ mod Std.Regex
   ## replace(digits, "ada 1815", "####")      # => "ada ####"
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :text
+
   ## Opaque compiled regex handle.
   rec Regex
     handle: T

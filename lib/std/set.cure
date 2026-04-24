@@ -23,6 +23,9 @@ mod Std.Set
   ## to_list(difference(a, b))              # => [1]
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :collections
+
   ## New empty set.
   fn new() -> Map = Std.Map.new()
 

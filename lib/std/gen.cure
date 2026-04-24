@@ -21,6 +21,10 @@ mod Std.Gen
   ## # Generate a list of 0..10 small ints.
   ## list_int(10, 0, 5)                           # e.g. [3, 0, 2, 5]
   ## ```
+
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :test
+
   # -- Primitive randomness ---------------------------------------------------
 
   ## Private wrapper over `:rand.uniform/1`; returns an integer in

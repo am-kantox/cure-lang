@@ -43,6 +43,9 @@ mod Std.CRDT
   ## or_value(or_remove(s1, "x"))            # => ["y"]
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :system
+
   ## Grow-only counter. Per-replica counts are summed on read.
   rec GCounter
     counts: T

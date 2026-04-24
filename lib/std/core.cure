@@ -27,6 +27,9 @@ mod Std.Core
   ##   |> unwrap_ok(0)                 # => 84
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :core
+
   # -- Combinators ------------------------------------------------------------
 
   ## Identity function: returns its argument unchanged.

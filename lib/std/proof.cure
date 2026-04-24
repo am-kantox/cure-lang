@@ -15,6 +15,10 @@ proof Std.Proof
   ## plus_zero(42)                           # : Eq(Int, 42, 42)
   ## append_nil([1, 2, 3])                   # : Eq(List(Int), [1,2,3], [1,2,3])
   ## ```
+  ##
+  ## Group: `:core` (inherited from the `Cure.Stdlib.Preload` default;
+  ## `proof` containers only allow `Eq(...)` returns, so no explicit
+  ## `__group__/0` can live here).
 
   # -- Reflexivity and basic arithmetic laws ---------------------------------
 

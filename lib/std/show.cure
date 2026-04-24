@@ -19,6 +19,9 @@ mod Std.Show
   ## show_line(true)                         # => "true\n"
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :core
+
   ## Convert a value of any `Show`-able type to its string representation.
   proto Show(T)
     ## Canonical string form of `x`.

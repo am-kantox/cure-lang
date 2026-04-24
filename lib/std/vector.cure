@@ -17,6 +17,9 @@ mod Std.Vector
   ## to_list(map(v, fn(x) -> x * x))         # => [1, 4, 9]
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :collections
+
   ## Empty vector.
   fn empty() -> Tuple = %[:vector, 0, []]
 

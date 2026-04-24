@@ -27,6 +27,10 @@ mod Std.Iter
   ## # Take at most 3 elements from a potentially infinite iterator.
   ## take(from_list([1, 2, 3, 4, 5]), 3)      # => [1, 2, 3]
   ## ```
+
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :collections
+
   # -- Constructors -----------------------------------------------------------
 
   ## An iterator that is immediately exhausted.

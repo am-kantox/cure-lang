@@ -14,6 +14,9 @@ mod Std.System
   ## node() == :nonode@nohost                # true without -sname
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :system
+
   ## Native monotonic-time reading in implementation-defined units.
   ## Use for measuring durations (`a - b` is meaningful); not
   ## wall-clock.

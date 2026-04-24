@@ -15,6 +15,9 @@ mod Std.Ord
   ## compare("ada", "grace")                 # => :lt
   ## ```
 
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :core
+
   ## Total ordering over `T`.
   proto Ord(T)
     ## `:lt` when `a < b`, `:gt` when `a > b`, `:eq` otherwise.
