@@ -211,24 +211,16 @@ defmodule Cure.Compiler do
   defp maybe_check(_ast, _file, _emit?, false), do: {:ok, :skipped}
 
   defp maybe_check(ast, file, emit?, true) do
+    # Proof-collect mode: when `Cure.Project.Proof.collect/1` sets up the
+    # `cure_proof_certs` ETS table before invoking the compiler, any proof
+    # certificates discharged inside `Cure.Types.Checker` are expected to
+    # be deposited directly via `Cure.Project.Proof.deposit/1`. The
+    # compiler pipeline itself does not intercept the checker's return
+    # value for this purpose -- the checker's public API always returns
+    # `{:ok, term()}` and the side-channel ETS table is the handshake.
     case Checker.check_module(ast, file: file, emit_events: emit?) do
-      {:ok, certs} when is_list(certs) ->
-        # When running in proof_collect mode the checker returns a
-        # non-empty list of certificates alongside the normal result.
-        # Deposit each one into the collection ETS table so that
-        # `Cure.Project.Proof.collect/1` can drain them afterwards.
-        Enum.each(certs, fn
-          %{kind: _} = cert -> Cure.Project.Proof.deposit(cert)
-          _ -> :ok
-        end)
-
-        {:ok, certs}
-
-      {:ok, _} = ok ->
-        ok
-
-      {:error, errors} ->
-        {:error, {:type_error, errors}}
+      {:ok, _} = ok -> ok
+      {:error, errors} -> {:error, {:type_error, errors}}
     end
   end
 

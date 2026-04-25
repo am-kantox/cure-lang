@@ -88,10 +88,6 @@ defmodule Mix.Tasks.Cure.ExportTypes do
 
           Mix.shell().info("cure.export_types: wrote #{length(outputs)} file(s) to #{out_dir}")
         end
-
-      error ->
-        Mix.shell().error("cure.export_types: #{inspect(error)}")
-        exit({:shutdown, 1})
     end
   end
 
