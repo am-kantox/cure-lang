@@ -2,7 +2,7 @@ defmodule Cure.MixProject do
   use Mix.Project
 
   @app :cure
-  @version "0.31.0"
+  @version "0.32.0"
   @source_url "https://github.com/am-kantox/cure-lang"
 
   def project do
@@ -165,7 +165,11 @@ defmodule Cure.MixProject do
         "docs/REPLAY.md",
         "docs/JOHN.md",
         "docs/MONOMORPHISATION.md",
-        "docs/PGO.md"
+        "docs/PGO.md",
+        "docs/PROOF_CARRYING.md",
+        "docs/EXPORT_TYPES.md",
+        "docs/SNAP.md",
+        "docs/STORY.md"
       ],
       source_url: @source_url,
       source_ref: "v#{@version}",

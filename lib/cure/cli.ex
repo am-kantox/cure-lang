@@ -201,6 +201,18 @@ defmodule Cure.CLI do
         ["draw" | rest] ->
           cmd_draw(rest, opts)
 
+        ["verify" | rest] ->
+          cmd_verify(rest, opts)
+
+        ["export-types" | rest] ->
+          cmd_export_types(rest, opts)
+
+        ["snap" | rest] ->
+          cmd_snap(rest, opts)
+
+        ["story" | _] ->
+          cmd_story(opts)
+
         ["help"] ->
           help()
 
@@ -212,7 +224,7 @@ defmodule Cure.CLI do
             compile run check lsp stdlib version init deps test
             explain doc repl fmt watch new bench why doctor fix
             publish search info keys release top trace synth bless replay
-            john profile draw help
+            john profile draw verify export-types snap story help
           )
 
           suffix =
@@ -1570,6 +1582,67 @@ defmodule Cure.CLI do
       -v, --verbose          Verbose output
       -h, --help             Show help
     """)
+  end
+
+  # -- verify (v0.32.0) ---------------------------------------------------------
+
+  defp cmd_verify(rest, opts) do
+    strict? = Keyword.get(opts, :strict, false)
+    path = List.first(rest)
+
+    Mix.Tasks.Cure.Verify.run(
+      if(strict?, do: ["--strict"], else: []) ++
+        if(path, do: [path], else: [])
+    )
+  end
+
+  # -- export-types (v0.32.0) ---------------------------------------------------
+
+  defp cmd_export_types(rest, opts) do
+    target = Keyword.get(opts, :target, "protobuf")
+    out = Keyword.get(opts, :out)
+    verbose? = Keyword.get(opts, :verbose, false)
+
+    cli_args =
+      ["--target", target] ++
+        if(out, do: ["--out", out], else: []) ++
+        if(verbose?, do: ["--verbose"], else: []) ++
+        rest
+
+    Mix.Tasks.Cure.ExportTypes.run(cli_args)
+  end
+
+  # -- snap (v0.32.0) -----------------------------------------------------------
+
+  defp cmd_snap([], _opts) do
+    IO.puts(:stderr, "Usage: cure snap <save|load|list> [options]")
+    exit({:shutdown, 1})
+  end
+
+  defp cmd_snap([sub | rest], opts) do
+    out = Keyword.get(opts, :out)
+
+    cli_args =
+      [sub] ++
+        if(out, do: ["--out", out], else: []) ++
+        rest
+
+    Mix.Tasks.Cure.Snap.run(cli_args)
+  end
+
+  # -- story (v0.32.0) ----------------------------------------------------------
+
+  defp cmd_story(opts) do
+    out = Keyword.get(opts, :out)
+    stdout? = Keyword.get(opts, :verbose, false)
+    diagrams? = false
+
+    cli_args =
+      if(out, do: ["--out", out], else: []) ++
+        if(stdout?, do: ["--stdout"], else: []) ++
+        if diagrams?, do: ["--diagrams"], else: []
+
+    Mix.Tasks.Cure.Story.run(cli_args)
   end
 
   # -- Output helpers ----------------------------------------------------------

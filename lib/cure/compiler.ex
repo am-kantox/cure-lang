@@ -212,8 +212,23 @@ defmodule Cure.Compiler do
 
   defp maybe_check(ast, file, emit?, true) do
     case Checker.check_module(ast, file: file, emit_events: emit?) do
-      {:ok, _} = ok -> ok
-      {:error, errors} -> {:error, {:type_error, errors}}
+      {:ok, certs} when is_list(certs) ->
+        # When running in proof_collect mode the checker returns a
+        # non-empty list of certificates alongside the normal result.
+        # Deposit each one into the collection ETS table so that
+        # `Cure.Project.Proof.collect/1` can drain them afterwards.
+        Enum.each(certs, fn
+          %{kind: _} = cert -> Cure.Project.Proof.deposit(cert)
+          _ -> :ok
+        end)
+
+        {:ok, certs}
+
+      {:ok, _} = ok ->
+        ok
+
+      {:error, errors} ->
+        {:error, {:type_error, errors}}
     end
   end
 

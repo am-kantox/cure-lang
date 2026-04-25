@@ -38,10 +38,21 @@ defmodule Cure.Project.Publisher do
   @doc """
   Assemble a gzipped tarball from `root`. Returns
   `{:ok, bytes, sha256_hex, manifest}`.
+
+  ## Options
+
+  - `:include_proofs` -- when `true` (the default), collect proof
+    certificates by recompiling in `proof_collect` mode and embed them
+    as `<name>-<version>/<name>.cureproof` inside the tarball. Disable
+    by passing `include_proofs: false` or by setting
+    `[publish] include_proofs = false` in `Cure.toml`.
   """
-  @spec build_tarball(String.t()) :: {:ok, tarball(), sha(), manifest()} | {:error, term()}
-  def build_tarball(root \\ ".") when is_binary(root) do
+  @spec build_tarball(String.t(), keyword()) :: {:ok, tarball(), sha(), manifest()} | {:error, term()}
+  def build_tarball(root \\ ".", opts \\ []) when is_binary(root) do
     with {:ok, project} <- Project.load(root) do
+      include_proofs? =
+        Keyword.get(opts, :include_proofs, project_include_proofs(project))
+
       files = collect_files(root)
       manifest = project_to_manifest(project)
       name_ver = "#{project.name}-#{project.version}"
@@ -52,9 +63,26 @@ defmodule Cure.Project.Publisher do
           {String.to_charlist(Path.join(name_ver, relative)), body}
         end)
 
+      proof_entries =
+        if include_proofs? do
+          case Cure.Project.Proof.collect(root) do
+            {:ok, []} ->
+              []
+
+            {:ok, certs} ->
+              proof_file = "#{project.name}.cureproof"
+              bytes = Cure.Project.Proof.serialize(certs)
+              [{String.to_charlist(Path.join(name_ver, proof_file)), bytes}]
+          end
+        else
+          []
+        end
+
+      all_entries = tar_entries ++ proof_entries
+
       tmp = Path.join(System.tmp_dir!(), "cure_pkg_#{:erlang.unique_integer([:positive])}.tar.gz")
 
-      case :erl_tar.create(String.to_charlist(tmp), tar_entries, [:compressed]) do
+      case :erl_tar.create(String.to_charlist(tmp), all_entries, [:compressed]) do
         :ok ->
           bytes = File.read!(tmp)
           _ = File.rm(tmp)
@@ -67,6 +95,13 @@ defmodule Cure.Project.Publisher do
     end
   end
 
+  # Read include_proofs from the project's [publish] table, defaulting to true.
+  defp project_include_proofs(%Project{publish: %{include_proofs: flag}})
+       when is_boolean(flag),
+       do: flag
+
+  defp project_include_proofs(_), do: true
+
   @doc """
   Sign and upload `{name, version}` from `root` using maintainer key
   `handle` and OAuth `token`.
@@ -74,7 +109,7 @@ defmodule Cure.Project.Publisher do
   @spec publish(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, term()}
   def publish(root, handle, token)
       when is_binary(root) and is_binary(handle) and is_binary(token) do
-    with {:ok, bytes, sha, manifest} <- build_tarball(root),
+    with {:ok, bytes, sha, manifest} <- build_tarball(root, []),
          name = Map.get(manifest, "name"),
          version = Map.get(manifest, "version"),
          {:ok, signature} <- Signing.sign_tarball(handle, name, version, bytes),

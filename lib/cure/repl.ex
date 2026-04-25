@@ -44,7 +44,7 @@ defmodule Cure.REPL do
   """
 
   alias Cure.Compiler.Printer
-  alias Cure.REPL.{Config, Docs, History, LineEditor, Markdown, Render, Search, Session, Terminal, Theme}
+  alias Cure.REPL.{Config, Docs, History, LineEditor, Markdown, Render, Search, Session, Snap, Terminal, Theme}
   alias Cure.Stdlib.Preload
   alias Cure.Types.{Checker, Holes}
 
@@ -750,6 +750,12 @@ defmodule Cure.REPL do
   end
 
   defp handle_meta(state, ":search " <> needle), do: cmd_search(state, String.trim(needle))
+  defp handle_meta(state, ":snap save"), do: cmd_snap_save(state, "cure.snap")
+  defp handle_meta(state, ":snap save " <> path), do: cmd_snap_save(state, String.trim(path))
+  defp handle_meta(state, ":snap load " <> path), do: cmd_snap_load(state, String.trim(path))
+  defp handle_meta(state, ":snap list"), do: cmd_snap_list(state, ".")
+  defp handle_meta(state, ":snap list " <> dir), do: cmd_snap_list(state, String.trim(dir))
+  defp handle_meta(state, ":snap"), do: cmd_snap_help(state)
   defp handle_meta(state, ":save " <> path), do: cmd_save(state, String.trim(path))
   defp handle_meta(state, ":edit"), do: cmd_edit(state)
   defp handle_meta(state, ":edit " <> _), do: cmd_edit(state)
@@ -779,7 +785,7 @@ defmodule Cure.REPL do
     known_commands = ~w(
       :t :type :doc :effects :load :use :fmt :let :ast :time :bench
       :theme :mode :color :history :search :save :edit :holes :john
-      :defs :reset :reload :help :imports :stdlib :quit :exit
+      :defs :reset :reload :help :imports :stdlib :quit :exit :snap
     )
 
     bare = String.split(String.trim(other), " ") |> hd()
@@ -956,6 +962,58 @@ defmodule Cure.REPL do
         Enum.each(hits, &Render.write_line(Cure.REPL.Highlight.highlight(&1)))
     end
 
+    state
+  end
+
+  defp cmd_snap_save(state, path) do
+    case Snap.save(state, path) do
+      :ok ->
+        render_info(state, "session saved to #{path}")
+
+      {:error, {:file_write_error, p, reason}} ->
+        render_error(state, "cannot write #{p}: #{:file.format_error(reason)}")
+    end
+
+    state
+  end
+
+  defp cmd_snap_load(state, path) do
+    case Snap.load(path) do
+      {:ok, snap_map} ->
+        state = Snap.apply_snap(state, snap_map)
+        defs_count = length(state.defs)
+        render_info(state, "loaded snap from #{path} (#{defs_count} definition(s) merged)")
+        state
+
+      {:error, :E069} ->
+        render_error(state, "snap schema incompatible (E069): re-create the snap with this version of Cure")
+        state
+
+      {:error, :corrupt} ->
+        render_error(state, "snap file is corrupt or truncated")
+        state
+
+      {:error, {:file_read_error, p, reason}} ->
+        render_error(state, "cannot read #{p}: #{:file.format_error(reason)}")
+        state
+    end
+  end
+
+  defp cmd_snap_list(state, dir) do
+    files = Snap.list(dir)
+
+    if files == [] do
+      render_info(state, "(no .cure-snap files in #{dir})")
+    else
+      render_info(state, "snap files in #{dir} (#{length(files)}):")
+      Enum.each(files, fn f -> render_info(state, "  #{f}") end)
+    end
+
+    state
+  end
+
+  defp cmd_snap_help(state) do
+    render_info(state, "snap subcommands: save [path]  load <path>  list [dir]")
     state
   end
 
@@ -1298,6 +1356,10 @@ defmodule Cure.REPL do
     - `:history [n]` - print the last `n` (default 20) entries
     - `:search term` - non-interactive history grep
     - `:save path` - write the session transcript to `path`
+    - `:snap save [path]` - freeze the REPL session to a `.cure-snap` file
+      (default: `cure.snap` in the current directory)
+    - `:snap load <path>` - restore a session from a `.cure-snap` file
+    - `:snap list [dir]` - list `.cure-snap` files in `dir` (default: `.`)
     - `:edit` - open $EDITOR on the current input buffer
     - `:time expr` - evaluate and report elapsed time
     - `:bench expr [n]` - run `expr` `n` times (default 1000), report stats

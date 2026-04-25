@@ -52,7 +52,8 @@ defmodule Cure.Project do
     root: ".",
     application: nil,
     release: nil,
-    doc: nil
+    doc: nil,
+    publish: nil
   ]
 
   @type dep :: %{name: String.t(), path: String.t()} | %{name: String.t(), git: String.t(), tag: String.t()}
@@ -664,7 +665,8 @@ defmodule Cure.Project do
       application: %{},
       release: %{},
       doc: %{},
-      doc_groups: %{}
+      doc_groups: %{},
+      publish: %{}
     }
 
     parsed = parse_lines(lines, nil, acc)
@@ -672,6 +674,7 @@ defmodule Cure.Project do
     application_map = normalize_application(parsed.application)
     release_map = normalize_release(parsed.release)
     doc_map = normalize_doc(parsed.doc, parsed.doc_groups)
+    publish_map = normalize_publish(parsed.publish)
 
     source_paths =
       case Map.get(parsed.project, "source_paths") do
@@ -687,7 +690,8 @@ defmodule Cure.Project do
       source_paths: source_paths,
       application: application_map,
       release: release_map,
-      doc: doc_map
+      doc: doc_map,
+      publish: publish_map
     }
   end
 
@@ -779,6 +783,13 @@ defmodule Cure.Project do
     case parse_kv(line) do
       {"", _} -> acc
       {key, val} -> %{acc | doc: Map.put(acc.doc, key, parse_scalar(val))}
+    end
+  end
+
+  defp apply_kv({:table, "publish"}, line, acc) do
+    case parse_kv(line) do
+      {"", _} -> acc
+      {key, val} -> %{acc | publish: Map.put(acc.publish, key, parse_scalar(val))}
     end
   end
 
@@ -895,6 +906,14 @@ defmodule Cure.Project do
       source_url: Map.get(map, "source_url"),
       source_ref: Map.get(map, "source_ref"),
       groups_for_modules: Enum.map(groups, fn {name, members} -> {name, list_of_strings(members)} end)
+    }
+  end
+
+  defp normalize_publish(map) when map == %{} or map == nil, do: nil
+
+  defp normalize_publish(map) do
+    %{
+      include_proofs: Map.get(map, "include_proofs", true)
     }
   end
 

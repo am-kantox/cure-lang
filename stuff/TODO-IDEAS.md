@@ -154,14 +154,10 @@ and synthesis.
 The following ideas remain in the brainstorm pool without explicit
 numbering; each is worth its own detailed spec before promotion:
 - `Std.Describe` -- self-describing types with derivable prose.
-- `cure snap` -- save/load the entire REPL environment into
-  `.cure-snap` files.
 - `cure release --oci` -- OCI image output with BEAM and release
   baked in.
-- Proof-carrying packages -- `.cureproof` artifacts in published
-  tarballs for offline re-verification.
-- Cross-language ADT export -- `cure export-types` targeting
-  TypeScript, Rust, Protobuf.
+- Cross-language ADT export (TypeScript, Rust) -- v0.32.0 shipped
+  Protobuf; TypeScript and Rust targets are future work.
 
 ## v0.27.0 -- accepted bundle
 
@@ -190,3 +186,30 @@ flattened into individual TODO items that expands to ten (items 1,
 2, 4, 5, 7, 8, 11, 17, 21, 22) plus the `cure_atelier` showcase.
 Items 1 and 2 together form the observability duo in the original
 count of nine.
+
+## v0.32.0 -- accepted bundle
+
+Theme: **"Trust, Export, Recall, Narrate"**. The following items are
+accepted into v0.32.0:
+
+- Proof-carrying packages -- `.cureproof` artifacts embedded in
+  published tarballs; `cure verify` for offline re-verification.
+  New error codes E065, E066, E067.
+- Cross-language ADT export -- `cure export-types --target protobuf`
+  targeting proto3. New error code E068.
+- `cure snap` -- save/load the entire REPL environment into
+  `.cure-snap` files. New error codes E069, E070. REPL meta-commands
+  `:snap save`, `:snap load`, `:snap list`.
+- `cure story` -- reads a project and generates a narrative `STORY.md`
+  introducing the system top-down: apps -> supervisors -> actors ->
+  FSMs -> types. Supports `--diagrams` (Mermaid) and `--format html`.
+
+## v0.33.0 -- planned next sprint
+
+Theme: **"Cure-native notebook"** (Item 10 from the brainstorm pool).
+
+A first-class `.cnb` format (or `.cure.livemd`) evaluated by a
+Livebook-style runner. Syntax-highlighted via `makeup_cure`, diagrams
+inline from FSMs, live type hints. Foundation already in place:
+`makeup_cure` for highlighting, `Cure.Doc.Mermaid` for diagrams,
+`Cure.REPL` evaluation pipeline for live code cells.
