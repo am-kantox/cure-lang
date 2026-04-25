@@ -102,6 +102,16 @@ defmodule Cure.REPL.LineEditorTest do
       assert {:signal, :submit, ^ed} = LE.handle(ed, :enter)
     end
 
+    test "alt_enter emits :newline signal in emacs mode" do
+      ed = LE.new() |> LE.insert("foo")
+      assert {:signal, :newline, ^ed} = LE.handle(ed, :alt_enter)
+    end
+
+    test "alt_enter emits :newline signal in vi normal mode" do
+      ed = %{LE.new() | mode: :vi_normal, buffer: "foo", cursor: 3}
+      assert {:signal, :newline, %LE{mode: :vi_normal}} = LE.handle(ed, :alt_enter)
+    end
+
     test "ctrl+D on empty buffer signals EOF" do
       assert {:signal, :eof, _} = LE.handle(LE.new(), {:ctrl, ?D})
     end

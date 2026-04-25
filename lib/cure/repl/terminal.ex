@@ -48,6 +48,7 @@ defmodule Cure.REPL.Terminal do
   @typedoc "A single decoded keypress."
   @type key ::
           :enter
+          | :alt_enter
           | :tab
           | :backspace
           | :delete
@@ -301,11 +302,18 @@ defmodule Cure.REPL.Terminal do
   defp decode_escape(?O, read_more), do: decode_ss3(read_more)
   defp decode_escape(0x1B, _), do: :esc
 
+  # Alt+Enter / Meta+Enter: most xterm-family terminals send `ESC` followed
+  # by the same byte they emit for plain Enter (CR=13 or LF=10). The
+  # surrounding REPL uses this as a "force newline / continue multi-line"
+  # signal, distinct from `:enter` (which submits).
+  defp decode_escape(b, _read_more) when b in [10, 13], do: :alt_enter
+
   defp decode_escape(b, _read_more) when b in 32..126, do: {:alt, <<b>>}
   defp decode_escape(b, _), do: {:raw, <<0x1B, b>>}
 
   defp decode_escape_rest(<<?[, rest::binary>>), do: decode_csi_binary(rest)
   defp decode_escape_rest(<<?O, rest::binary>>), do: decode_ss3_binary(rest)
+  defp decode_escape_rest(<<b, _::binary>>) when b in [10, 13], do: :alt_enter
   defp decode_escape_rest(<<b, _::binary>>) when b in 32..126, do: {:alt, <<b>>}
   defp decode_escape_rest(bin), do: {:raw, <<0x1B>> <> bin}
 
@@ -328,7 +336,8 @@ defmodule Cure.REPL.Terminal do
            <<?F>>,
            <<?H>>,
            <<?~>>,
-           <<?Z>>
+           <<?Z>>,
+           <<?u>>
          ]) do
       {pos, 1} ->
         params = binary_part(bin, 0, pos)
@@ -378,6 +387,25 @@ defmodule Cure.REPL.Terminal do
   defp classify_csi("24", ?~), do: {:fn, 12}
 
   defp classify_csi("200", ?~), do: read_paste()
+
+  # CSI-u (Kitty / xterm `modifyOtherKeys=1`) modified-Enter: `ESC [ 13 ; M u`
+  # where `M` is a modifier mask (2=Shift, 3=Alt, 4=Shift+Alt, 5=Ctrl,
+  # 6=Ctrl+Shift, 7=Ctrl+Alt, 8=Ctrl+Alt+Shift). Any modified Enter is
+  # collapsed to a single `:alt_enter` event so the REPL can treat
+  # Shift+Enter, Ctrl+Enter, and Alt+Enter uniformly as "force newline".
+  defp classify_csi("13", ?u), do: :enter
+  defp classify_csi(<<"13;", _mods::binary>>, ?u), do: :alt_enter
+
+  # xterm `modifyOtherKeys=2` form: `ESC [ 27 ; M ; 13 ~`. Same
+  # collapsing rule -- any modified Enter is `:alt_enter`.
+  defp classify_csi(<<"27;", rest::binary>>, ?~) do
+    case String.split(rest, ";") do
+      [_mods, "13"] -> :alt_enter
+      [_mods, "10"] -> :alt_enter
+      _ -> {:raw, <<0x1B, ?[, "27;">> <> rest <> <<?~>>}
+    end
+  end
+
   defp classify_csi(params, final), do: {:raw, <<0x1B, ?[>> <> params <> <<final>>}
 
   # -- SS3 sequences --------------------------------------------------------

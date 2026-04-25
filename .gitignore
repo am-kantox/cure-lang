@@ -44,3 +44,6 @@ cure-*.tar
 # and bundled into the hex tarball at pack time via `files:` in
 # `mix.exs`; do not check in.
 /priv/ebin/
+
+# The main executable escript
+cure

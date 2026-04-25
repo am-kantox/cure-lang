@@ -30,6 +30,74 @@ defmodule Cure.REPLTest do
       assert :continue = REPL.__classify_input__("f(a,")
       assert :continue = REPL.__classify_input__("f(")
     end
+
+    test "lone block-opening keywords are continuations" do
+      for kw <- ~w(match if case cond try fn do let mod rec type proto impl proof actor fsm) do
+        assert :continue = REPL.__classify_input__(kw),
+               "expected lone #{inspect(kw)} to be classified as continuation"
+      end
+    end
+
+    test "trailing whitespace after a continuation token still continues" do
+      assert :continue = REPL.__classify_input__("if x > 0 then  ")
+      assert :continue = REPL.__classify_input__("match  ")
+    end
+  end
+
+  describe "multiline auto-detection" do
+    test "`match foo` (scrutinee, no arms) is treated as incomplete" do
+      assert REPL.__incomplete__?("match foo", "match foo")
+    end
+
+    test "a balanced complete expression is not incomplete" do
+      refute REPL.__incomplete__?("1 + 1", "1 + 1")
+      refute REPL.__incomplete__?("foo(bar)", "foo(bar)")
+    end
+
+    test "unbalanced brackets keep us continuing" do
+      assert REPL.__incomplete__?("[1, 2,", "[1, 2,")
+      assert REPL.__incomplete__?("f(a", "f(a")
+    end
+
+    test "submitting `match foo` accumulates instead of dispatching" do
+      state = REPL.__submit__(REPL.__new_state__(), "match foo")
+      assert state.input_buffer == ["match foo"]
+      # The prompt counter is only bumped on dispatch.
+      assert state.n == 1
+    end
+
+    test "submitting a lone `if` accumulates instead of dispatching" do
+      state = REPL.__submit__(REPL.__new_state__(), "if")
+      assert state.input_buffer == ["if"]
+    end
+  end
+
+  describe "force-newline (Alt+Enter)" do
+    test "appends the line to input_buffer even on a complete expression" do
+      state = REPL.__continue__(REPL.__new_state__(), "1 + 1")
+      assert state.input_buffer == ["1 + 1"]
+      assert state.n == 1
+    end
+
+    test "force-newline on an empty fresh prompt is a no-op" do
+      state = REPL.__continue__(REPL.__new_state__(), "")
+      assert state.input_buffer == []
+    end
+
+    test "force-newline composes with subsequent submit to dispatch" do
+      state =
+        REPL.__new_state__()
+        |> REPL.__continue__("let a = 1")
+        |> REPL.__continue__("let b = a + 1")
+
+      assert state.input_buffer == ["let a = 1", "let b = a + 1"]
+
+      # A bare `b` would normally be classified as :complete, but
+      # because the input_buffer is non-empty it joins and dispatches.
+      {state, stdout, _stderr} = submit_capture(state, "b")
+      assert state.input_buffer == []
+      assert stdout =~ "=> 2"
+    end
   end
 
   describe "error formatting" do

@@ -37,6 +37,7 @@ defmodule Cure.REPL.LineEditor do
   @type event ::
           Cure.REPL.Terminal.key()
           | :submit
+          | :newline
           | :abort
           | :cancel
           | :eof
@@ -76,6 +77,7 @@ defmodule Cure.REPL.LineEditor do
   defp handle_emacs(ed, key) do
     case key do
       :enter -> {:signal, :submit, ed}
+      :alt_enter -> {:signal, :newline, ed}
       :eof -> signal_eof(ed)
       {:ctrl, ?D} -> signal_eof(ed)
       {:ctrl, ?C} -> {:signal, :abort, reset(ed)}
@@ -120,6 +122,7 @@ defmodule Cure.REPL.LineEditor do
   defp handle_vi_normal(ed, key) do
     case key do
       :enter -> {:signal, :submit, ed}
+      :alt_enter -> {:signal, :newline, ed}
       {:ctrl, ?C} -> {:signal, :abort, reset(ed)}
       :esc -> cont(ed)
       {:key, "i"} -> cont(%{ed | mode: :vi_insert})

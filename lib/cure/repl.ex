@@ -11,8 +11,15 @@ defmodule Cure.REPL do
   * Input is syntax-highlighted live via `Makeup.Lexers.CureLexer` +
     `Marcli.Formatter`.
   * Meta-commands are prefixed with `:`. See `:help`.
-  * Multi-line input ends with a blank line or `;;`, and is also
-    auto-completed when brackets balance.
+  * Multi-line input is detected automatically: a line ending with
+    a continuation token (`do`, `->`, `=`, `|`, `then`, `else`,
+    `,`, `(`), an unbalanced bracket, an open block-opener
+    (`match`, `if`, `case`, `try`, `fn`, ...), or a buffer that
+    parses with an EOF-rooted error keeps the prompt in
+    continuation mode. Press `Alt+Enter` (or `Shift+Enter` /
+    `Ctrl+Enter` on terminals that send CSI-u modifier sequences)
+    to force-continue regardless of the heuristic, and submit the
+    accumulated buffer with a blank line or `;;`.
   * When stdin is not a tty (CI, pipes, etc.) the REPL falls back to
     the legacy `IO.gets` loop, so automation continues to work.
 
@@ -268,6 +275,18 @@ defmodule Cure.REPL do
         state = submit(state, ed.buffer)
         if state.running, do: raw_loop(state), else: save_and_bye(state)
 
+      {:signal, :newline, ed} ->
+        # Alt+Enter / Shift+Enter / Ctrl+Enter: explicitly extend the
+        # current submission with one more line, regardless of whether
+        # the parser would consider it complete. Bypasses the
+        # incomplete-detection heuristics so the user can compose a
+        # multi-line block even when each individual line happens to
+        # parse on its own.
+        state = %{state | editor: ed}
+        Render.newline()
+        state = force_continue(state, ed.buffer)
+        raw_loop(state)
+
       {:signal, :abort, ed} ->
         Render.newline()
         render_info(state, "(aborted)")
@@ -444,11 +463,32 @@ defmodule Cure.REPL do
         new_state = %{state | input_buffer: state.input_buffer ++ [line]}
         joined = Enum.join(new_state.input_buffer, "\n")
 
-        if classify_input(line) == :continue or not balanced?(joined) do
+        if incomplete?(line, joined) do
           new_state
         else
           dispatch_buffer(new_state)
         end
+    end
+  end
+
+  # Force-continuation path: invoked from the raw loop when the user
+  # presses Alt+Enter / Shift+Enter / Ctrl+Enter. Always appends the
+  # current line to `input_buffer` without consulting the
+  # incomplete-detection heuristics; the `;;` / blank-line conventions
+  # remain the way to actually dispatch.
+  defp force_continue(state, line) do
+    state = %{state | editor: LineEditor.new(mode: state.mode)}
+
+    cond do
+      # Pressing Alt+Enter on an empty fresh prompt is a no-op rather
+      # than starting an unsolicited continuation prompt -- the user
+      # almost certainly meant to insert a literal blank line in the
+      # middle of an *existing* buffer.
+      line == "" and state.input_buffer == [] ->
+        state
+
+      true ->
+        %{state | input_buffer: state.input_buffer ++ [line]}
     end
   end
 
@@ -1286,7 +1326,10 @@ defmodule Cure.REPL do
     - `Ctrl+D` - EOF on empty line, delete char otherwise
     - `Ctrl+C` - abort current input
     - `Tab` - completion for meta-commands, paths, modules, keywords
-    - `Enter` - submit (or continue if the input looks incomplete)
+    - `Enter` - submit (or auto-continue if the input looks incomplete)
+    - `Alt+Enter` (also `Shift+Enter` / `Ctrl+Enter` on supporting
+      terminals) - force a continuation line even if the current
+      buffer parses as complete
     - `;;` on its own line - force submit a multi-line buffer
 
     ## Top-level declarations
@@ -1370,16 +1413,31 @@ defmodule Cure.REPL do
   defp starts_with_colon?(_), do: false
 
   defp classify_input(line) do
+    trimmed = String.trim_trailing(line)
+
     cond do
-      String.ends_with?(line, "do") -> :continue
-      String.ends_with?(line, "->") -> :continue
-      String.ends_with?(line, "=") -> :continue
-      String.ends_with?(line, "|") -> :continue
-      String.ends_with?(line, "then") -> :continue
-      String.ends_with?(line, "else") -> :continue
-      String.ends_with?(line, ",") -> :continue
-      String.ends_with?(line, "(") -> :continue
+      String.ends_with?(trimmed, "do") -> :continue
+      String.ends_with?(trimmed, "->") -> :continue
+      String.ends_with?(trimmed, "=") -> :continue
+      String.ends_with?(trimmed, "|") -> :continue
+      String.ends_with?(trimmed, "then") -> :continue
+      String.ends_with?(trimmed, "else") -> :continue
+      String.ends_with?(trimmed, ",") -> :continue
+      String.ends_with?(trimmed, "(") -> :continue
+      lone_opening_keyword?(trimmed) -> :continue
       true -> :complete
+    end
+  end
+
+  # Single-token block-opening keywords with no operand on the same
+  # line. Typing `match` / `if` / `try` / `fn` / `case` / `cond` /
+  # `do` and pressing Enter clearly signals an unfinished expression.
+  @opening_keywords ~w(match if case cond try fn do let mod rec type proto impl proof actor fsm)
+
+  defp lone_opening_keyword?(line) do
+    case String.split(String.trim(line), ~r/\s+/, trim: true) do
+      [single] -> single in @opening_keywords
+      _ -> false
     end
   end
 
@@ -1404,6 +1462,84 @@ defmodule Cure.REPL do
 
     p <= 0 and b <= 0 and c <= 0
   end
+
+  # ==========================================================================
+  # Multiline auto-detection
+  # ==========================================================================
+  #
+  # Decide whether the user's accumulated submission still needs more
+  # input. The answer is yes when ANY of these signals fire:
+  #
+  #   1. The just-typed line ends with a continuation token (`do`, `->`,
+  #      `=`, `|`, `then`, `else`, `,`, `(`) or is a lone block-opener
+  #      (`match`, `if`, `fn`, ...). This is the cheap fast path.
+  #   2. Brackets are unbalanced.
+  #   3. The full joined buffer fails to parse and at least one parser
+  #      error is rooted at the synthetic EOF / dedent token, meaning
+  #      "we ran out of input mid-construct".
+  #   4. The buffer parses but yields a top-level shape that the parser
+  #      treats as a syntactic stub: a `match scrutinee` with no arms,
+  #      a `try` body with no rescue/catch, and so on.
+  #
+  # A `;;` / blank line still always submits, since the user's explicit
+  # signal trumps the heuristic.
+  defp incomplete?(line, joined) do
+    classify_input(line) == :continue or
+      not balanced?(joined) or
+      parse_indicates_continuation?(joined) or
+      ast_is_open_block?(joined)
+  end
+
+  defp parse_indicates_continuation?(src) do
+    case Cure.quote(src, file: "repl") do
+      {:ok, _ast} ->
+        false
+
+      {:error, errors} when is_list(errors) ->
+        Enum.any?(errors, &error_at_eof?/1)
+
+      _ ->
+        false
+    end
+  end
+
+  # Errors of the shape `{:expected, _, :got, :eof, ...}` /
+  # `{:unexpected_token, :eof, ...}` (and the dedent/newline variants
+  # the lexer emits at the synthetic end of input) are the parser's
+  # way of saying "more tokens would have satisfied this rule".
+  defp error_at_eof?({:expected, _expected, :got, got, _line, _col})
+       when got in [:eof, :dedent, :newline],
+       do: true
+
+  defp error_at_eof?({:unexpected_token, type, _line, _col})
+       when type in [:eof, :dedent, :newline],
+       do: true
+
+  defp error_at_eof?(_), do: false
+
+  # The parser is permissive: `match scrutinee` on its own elaborates
+  # to `{:pattern_match, _, [scrutinee]}` (only one child, no arms),
+  # which is almost always not what the user wanted -- they were
+  # halfway through composing the match expression. Treat such open
+  # AST shapes as a continuation cue.
+  defp ast_is_open_block?(src) do
+    case Cure.quote(src, file: "repl") do
+      {:ok, ast} -> open_ast?(ast)
+      _ -> false
+    end
+  end
+
+  defp open_ast?({:block, _meta, nodes}) when is_list(nodes) do
+    case List.last(nodes) do
+      nil -> false
+      last -> open_ast?(last)
+    end
+  end
+
+  # `match scrutinee` without arms.
+  defp open_ast?({:pattern_match, _meta, [_scrutinee]}), do: true
+
+  defp open_ast?(_), do: false
 
   defp resolve_theme(opts) do
     case Keyword.get(opts, :theme, :auto) do
@@ -1489,6 +1625,18 @@ defmodule Cure.REPL do
   # updated state so tests can assert on `:defs`, `:n`, etc.
   def __submit__(%__MODULE__{} = state, line) when is_binary(line) do
     submit(state, line)
+  end
+
+  @doc false
+  # Test hook for the explicit force-continuation path used by
+  # Alt+Enter / Shift+Enter / Ctrl+Enter in the raw loop.
+  def __continue__(%__MODULE__{} = state, line) when is_binary(line) do
+    force_continue(state, line)
+  end
+
+  @doc false
+  def __incomplete__?(line, joined) when is_binary(line) and is_binary(joined) do
+    incomplete?(line, joined)
   end
 
   defp format_microseconds(us) when us < 1_000, do: "#{us} us"
