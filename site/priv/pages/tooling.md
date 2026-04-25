@@ -225,6 +225,103 @@ cure explain E010
 
 **`cure help`** -- Show usage information.
 
+## v0.32.0 additions
+
+### `cure verify` -- offline proof verification
+
+`cure verify` replays the `.cureproof` artifacts embedded in
+published package tarballs (v0.32.0) through the offline verifier
+without re-running the full SMT solver or the type-checker:
+
+```bash
+mix cure.verify                          # verify current project's own proofs
+mix cure.verify my_pkg-0.1.0.tar.gz     # verify a tarball
+mix cure.verify _build/cure/deps/       # verify installed deps
+mix cure.verify --strict ...            # E065 on missing .cureproof artifact
+```
+
+`cure publish` now embeds a `<name>.cureproof` file (gzip-compressed
+binary certificates: equality witnesses, refinement bounds, SMT
+models, totality SCCs) unless `[publish] include_proofs = false` is
+set in `Cure.toml`. Three new error codes: **E065 Proof File
+Missing**, **E066 Proof Verification Failed**, **E067 Proof Schema
+Incompatible**. Full reference:
+[`docs/PROOF_CARRYING.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/PROOF_CARRYING.md).
+
+### `cure export-types` -- cross-language ADT export
+
+Translates Cure `rec`, `type`, and `enum` declarations to schema
+files for external languages. The first target is proto3:
+
+```bash
+mix cure.export_types                                      # all lib/**/*.cure
+mix cure.export_types --target protobuf --out proto/       # explicit dir
+mix cure.export_types --dry-run                            # print, don't write
+mix cure.export_types lib/events.cure lib/types.cure       # specific files
+```
+
+Type mapping highlights: `Int->int64`, `List(T)->repeated T`,
+`Option(T)->optional T`, pure-enum ADTs to proto3 `enum`,
+payload-bearing ADTs to wrapper `message` + `oneof value` blocks.
+Field names are converted `camelCase->snake_case`; field numbers by
+declaration order. Refinements and dependent types emit `bytes` with
+a comment and raise **E068 Export Type Unmappable** (warning, not
+hard error). Full reference:
+[`docs/EXPORT_TYPES.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/EXPORT_TYPES.md).
+
+### `cure snap` -- REPL session snapshots
+
+Save and restore the entire REPL environment as a compact binary
+(`.cure-snap`) file. Available as REPL meta-commands and as a Mix
+task:
+
+```bash
+# inside the REPL
+:snap save my-session.cure-snap
+:snap load my-session.cure-snap
+:snap list sessions/
+
+# from the shell (inspection without a running REPL)
+mix cure.snap load my-session.cure-snap
+mix cure.snap list .
+```
+
+A snap captures: all named declarations (`fn`, `type`, `rec`,
+`proto`, `impl`, `proof`), up to 500 history entries, `use` imports,
+open typed holes, stdlib mode, theme, and editing mode. Loading
+*merges* rather than replaces: last-writer-wins for defs, union for
+uses, prepend for history. Two new error codes: **E069 Snap Schema
+Incompatible**, **E070 Snap Module Missing**. Full reference:
+[`docs/SNAP.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/SNAP.md).
+
+### `cure story` -- narrative architecture generator
+
+Reads a project's source tree and writes `STORY.md` -- a
+human-readable introduction to the system, top-down:
+
+```bash
+mix cure.story                           # write STORY.md at project root
+mix cure.story --diagrams                # embed Mermaid FSM diagrams
+mix cure.story --out docs/ARCH.md       # custom output path
+mix cure.story --format html --out docs/story.html
+mix cure.story --stdout                  # print without writing
+```
+
+The generator parses every `.cure` file under `lib/`, classifies AST
+containers into a five-layer outline (app -> supervisor -> actor ->
+fsm -> types), and emits structured prose for each. `--diagrams`
+embeds Mermaid `stateDiagram-v2` blocks for each FSM, renderable in
+GitHub Markdown and GitLab without extra tooling. Use as a CI gate:
+
+```bash
+mix cure.story --out /tmp/STORY.md && diff STORY.md /tmp/STORY.md
+```
+
+Full reference:
+[`docs/STORY.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/STORY.md).
+
+---
+
 ## v0.30.0 additions
 
 ### `cure john` -- everything-at-once diagnostic

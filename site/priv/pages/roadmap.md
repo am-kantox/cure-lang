@@ -5,6 +5,65 @@
 }
 ---
 
+## Implemented: v0.32.0 -- Trust, Export, Recall, Narrate
+
+Four independent features completing the sprint. The theme is closing
+gaps that have been queued since the registry landed in v0.23.0.
+See the [v0.32.0 release post](/blog/cure-v0.32.0) for the full
+narrative.
+
+- **Proof-carrying packages** (`Cure.Project.Proof`,
+  `Cure.Project.Proof.Verifier`) -- When `cure publish` assembles a
+  tarball the compiler is re-invoked in `proof_collect` mode.
+  Every proof obligation discharged by the type-checker (equality
+  witnesses, refinement predicates, SMT constraints, totality
+  arguments) is serialised as a certificate and written into
+  `<name>.cureproof` alongside the source files. Binary format:
+  `"CUREPROOF\0" <> <<0x01>> <> gzip(term_to_binary([cert, ...])))`.
+  `cure verify [path] [--strict]` replays each certificate through
+  the offline verifier -- no source, no Z3 for equality / refinement
+  proofs. `[publish] include_proofs = false` in `Cure.toml` opts out.
+  New error codes: **E065 Proof File Missing**, **E066 Proof
+  Verification Failed**, **E067 Proof Schema Incompatible**.
+  New Mix task `mix cure.verify`. New doc `docs/PROOF_CARRYING.md`.
+- **Cross-language ADT export** (`Cure.ExportTypes`,
+  `Cure.ExportTypes.Protobuf`) -- `cure export-types --target protobuf`
+  translates Cure `rec`, `type`, and `enum` declarations to proto3
+  `.proto` files. Complete type mapping: `Int->int64`,
+  `List(T)->repeated T`, `Option(T)->optional T`, pure-enum ADTs to
+  proto3 `enum`, payload-bearing ADTs to wrapper `message` +
+  `oneof value` blocks + one synthetic payload message per variant.
+  Refinements and dependent types emit a `bytes` field with a comment
+  and raise **E068 Export Type Unmappable** (warning, not hard error).
+  Field names converted from `camelCase` to `snake_case`; field
+  numbers by declaration order. `--out`, `--dry-run`, `--verbose`
+  flags. New Mix task `mix cure.export_types`. New doc
+  `docs/EXPORT_TYPES.md`.
+- **`cure snap`** (`Cure.REPL.Snap`) -- REPL session snapshots.
+  `:snap save [path]`, `:snap load <path>`, `:snap list [dir]` as
+  REPL meta-commands. Binary format:
+  `"CURESNAP\0" <> <<0x01>> <> gzip(term_to_binary(snap_map))`.
+  Captures: session entries (fn/type/rec/proto/impl/proof),
+  up to 500 history lines, use imports, holes, stdlib mode, theme,
+  editing mode, loaded-file paths. Load merges (last-writer-wins for
+  defs, union for uses, prepend for history); E070 warning for each
+  saved path no longer on disk. New Mix task `mix cure.snap save|
+  load|list`. New doc `docs/SNAP.md`. New error codes: **E069 Snap
+  Schema Incompatible**, **E070 Snap Module Missing**.
+- **`cure story`** (`Cure.Story`, `Cure.Story.Outline`,
+  `Cure.Story.Narrator`) -- narrative `STORY.md` generator. Parses
+  every `.cure` file under `lib/`, classifies AST containers into a
+  five-layer outline (app -> supervisor -> actor -> fsm -> types), and
+  emits template-driven prose for each level. `--diagrams` embeds
+  Mermaid `stateDiagram-v2` blocks for each FSM. `--format html`
+  wraps the output in a minimal HTML shell. `--stdout` prints to
+  stdout without writing a file. Project name read from `Cure.toml`.
+  New Mix task `mix cure.story`. New doc `docs/STORY.md`.
+- **Cross-cutting**: six new error codes E065--E070 added to
+  `Cure.Compiler.Errors`; all four commands wired into `Cure.CLI`
+  and `cure help`; `mix.exs` version 0.32.0; four new doc pages
+  registered in Hex extras.
+
 ## Implemented: v0.31.0 -- Specialise & Steer
 
 The optimisation release. Cure stops paying for polymorphism it
@@ -69,22 +128,22 @@ that cannot render Mermaid.
   exercises `id/1` and `pair_first/2` against four distinct
   substitutions.
 
-Deferred to v0.32.0:
-- Typed hot code upgrades (`cure release --upgrade-from`,
-  `@migration`, E057/E058) -- the appup/relup machinery is
-  large and fragile; postponed in line with the release theme.
-- Automatic codegen instrumentation that emits a tick-at-entry
-  call into every compiled function. v0.31.0 ships the data
-  layer, the recorder, and the optimiser integration; users who
-  want PGO today drive ticks manually or generate profiles from
-  `Cure.Profiler` events.
-- Richer pattern-trigger emission for `forall` predicates in the
-  SMT translator. v0.31.0 ships the `pgo_hint` parameter and the
-  hot-path `arith.solver=6` switch; trigger patterns are reserved
-  for a follow-up.
-- Cross-module monomorphisation (whole-program specialisation).
-  v0.31.0 is per compilation unit; cross-module polymorphic calls
-  flow through the protocol registry as before.
+Deferred to v0.33.0 and beyond:
+- **Cure-native notebook** (v0.33.0 target) -- first-class `.cnb`
+  format evaluated by a Livebook-style runner. Groundwork in place:
+  `Cure.Doc.Mermaid`, `Cure.Doc.HtmlGenerator`, `Cure.REPL` pipeline.
+- **Typed hot code upgrades** (`cure release --upgrade-from`,
+  `@migration`, E057/E058) -- the appup/relup machinery is large and
+  fragile; it continues to get its own cycle.
+- **Automatic PGO instrumentation** -- inject
+  `Cure.PGO.Recorder.tick/1` at every compiled function's entry.
+  v0.31.0 ships the data layer; users who want PGO today drive ticks
+  manually or via `Cure.Profiler`.
+- **`cure export-types --target typescript` and `--target rust`** --
+  the Protobuf backend (v0.32.0) proved the extractor API; additional
+  emitters are additive.
+- **Cross-module monomorphisation** -- whole-program specialisation
+  across compilation unit boundaries.
 
 ## Implemented: v0.30.0 -- John
 

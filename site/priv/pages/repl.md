@@ -131,6 +131,17 @@ Every meta-command is prefixed with `:`. Typing `:` and pressing
 
 - `:reset` -- forget all bindings, fresh session
 - `:save path` -- write the session transcript to `path`
+- `:snap save [path]` (v0.32.0) -- freeze the entire REPL session
+  to a `.cure-snap` file (default: `cure.snap` in the current
+  directory). Captures all named declarations, up to 500 history
+  entries, `use` imports, open holes, theme, and editing mode.
+- `:snap load <path>` (v0.32.0) -- load and merge a session from
+  a `.cure-snap` file. Definitions merge with last-writer-wins
+  semantics; history is prepended; imports are unioned. An E070
+  warning is emitted for each `:load`-ed path that no longer
+  exists on disk; the rest of the session restores normally.
+- `:snap list [dir]` (v0.32.0) -- list `.cure-snap` files found
+  recursively in `dir` (default: current directory).
 - `:edit` -- open `$EDITOR` / `$VISUAL` on the current buffer
 - `:history [n]` -- print the last `n` (default 20) entries
 - `:search term` -- non-interactive history grep

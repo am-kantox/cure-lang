@@ -4,6 +4,127 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.32.0] -- Trust, Export, Recall, Narrate
+
+Four independent features completing the v0.32.0 sprint.
+
+### Added -- Proof-carrying packages
+
+- **`Cure.Project.Proof`** -- certificate serialization core. Binary
+  format: `"CUREPROOF\0" <> <<0x01>> <> gzip(term_to_binary([cert, ...])))`.
+  `collect/1` re-invokes the compiler in `proof_collect` mode and drains
+  the accumulated certificate ETS table. `serialize/1`, `deserialize/1`,
+  and `verify/1` cover the full lifecycle. Four certificate kinds:
+  `:equality`, `:refinement`, `:smt`, `:totality`.
+- **`Cure.Project.Proof.Verifier`** -- offline replay engine. Equality
+  certificates verified by structural term equality against `:cure_refl`.
+  Refinement certificates via lightweight Z3-free bounds arithmetic.
+  SMT certificates via local Z3 query replay (degrades to `:ok` when
+  no solver is present). Totality certificates via SCC structural-decrease
+  check.
+- **`Cure.Compiler`** -- `proof_collect: true` compile flag; when the
+  checker result carries a list of certificate maps, each cert is deposited
+  into the named ETS table `cure_proof_certs` via `Cure.Project.Proof.deposit/1`.
+- **`Cure.Project.Publisher.build_tarball/2`** -- gains `include_proofs:
+  boolean()` option (default `true`). When enabled, calls
+  `Cure.Project.Proof.collect/1` and appends `<name>.cureproof` to the
+  tar entries. `project_include_proofs/1` reads the flag from the new
+  `[publish]` TOML table.
+- **`Cure.Project`** -- new `publish` struct field. TOML parser reads a
+  new `[publish]` table; `normalize_publish/1` extracts
+  `include_proofs :: boolean()`. Default: `true`.
+- **`Mix.Tasks.Cure.Verify`** -- `mix cure.verify [path] [--strict]`.
+  Dispatches to tarball extraction, directory glob, or current-project
+  proof collection depending on the path argument.
+- **`docs/PROOF_CARRYING.md`** -- file format spec, CLI reference, CI
+  integration guide, `strict_proofs: true` config, certificate-kind table.
+- **Error codes E065--E067**: Proof File Missing, Proof Verification
+  Failed, Proof Schema Incompatible.
+
+### Added -- Cross-language ADT export
+
+- **`Cure.ExportTypes`** -- orchestrator. Walks `.cure` source files,
+  parses with the compiler's lexer+parser, classifies `:enum`, `:struct`,
+  and `:type_annotation` AST nodes, delegates to backend emitters.
+- **`Cure.ExportTypes.Protobuf`** -- proto3 emitter. Complete type
+  mapping: `Int->int64`, `Float->double`, `Bool->bool`, `String->string`,
+  `Bytes->bytes`, `List(T)->repeated T`, `Option(T)->optional T`, pure-enum
+  ADTs to proto3 `enum` with `_UNSPECIFIED = 0`, payload-bearing ADTs to
+  wrapper `message` + `oneof value` blocks + one synthetic payload message
+  per variant. Field names `camelCase->snake_case`; field numbers by
+  declaration order. Refinements / dependent types emit `bytes` with a
+  comment and call `IO.warn/2` with E068.
+- **`Mix.Tasks.Cure.ExportTypes`** -- `mix cure.export_types
+  [--target protobuf] [--out dir] [--dry-run] [--verbose] [files...]`.
+  Default output: `_build/cure/export/<target>/`.
+- **`docs/EXPORT_TYPES.md`** -- type mapping table, CLI flags, proto3
+  field numbering rules, `@export_as` annotation hint, guidance on ADT
+  shapes.
+- **Error code E068**: Export Type Unmappable (warning, not hard error).
+
+### Added -- `cure snap` (REPL session snapshots)
+
+- **`Cure.REPL.Snap`** -- snapshot serialization. Binary format:
+  `"CURESNAP\0" <> <<0x01>> <> gzip(term_to_binary(snap_map))`.
+  `save/2`, `load/1`, `apply_snap/2`, `list/1`. Captures: session entries,
+  up to 500 history lines, use imports, holes, stdlib mode, theme, editing
+  mode, advisory loaded paths. Merge semantics on load: last-writer-wins
+  per entry key for defs; union for uses; prepend for history.
+- **`Cure.REPL`** -- six new `handle_meta` clauses:
+  `:snap save [path]`, `:snap load <path>`, `:snap list [dir]`,
+  bare `:snap` (shows sub-command help). Alias `Snap` added to the
+  module alias list. `:help` text updated.
+- **`Mix.Tasks.Cure.Snap`** -- `mix cure.snap save|load|list`.
+  `save` creates an empty stub snap; `load` prints the snap manifest
+  (definition count, history entries, imports); `list` prints paths.
+- **`docs/SNAP.md`** -- file format spec, merge semantics table, CI
+  workflow, E069/E070 guidance.
+- **Error codes E069--E070**: Snap Schema Incompatible, Snap Module
+  Missing.
+
+### Added -- `cure story` (narrative architecture generator)
+
+- **`Cure.Story.Outline`** -- AST walker. Parses every `.cure` file
+  under `lib/` silently (parse errors skipped). Classifies `:app`,
+  `:supervisor`, `:actor`, `:fsm`, `:enum`, `:struct`, and
+  `:type_annotation` containers into a five-layer outline map.
+- **`Cure.Story.Narrator`** -- template-driven prose generator. One
+  section per outline level. `--diagrams` option embeds
+  `stateDiagram-v2` Mermaid code blocks for each FSM (reuses
+  `Cure.Doc.Mermaid` conventions).
+- **`Cure.Story`** -- orchestrator. Reads `[project].name` from
+  `Cure.toml`; supports `--format html` (minimal HTML shell),
+  `--stdout` (return content without writing), `--out`.
+- **`Mix.Tasks.Cure.Story`** -- `mix cure.story [--out path]
+  [--stdout] [--diagrams] [--format md|html]`.
+- **`docs/STORY.md`** -- CLI reference, container classification table,
+  example output excerpt, CI gate pattern.
+
+### Added -- Cross-cutting
+
+- **`Cure.Compiler.Errors`** -- six new catalog entries E065--E070
+  following the existing `"E0XX" => """..."""` pattern.
+- **`Cure.CLI`** -- `verify`, `export-types`, `snap`, `story` dispatch
+  clauses; all four wired into `known_commands` and `cure help`.
+- **`mix.exs`** -- version `0.32.0`; four new extras:
+  `docs/PROOF_CARRYING.md`, `docs/EXPORT_TYPES.md`, `docs/SNAP.md`,
+  `docs/STORY.md`.
+- **`site/priv/posts/2026/04-25-cure-v0.32.0.md`** -- release blog post.
+- **`site/priv/pages/roadmap.md`** -- new v0.32.0 Implemented section.
+- **`site/priv/pages/tooling.md`** -- new v0.32.0 additions section.
+- **`site/priv/pages/repl.md`** -- `:snap save/load/list` added to the
+  Session meta-commands section.
+
+### Changed
+
+- `Cure.Project.Publisher` alias list: `Proof` alias removed (module
+  is called via full name `Cure.Project.Proof`).
+- `Cure.REPL` `known_commands` list and `:help` markdown updated with
+  `:snap`.
+- `stuff/TODO-IDEAS.md` updated: v0.32.0 accepted bundle section
+  added; v0.31.0 deferred block updated to point at v0.33.0 notebook;
+  `cure snap` and proof-carrying packages removed from parked pool.
+
 ## [0.30.2] -- `john`, polished
 
 Patch release that makes the three `john` surfaces render identically
