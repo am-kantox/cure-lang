@@ -71,7 +71,7 @@ defmodule Cure.PGO.Profile do
   @doc "Append a per-MFA entry to the profile."
   @spec add_entry(t(), entry()) :: t()
   def add_entry(%__MODULE__{} = p, %{mfa: _} = entry) do
-    %__MODULE__{p | entries: [entry | p.entries]}
+    %{p | entries: [entry | p.entries]}
   end
 
   @doc "Build a per-MFA entry from raw counters."

@@ -91,13 +91,25 @@ defmodule Cure.PGO do
             case Profile.read(path) do
               {:ok, p} ->
                 if emit?,
-                  do: Events.emit(:type_checker, :pgo_loaded, {p.module, length(p.entries)}, Events.meta(path, 0))
+                  do:
+                    Events.emit(
+                      :type_checker,
+                      :pgo_loaded,
+                      {p.module, length(p.entries)},
+                      Events.meta(to_string(path), 1)
+                    )
 
                 [p]
 
               {:error, reason} ->
                 if emit?,
-                  do: Events.emit(:type_checker, :pgo_load_failed, {path, reason}, Events.meta(path, 0))
+                  do:
+                    Events.emit(
+                      :type_checker,
+                      :pgo_load_failed,
+                      {path, reason},
+                      Events.meta(to_string(path), 1)
+                    )
 
                 []
             end

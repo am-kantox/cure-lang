@@ -615,6 +615,11 @@ defmodule Cure.Optimizer.Monomorphise do
 
   # -- Pipeline events --------------------------------------------------------
 
+  # Synthesised pipeline events do not correspond to a single source
+  # line, so we emit them with line `1` -- the smallest value
+  # `Events.meta/2` accepts (its spec demands `pos_integer()`).
+  @synthetic_line 1
+
   defp emit_specialised_events(registry, file) do
     Enum.each(registry, fn {{name, arity}, inner} ->
       Enum.each(inner, fn {_key, %{subst: subst, mangled: mangled}} ->
@@ -622,7 +627,7 @@ defmodule Cure.Optimizer.Monomorphise do
           :type_checker,
           :monomorph_specialised,
           {name, arity, subst, mangled},
-          Events.meta(file, 0)
+          Events.meta(to_string(file), @synthetic_line)
         )
       end)
     end)
@@ -634,7 +639,7 @@ defmodule Cure.Optimizer.Monomorphise do
         :type_checker,
         :monomorph_skipped,
         {name, arity, :budget_exhausted, dropped},
-        Events.meta(file, 0)
+        Events.meta(to_string(file), @synthetic_line)
       )
 
       Events.emit(
@@ -642,8 +647,9 @@ defmodule Cure.Optimizer.Monomorphise do
         :type_warning,
         {:monomorph_budget_exceeded,
          "monomorphisation budget exhausted for '#{name}/#{arity}': " <>
-           "#{dropped} additional specialisation(s) skipped (E064)", line: 0},
-        Events.meta(file, 0)
+           "#{dropped} additional specialisation(s) skipped (E064)",
+         line: @synthetic_line},
+        Events.meta(to_string(file), @synthetic_line)
       )
     end)
   end
