@@ -43,13 +43,20 @@ jobs:
 
       # Cache the Dialyzer PLT directory separately from `_build`: the PLT is
       # expensive to rebuild (depends on every transitive app) and changes
-      # only when Elixir/OTP or the dependency graph changes.
+      # when Elixir/OTP, the dependency graph, or the app version changes.
+      # Including mix.exs in the hash ensures that a version bump (which
+      # accompanies every sprint that adds new modules) busts the PLT cache
+      # so `mix dialyzer --plt` rebuilds it with the new beam files included.
+      # Without mix.exs in the key, a stale PLT is reused when only source
+      # files change (mix.lock is unchanged), causing "Function X does not
+      # exist" warnings for newly added modules.
       - name: Cache Dialyzer PLTs
         uses: actions/cache@v4
         with:
           path: .dialyzer
-          key: ${{ runner.os }}-dialyzer-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
+          key: ${{ runner.os }}-dialyzer-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.exs', 'mix.lock') }}
           restore-keys: |
+            ${{ runner.os }}-dialyzer-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}-
             ${{ runner.os }}-dialyzer-${{ matrix.elixir }}-${{ matrix.otp }}-
 
       - name: Install dependencies
