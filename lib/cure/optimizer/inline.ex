@@ -26,9 +26,28 @@ defmodule Cure.Optimizer.Inline do
 
   @doc "Run function inlining. Returns `{new_ast, inline_count}`."
   @spec run(tuple()) :: {tuple(), non_neg_integer()}
-  def run(ast) do
+  def run(ast), do: run(ast, [])
+
+  @doc """
+  Run function inlining with optional PGO opts.
+
+  ## Options
+
+  * `:pgo` -- a `Cure.PGO` summary; when present, the inliner relaxes
+    its size cap for hot functions (`<= 12`) and tightens it for
+    cold ones (`<= 2`). The default cap stays at `<= 5` for unknown
+    functions.
+  * `:module` -- atom; required when `:pgo` is set so the inliner can
+    classify per-MFA. Without it, every function is treated as
+    `:default`.
+  """
+  @spec run(tuple(), keyword()) :: {tuple(), non_neg_integer()}
+  def run(ast, opts) do
+    pgo = Keyword.get(opts, :pgo)
+    module = Keyword.get(opts, :module)
+
     # Phase 1: collect inlinable function bodies
-    inlinables = collect_inlinables(ast)
+    inlinables = collect_inlinables(ast, pgo, module)
 
     # Phase 2: substitute call sites
     if map_size(inlinables) > 0 do
@@ -40,14 +59,15 @@ defmodule Cure.Optimizer.Inline do
 
   # -- Phase 1: collect inlinable functions ------------------------------------
 
-  defp collect_inlinables({:container, _meta, body}) do
+  defp collect_inlinables({:container, _meta, body}, pgo, module) do
     Enum.reduce(body, %{}, fn
       {:function_def, meta, [body_expr]} = _fn_def, acc ->
         name = Keyword.get(meta, :name, "")
         params = Keyword.get(meta, :params, [])
         arity = length(params)
+        mode = pgo_mode(pgo, module, name, arity, meta)
 
-        if inlinable?(name, body_expr) do
+        if inlinable?(name, body_expr, mode) do
           param_names = Enum.map(params, fn {:param, _, pname} -> pname end)
           Map.put(acc, {name, arity}, %{body: body_expr, params: param_names})
         else
@@ -59,19 +79,35 @@ defmodule Cure.Optimizer.Inline do
     end)
   end
 
-  defp collect_inlinables({:block, _, children}) do
+  defp collect_inlinables({:block, _, children}, pgo, module) do
     Enum.reduce(children, %{}, fn child, acc ->
-      Map.merge(acc, collect_inlinables(child))
+      Map.merge(acc, collect_inlinables(child, pgo, module))
     end)
   end
 
-  defp collect_inlinables(_), do: %{}
+  defp collect_inlinables(_, _pgo, _module), do: %{}
 
-  defp inlinable?(name, body_expr) do
+  defp pgo_mode(nil, _module, _name, _arity, _meta), do: :default
+  defp pgo_mode(_pgo, nil, _name, _arity, _meta), do: :default
+
+  defp pgo_mode(pgo, module, name, arity, meta) do
+    fn_atom = name |> String.to_atom()
+    Cure.PGO.classify(pgo, module, fn_atom, arity, meta)
+  end
+
+  @default_size_cap 5
+  @hot_size_cap 12
+  @cold_size_cap 2
+
+  defp size_cap(:hot), do: @hot_size_cap
+  defp size_cap(:cold), do: @cold_size_cap
+  defp size_cap(_), do: @default_size_cap
+
+  defp inlinable?(name, body_expr, mode) do
     name != "" and
       not recursive?(name, body_expr) and
       not has_side_effects?(body_expr) and
-      ast_size(body_expr) <= 5
+      ast_size(body_expr) <= size_cap(mode)
   end
 
   defp recursive?(name, {:function_call, meta, _args}) do

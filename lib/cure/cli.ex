@@ -71,7 +71,14 @@ defmodule Cure.CLI do
           overwrite: :boolean,
           title: :string,
           main: :string,
-          extras: :keep
+          extras: :keep,
+          # v0.31.0 -- monomorphisation + PGO
+          monomorphise: :boolean,
+          pgo: :boolean,
+          record_profile: :boolean,
+          profile_dir: :string,
+          module: :string,
+          top: :integer
         ],
         aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
       )
@@ -185,6 +192,15 @@ defmodule Cure.CLI do
         ["replay" | rest] ->
           cmd_replay(rest, opts)
 
+        ["profile"] ->
+          cmd_profile(["show"], opts)
+
+        ["profile" | rest] ->
+          cmd_profile(rest, opts)
+
+        ["draw" | rest] ->
+          cmd_draw(rest, opts)
+
         ["help"] ->
           help()
 
@@ -196,7 +212,7 @@ defmodule Cure.CLI do
             compile run check lsp stdlib version init deps test
             explain doc repl fmt watch new bench why doctor fix
             publish search info keys release top trace synth bless replay
-            john help
+            john profile draw help
           )
 
           suffix =
@@ -413,6 +429,9 @@ defmodule Cure.CLI do
     check? = Keyword.get(opts, :type_check, true)
     optimize? = Keyword.get(opts, :optimize, false)
     verbose? = Keyword.get(opts, :verbose, false)
+    monomorphise? = Keyword.get(opts, :monomorphise, true)
+    pgo? = Keyword.get(opts, :pgo, false)
+    profile_dir = Keyword.get(opts, :profile_dir, Cure.PGO.Recorder.default_dir())
 
     # Preload the stdlib so sources that `use Std.Iter`, `use Std.Gen`,
     # etc. can resolve their imports at compile time. Without this, a
@@ -421,12 +440,30 @@ defmodule Cure.CLI do
     # stdlib function whose beam has not yet been loaded.
     preload_stdlib()
 
-    compile_opts = [
+    base_compile_opts = [
       output_dir: output_dir,
       check_types: check?,
       optimize: optimize?,
+      monomorphise: monomorphise?,
       emit_events: false
     ]
+
+    compile_opts =
+      if pgo? do
+        case Cure.PGO.load(profile_dir, emit_events: false) do
+          {:ok, pgo} ->
+            if verbose?,
+              do: info("PGO loaded from #{profile_dir}: #{MapSet.size(pgo.hot)} hot, #{MapSet.size(pgo.cold)} cold")
+
+            Keyword.put(base_compile_opts, :pgo, pgo)
+
+          {:error, reason} ->
+            warn("--pgo: cannot load #{profile_dir}: #{inspect(reason)}; continuing without PGO")
+            base_compile_opts
+        end
+      else
+        base_compile_opts
+      end
 
     Enum.each(paths, fn path ->
       if File.dir?(path) do
@@ -466,8 +503,19 @@ defmodule Cure.CLI do
     # Type checking runs by default; use `--no-type-check` to opt out.
     check? = Keyword.get(opts, :type_check, true)
     optimize? = Keyword.get(opts, :optimize, false)
+    monomorphise? = Keyword.get(opts, :monomorphise, true)
+    record_profile? = Keyword.get(opts, :record_profile, false)
+    profile_dir = Keyword.get(opts, :profile_dir, Cure.PGO.Recorder.default_dir())
 
     preload_stdlib()
+
+    if record_profile? do
+      case Cure.PGO.Recorder.start_link([]) do
+        {:ok, _} -> :ok
+        {:error, {:already_started, _}} -> :ok
+        other -> warn("--record-profile: failed to start recorder: #{inspect(other)}")
+      end
+    end
 
     source =
       case File.read(path) do
@@ -479,6 +527,7 @@ defmodule Cure.CLI do
            file: path,
            check_types: check?,
            optimize: optimize?,
+           monomorphise: monomorphise?,
            emit_events: false
          ) do
       {:ok, module} ->
@@ -489,9 +538,123 @@ defmodule Cure.CLI do
           info("Module #{module} compiled (no main/0 function)")
         end
 
+        if record_profile? do
+          case Cure.PGO.Recorder.flush(profile_dir) do
+            {:ok, []} -> info("--record-profile: no profile entries collected")
+            {:ok, paths} -> info("--record-profile: wrote #{length(paths)} profile(s) to #{profile_dir}")
+            {:error, reason} -> warn("--record-profile: flush failed: #{inspect(reason)}")
+          end
+        end
+
       {:error, reason} ->
         formatted = Cure.Compiler.Errors.format_error(reason, path)
         diagnostic(formatted)
+        exit({:shutdown, 1})
+    end
+  end
+
+  # -- profile (v0.31.0) -------------------------------------------------------
+
+  defp cmd_profile(["show" | _rest], opts) do
+    dir = Keyword.get(opts, :profile_dir, Cure.PGO.Recorder.default_dir())
+    top_n = Keyword.get(opts, :top, 10)
+
+    case Cure.PGO.load(dir, emit_events: false) do
+      {:error, reason} ->
+        error("cannot load profiles from #{dir}: #{inspect(reason)}")
+        exit({:shutdown, 1})
+
+      {:ok, pgo} ->
+        info("PGO summary (#{dir})")
+        info("  hot:  #{MapSet.size(pgo.hot)} function(s)")
+        info("  cold: #{MapSet.size(pgo.cold)} function(s)")
+        info("  threshold: #{pgo.hot_threshold}")
+
+        if MapSet.size(pgo.hot) > 0 do
+          info("\nHot (top #{top_n}):")
+
+          pgo.hot
+          |> Enum.take(top_n)
+          |> Enum.each(fn {m, f, a} -> info("  #{m}.#{f}/#{a}") end)
+        end
+    end
+  end
+
+  defp cmd_profile(["clear" | _rest], opts) do
+    dir = Keyword.get(opts, :profile_dir, Cure.PGO.Recorder.default_dir())
+
+    case File.ls(dir) do
+      {:error, _} ->
+        info("profile dir #{dir} is empty or missing")
+
+      {:ok, files} ->
+        removed =
+          files
+          |> Enum.filter(&String.ends_with?(&1, ".profile"))
+          |> Enum.map(fn f ->
+            path = Path.join(dir, f)
+            File.rm!(path)
+            path
+          end)
+
+        info("removed #{length(removed)} profile(s) from #{dir}")
+    end
+  end
+
+  defp cmd_profile(["run" | rest], opts) do
+    case rest do
+      [path | _] ->
+        cmd_run(path, Keyword.put(opts, :record_profile, true))
+
+      [] ->
+        error("Usage: cure profile run <file.cure>")
+        exit({:shutdown, 1})
+    end
+  end
+
+  defp cmd_profile([unknown | _], _opts) do
+    error("Unknown profile subcommand: #{unknown}. Use one of: run, show, clear")
+    exit({:shutdown, 1})
+  end
+
+  # -- draw (v0.31.0) ----------------------------------------------------------
+
+  defp cmd_draw([], _opts) do
+    error("Usage: cure draw <path.cure> [--filter fsm|sup|app]")
+    exit({:shutdown, 1})
+  end
+
+  defp cmd_draw([kind, path], opts) when kind in ["fsm", "sup", "app"] do
+    do_draw(path, Keyword.put(opts, :filter, String.to_atom(kind)))
+  end
+
+  defp cmd_draw([path | _rest], opts) do
+    filter =
+      case Keyword.get(opts, :filter) do
+        nil -> :all
+        "fsm" -> :fsm
+        "sup" -> :sup
+        "app" -> :app
+        "all" -> :all
+        atom when is_atom(atom) -> atom
+        _ -> :all
+      end
+
+    do_draw(path, Keyword.put(opts, :filter, filter))
+  end
+
+  defp do_draw(path, opts) do
+    filter = Keyword.get(opts, :filter, :all)
+
+    case Cure.Doc.Ascii.render_file(path, filter: filter) do
+      {:ok, ""} ->
+        info("#{path}: no fsm/sup/app containers to draw")
+
+      {:ok, source} ->
+        IO.puts(source)
+
+      {:error, reason} ->
+        error("cannot draw #{path}: #{inspect(reason)}")
         exit({:shutdown, 1})
     end
   end

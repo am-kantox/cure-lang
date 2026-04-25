@@ -222,7 +222,12 @@ defmodule Cure.Compiler.Codegen do
     # Suppress errors for functions that shadow auto-imported BIFs (OTP 27+)
     no_auto_import_attr = build_no_auto_import_attr(fn_forms)
 
-    forms = [mod_attr, export_attr] ++ no_auto_import_attr ++ fn_forms
+    # v0.31.0: monomorphisation can produce specialised clones whose only
+    # call sites get devoured by the inliner immediately afterwards. Tag
+    # those clones with `nowarn_unused_function` so erl_lint stays quiet.
+    nowarn_attr = build_monomorph_nowarn_attr(body, state)
+
+    forms = [mod_attr, export_attr] ++ no_auto_import_attr ++ nowarn_attr ++ fn_forms
 
     if emit? do
       Events.emit(:codegen, :module_assembled, forms, Events.meta(file, 1))
@@ -297,6 +302,31 @@ defmodule Cure.Compiler.Codegen do
     case shadowed do
       [] -> []
       bifs -> [{:attribute, 1, :compile, {:no_auto_import, bifs}}]
+    end
+  end
+
+  # -- Monomorphisation nowarn_unused_function (v0.31.0) ----------------------
+
+  defp build_monomorph_nowarn_attr(body, _state) do
+    specialised =
+      Enum.flat_map(body, fn
+        {:function_def, meta, _b} ->
+          if Keyword.get(meta, :specialised_from) do
+            name = Keyword.get(meta, :name, "")
+            arity = length(Keyword.get(meta, :params, []))
+            [{mangle_fn_name(name), arity}]
+          else
+            []
+          end
+
+        _ ->
+          []
+      end)
+      |> Enum.uniq()
+
+    case specialised do
+      [] -> []
+      list -> [{:attribute, 1, :compile, {:nowarn_unused_function, list}}]
     end
   end
 

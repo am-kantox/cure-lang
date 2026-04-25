@@ -26,10 +26,37 @@ defmodule Cure.SMT.Solver do
   Returns `:sat`, `:unsat`, or `:unknown`.
   """
   @spec check_sat(tuple(), map()) :: :sat | :unsat | :unknown
-  def check_sat(constraint_ast, var_types \\ %{}) do
-    query = Translator.generate_query(constraint_ast, var_types)
-    run_query(query)
+  def check_sat(constraint_ast, var_types \\ %{}),
+    do: check_sat(constraint_ast, var_types, :default)
+
+  @doc """
+  Check satisfiability with a v0.31.0 PGO budget hint.
+
+  * `:hot` doubles the Z3 timeout and asks the encoder to emit
+    `(set-option :smt.arith.solver 6)` so hot-path queries that today
+    return `:unknown` get a second look.
+  * `:cold` halves the timeout; on `:unknown` the function returns
+    `:sat` (a conservative "may hold" so cold paths don't block
+    compilation on flaky queries).
+  * `:default` is the pre-v0.31.0 behaviour.
+
+  PGO is strictly opt-in -- callers that omit `pgo_hint` get the
+  same query they always did.
+  """
+  @spec check_sat(tuple(), map(), :hot | :cold | :default) :: :sat | :unsat | :unknown
+  def check_sat(constraint_ast, var_types, pgo_hint)
+      when pgo_hint in [:hot, :cold, :default] and is_map(var_types) do
+    query = Translator.generate_query(constraint_ast, var_types, pgo_hint)
+
+    case run_query(query, pgo_timeout(pgo_hint)) do
+      :unknown when pgo_hint == :cold -> :sat
+      result -> result
+    end
   end
+
+  defp pgo_timeout(:hot), do: 6_000
+  defp pgo_timeout(:cold), do: 1_500
+  defp pgo_timeout(_), do: 3_000
 
   @doc """
   Prove that `pred1` implies `pred2` (for refinement subtyping).
@@ -115,17 +142,17 @@ defmodule Cure.SMT.Solver do
 
   # -- Internal ----------------------------------------------------------------
 
-  defp run_query(query) do
+  defp run_query(query, timeout \\ 3_000) do
     if Process.z3_available?() do
-      run_with_z3(query)
+      run_with_z3(query, timeout)
     else
       # Conservative fallback: we cannot prove anything without Z3
       :unknown
     end
   end
 
-  defp run_with_z3(query) do
-    case Process.start_link(timeout: 3_000) do
+  defp run_with_z3(query, timeout) do
+    case Process.start_link(timeout: timeout) do
       {:ok, pid} ->
         try do
           result = Process.query(pid, query)

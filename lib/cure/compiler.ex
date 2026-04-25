@@ -71,12 +71,21 @@ defmodule Cure.Compiler do
     check? = Keyword.get(opts, :check_types, true)
 
     optimize? = Keyword.get(opts, :optimize, false)
+    monomorph? = Keyword.get(opts, :monomorphise, true)
+    monomorph_budget = Keyword.get(opts, :monomorph_budget, 16)
     declared_phases = Keyword.get(opts, :declared_phases)
+
+    optimize_opts = [
+      monomorphise: monomorph?,
+      monomorph_budget: monomorph_budget,
+      emit_events: emit?,
+      file: file
+    ]
 
     with {:ok, tokens} <- lex(source, file, emit?),
          {:ok, ast} <- parse(tokens, file, emit?),
          {:ok, _} <- maybe_check(ast, file, emit?, check?),
-         {:ok, ast} <- maybe_optimize(ast, optimize?),
+         {:ok, ast} <- maybe_optimize(ast, optimize?, optimize_opts),
          {:ok, forms} <- codegen(ast, file, emit?, output_dir, declared_phases) do
       # Callback-mode FSMs, typed actors, supervisors, and
       # applications are already compiled, loaded, *and* persisted to
@@ -137,12 +146,21 @@ defmodule Cure.Compiler do
     check? = Keyword.get(opts, :check_types, true)
 
     optimize? = Keyword.get(opts, :optimize, false)
+    monomorph? = Keyword.get(opts, :monomorphise, true)
+    monomorph_budget = Keyword.get(opts, :monomorph_budget, 16)
     declared_phases = Keyword.get(opts, :declared_phases)
+
+    optimize_opts = [
+      monomorphise: monomorph?,
+      monomorph_budget: monomorph_budget,
+      emit_events: emit?,
+      file: file
+    ]
 
     with {:ok, tokens} <- lex(source, file, emit?),
          {:ok, ast} <- parse(tokens, file, emit?),
          {:ok, _} <- maybe_check(ast, file, emit?, check?),
-         {:ok, ast} <- maybe_optimize(ast, optimize?),
+         {:ok, ast} <- maybe_optimize(ast, optimize?, optimize_opts),
          {:ok, forms} <- codegen(ast, file, emit?, nil, declared_phases) do
       # compile_and_load/2 intentionally does NOT persist bytecode to
       # disk -- it only loads into the current VM -- so we pass `nil`
@@ -183,10 +201,10 @@ defmodule Cure.Compiler do
     end
   end
 
-  defp maybe_optimize(ast, false), do: {:ok, ast}
+  defp maybe_optimize(ast, false, _opts), do: {:ok, ast}
 
-  defp maybe_optimize(ast, true) do
-    {:ok, optimized, _stats} = Optimizer.optimize(ast)
+  defp maybe_optimize(ast, true, opts) do
+    {:ok, optimized, _stats} = Optimizer.optimize(ast, opts)
     {:ok, optimized}
   end
 

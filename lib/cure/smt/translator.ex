@@ -28,12 +28,38 @@ defmodule Cure.SMT.Translator do
   Includes logic declaration, variable declarations, assertion, and check-sat.
   """
   @spec generate_query(tuple(), map()) :: String.t()
-  def generate_query(constraint_ast, var_types \\ %{}) do
+  def generate_query(constraint_ast, var_types \\ %{}),
+    do: generate_query(constraint_ast, var_types, :default)
+
+  @doc """
+  Generate a complete SMT-LIB2 query with a `pgo_hint`.
+
+  When `pgo_hint == :hot`, the encoder asks Z3 to favour stronger
+  arithmetic reasoning (`(set-option :smt.arith.solver 6)`) before
+  the regular query body, so hot-path queries that today return
+  `:unknown` get a second look. `:cold` and `:default` produce the
+  pre-v0.31.0 query verbatim.
+
+  v0.31.0 ships the option flag and the `:hot` arithmetic-solver
+  selection; richer pattern-trigger emission (forall + `:pattern`)
+  is reserved for a follow-up release once the optimiser has real
+  triggers to attach.
+  """
+  @spec generate_query(tuple(), map(), :hot | :cold | :default) :: String.t()
+  def generate_query(constraint_ast, var_types, pgo_hint)
+      when pgo_hint in [:hot, :cold, :default] and is_map(var_types) do
     vars = collect_variables(constraint_ast)
     logic = infer_logic(constraint_ast)
 
+    options =
+      case pgo_hint do
+        :hot -> "(set-option :smt.arith.solver 6)\n"
+        _ -> []
+      end
+
     query = [
       "(set-logic #{logic})\n",
+      options,
       maybe_declare_byte_size(constraint_ast),
       Enum.map(vars, fn v -> declare_var(v, Map.get(var_types, v, :int)) end),
       "(assert ",

@@ -1048,6 +1048,33 @@ defmodule Cure.Compiler.Errors do
 
     Fix: address the root syntax error. E063 diagnostics are
     informational and do not indicate a new, independent bug.
+    """,
+    "E064" => """
+    E064: Monomorphisation Budget Exhausted
+
+    The optimiser's monomorphisation pass synthesises one specialised
+    clone of a polymorphic function per unique call-site type
+    substitution. To keep BEAM bytecode size bounded, the pass caps
+    the number of specialisations at `[compiler].monomorph_budget`
+    (default 16) per source function.
+
+    When a function has more than the configured number of distinct
+    concrete call shapes in a single compilation unit, the pass keeps
+    the first N specialisations, falls back to the original generic
+    clone for the rest, and emits this warning. Calls that fell back
+    are still correct -- they just dispatch through the generic
+    function instead of a tighter clone.
+
+    Example:
+      fn id(x: T) -> T = x
+      # 17 distinct concrete types call id/1 -> the 17th and beyond
+      # use the generic implementation; the warning lists the count.
+
+    Fix: either accept the generic fallback (it is fully correct), or
+    raise the budget in `Cure.toml`:
+
+      [compiler]
+      monomorph_budget = 32
     """
   }
 
