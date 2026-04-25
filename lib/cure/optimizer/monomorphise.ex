@@ -647,8 +647,7 @@ defmodule Cure.Optimizer.Monomorphise do
         :type_warning,
         {:monomorph_budget_exceeded,
          "monomorphisation budget exhausted for '#{name}/#{arity}': " <>
-           "#{dropped} additional specialisation(s) skipped (E064)",
-         line: @synthetic_line},
+           "#{dropped} additional specialisation(s) skipped (E064)", line: @synthetic_line},
         Events.meta(to_string(file), @synthetic_line)
       )
     end)
