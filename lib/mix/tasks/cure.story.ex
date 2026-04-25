@@ -60,13 +60,8 @@ defmodule Mix.Tasks.Cure.Story do
           Mix.shell().info("cure.story: wrote #{result}")
         end
 
-      {:error, reason} ->
-        msg =
-          case reason do
-            {:file_write_error, path, r} -> "cannot write #{path}: #{inspect(r)}"
-            other -> inspect(other)
-          end
-
+      {:error, {:file_write_error, path, reason}} ->
+        msg = "cannot write #{path}: #{inspect(reason)}"
         Mix.shell().error("cure.story: #{msg}")
         exit({:shutdown, 1})
     end
