@@ -5,6 +5,56 @@
 }
 ---
 
+## Implemented: v0.33.0 -- Formalisation
+
+The two branching constructs in the language -- `match` and `pickup`
+-- graduate from "described in a tutorial" to "specified, normatively,
+at version 1.0.0". v0.33.0 ships the contract, not a behaviour change:
+the implementation already honours every clause of both specifications.
+See the [v0.33.0 release post](/blog/cure-v0.33.0) for the full
+narrative.
+
+- **`docs/MATCH.md` -- *The `match` Construct, Language
+  Specification, Version 1.0.0*.** EBNF grammar, the full pattern
+  sub-grammar (literals, wildcards, silent bindings, tuples / lists /
+  maps / records / ADT constructors / pin operator / binary segments,
+  repeated variables, refutability, arbitrary nesting), static
+  semantics (T-Match typing rule, Maranget-style exhaustiveness,
+  reachability, scoping, refinement-context strengthening), dynamic
+  semantics, big-step / small-step operational semantics, twenty-five
+  formatter-conformance clauses, tail-position behaviour, lowering,
+  constant folding, macro hygiene, IDE / language-server requirements,
+  the diagnostic catalogue (`E004`, `E021`-`E025`, `E031`-`E034`, plus
+  warnings / hints), the soundness proof sketch, an acceptance test
+  corpus, and reserved future syntax (or-patterns, view patterns, range
+  patterns, dependent patterns, as-patterns).
+- **`docs/PICKUP.md` -- *The `pickup` Construct, Language
+  Specification, Version 1.0.0*.** Mirrors `MATCH.md` in shape with
+  the typing rules T-Pickup-Else / T-Pickup-Cons, the totality
+  guarantee enforced by the mandatory terminator, source-order
+  short-circuit semantics, refinement narrowing, twenty-five formatter
+  clauses, the migration story for legacy `if` / `elif`
+  (`cure rewrite if-to-pickup`, the new `E-IF-REMOVED` diagnostic),
+  the diagnostic catalogue (`E-PICKUP-NO-ELSE`, `E-PICKUP-ELSE-NOT-LAST`,
+  `E-PICKUP-MULTIPLE-ELSE`, `E-PICKUP-GUARD-TYPE`,
+  `E-PICKUP-BRANCH-MISMATCH`, plus warnings / hints), reserved future
+  syntax (`pickup as`, `pickup with`, `pickup async`, trailing
+  `where`), and the soundness proof sketch.
+- **HexDocs integration.** Both specifications added to `mix.exs`
+  `docs.extras`, alongside `docs/PATTERNS.md`, `docs/BINARIES.md`, and
+  the rest of the language references.
+- **Cross-references.** `docs/LANGUAGE_SPEC.md` § "Pattern Matching"
+  now opens with a normative pointer to `docs/MATCH.md`; a new
+  `## Conditional Dispatch (`pickup`)` section opens with a pointer to
+  `docs/PICKUP.md` and recapitulates the mental model in one paragraph.
+- **Website.** `/match` grew leading and trailing notes pointing at
+  the new normative documents; `/pickup` is new and mirrors the `/match`
+  shape (grammar, totality, evaluation order, scoping, refinement
+  narrowing, tail position, migration from `if`, formatter conventions,
+  diagnostic catalogue, idioms).
+- **No language-surface behaviour changes.** Code that compiled and
+  ran under v0.32.0 compiles and runs identically under v0.33.0.
+
 ## Implemented: v0.32.0 -- Trust, Export, Recall, Narrate
 
 Four independent features completing the sprint. The theme is closing

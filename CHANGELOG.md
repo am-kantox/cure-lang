@@ -4,6 +4,125 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.33.0] -- Formalisation
+
+v0.33.0 is the formalisation release. The two branching constructs in
+the language -- `match` and `pickup` -- graduate from "described in a
+tutorial" to "specified, normatively, at version 1.0.0". Two long-form
+documents land in HexDocs, the website grows a dedicated `pickup`
+page, and the language reference cross-links the new sources of truth.
+
+Nothing in the compiler moves. The specifications were written against
+the behaviour the implementation already exhibits; v0.33.0 ships the
+contract, not a behaviour change.
+
+### Added -- Normative specifications
+
+- **`docs/MATCH.md`** -- *The `match` Construct, Language
+  Specification, Version 1.0.0*. Covers the lexical syntax, EBNF
+  grammar, the full pattern sub-grammar (literals, wildcards, silent
+  bindings, tuples, lists, maps, records, ADT constructors, the pin
+  operator, binary segments, repeated variables, refutability, and
+  arbitrary nesting), the static semantics (typing judgement T-Match,
+  Maranget-style exhaustiveness, reachability, scoping, refinement
+  interaction, polymorphism, decidability, erasure), the dynamic
+  semantics (evaluation order, side-effect observability, exceptions,
+  divergence), the formal operational semantics (big-step rules
+  M-Hit / M-Skip-Pat / M-Skip-Guard / M-NoClause, small-step rules
+  SM-Scrut / SM-Hit / SM-Skip-Pat / SM-Skip-Guard / SM-NoClause,
+  evaluation contexts, determinism / progress / preservation /
+  equivalence / confluence, cost and memory models), formatter
+  conformance (twenty-five clauses), tail-position behaviour,
+  compilation / lowering rules, constant folding obligations, macro
+  hygiene, IDE / language-server requirements, the diagnostic
+  catalogue, non-goals, the soundness proof sketch (Appendix J), an
+  acceptance test corpus (Appendix A), worked pattern examples
+  (Appendix F), the style guide (Appendix G), anti-patterns
+  (Appendix H), reserved future syntax (Appendix I -- or-patterns,
+  view patterns, range patterns, dependent patterns, as-patterns), a
+  bibliography (Appendix K), open questions (Appendix L), and the
+  colophon (Appendix M).
+- **`docs/PICKUP.md`** -- *The `pickup` Construct, Language
+  Specification, Version 1.0.0*. Mirrors the `match` document in
+  shape: lexical syntax, grammar, static semantics (typing rules
+  T-Pickup-Else and T-Pickup-Cons, exhaustiveness via the mandatory
+  terminator, reachability lattice, scoping, refinement interaction,
+  type-inference algorithm, polymorphism, decidability, erasure),
+  dynamic semantics, operational semantics (big-step rules
+  P-Else / P-Hit / P-Skip / P-Guard-Raise / P-Guard-Diverge,
+  small-step rules SP-Guard / SP-Hit / SP-Skip / SP-Else /
+  SP-Guard-Raise, properties, cost model, memory model), the
+  formatter rules (alignment, default-clause normalisation, comment
+  fidelity, idempotence, round-trip, performance bounds, plugin
+  interface, editor-folding integration, the formatter conformance
+  grammar), tail-position behaviour, lowering, constant folding, the
+  algebraic-laws table, the migration story for legacy `if`/`elif`
+  including `cure rewrite if-to-pickup` and the new `E-IF-REMOVED`
+  diagnostic, IDE / language-server requirements, the diagnostic
+  catalogue (errors `E-PICKUP-NO-ELSE`, `E-PICKUP-ELSE-NOT-LAST`,
+  `E-PICKUP-MULTIPLE-ELSE`, `E-PICKUP-GUARD-TYPE`,
+  `E-PICKUP-BRANCH-MISMATCH`, `E-IF-REMOVED`; warnings
+  `W-PICKUP-UNREACHABLE`, `W-PICKUP-DEAD-ELSE`,
+  `W-PICKUP-EFFECTFUL-GUARD`; hints `H-PICKUP-PREFER-ELSE`,
+  `H-PICKUP-DEGENERATE`, `H-PICKUP-LINE-TOO-LONG`,
+  `H-PICKUP-COMMENT-RELOCATED`), non-goals, an acceptance test
+  corpus, worked migration examples, the style guide, anti-patterns,
+  reserved future syntax (`pickup as`, `pickup with`, `pickup async`,
+  trailing `where`), a bibliography, open questions, and the
+  colophon.
+
+### Added -- Surrounding documentation
+
+- **`docs/MATCH.md` and `docs/PICKUP.md`** wired into the `mix.exs`
+  documentation extras list, so HexDocs renders both specifications
+  alongside `docs/PATTERNS.md`, `docs/BINARIES.md`, and the rest of
+  the language references.
+- **`docs/LANGUAGE_SPEC.md`** -- the existing `## Pattern Matching`
+  section now opens with a normative pointer to `docs/MATCH.md`; a
+  new `## Conditional Dispatch (`pickup`)` section opens with a
+  pointer to `docs/PICKUP.md` and recapitulates the mental model in
+  one paragraph for inline readers.
+- **`site/priv/pages/match.md`** -- a leading note frames the page
+  as the user-facing tutorial complement to `docs/MATCH.md`; a
+  closing note links to the new `pickup` page and to
+  `docs/PICKUP.md`.
+- **`site/priv/pages/pickup.md`** (new) -- user-facing reference
+  page for `pickup`. Covers the grammar, the totality requirement,
+  guard evaluation order, strict-`Bool` typing, per-clause scoping,
+  worked examples (sign classification, HTTP routing, nested
+  `match`/`pickup`, `pickup` as an expression), the migration story
+  from legacy `if`/`elif`, the error catalogue, and the formatter's
+  alignment / `else` normalisation rules. Cross-links
+  `docs/PICKUP.md` and `docs/MATCH.md`.
+- **`site/priv/pages/roadmap.md`** -- new `## Implemented: v0.33.0
+  -- Formalisation` section.
+- **`site/priv/pages/tooling.md`** -- new v0.33.0 additions section
+  pointing at the formal specifications and highlighting the
+  tooling-relevant clauses (formatter conformance, language-server
+  requirements, the per-construct diagnostic catalogue).
+- **`site/priv/posts/2026/04-26-cure-v0.33.0.md`** -- release blog
+  post.
+
+### Changed
+
+- `mix.exs` version bumped to `0.33.0`.
+- `docs/MATCH.md` and `docs/PICKUP.md` each gain a `v0.33.0` entry
+  under Appendix C -- Change Log, recording the publication into
+  HexDocs and the surrounding documentation work. The 1.0.0 normative
+  body of both documents is unchanged.
+- `RELEASE.md` rewritten to lead with the formalisation theme.
+- `stuff/TODO-IDEAS.md` updated: a new `## v0.33.0 -- accepted
+  bundle` block describes the formalisation theme; the Cure-native
+  notebook block is rescheduled to `## v0.34.0 -- planned next
+  sprint`.
+
+### Notes on backward compatibility
+
+No language-surface behaviour changes. The implementation already
+honours every clause of the published specifications; v0.33.0 turns
+the contract into a published artefact. Code that compiled and ran
+under v0.32.0 compiles and runs identically under v0.33.0.
+
 ## [0.32.0] -- Trust, Export, Recall, Narrate
 
 Four independent features completing the v0.32.0 sprint.

@@ -225,6 +225,52 @@ cure explain E010
 
 **`cure help`** -- Show usage information.
 
+## v0.33.0 additions
+
+### Formal specifications for `match` and `pickup`
+
+v0.33.0 publishes two long-form normative specifications into HexDocs
+alongside the rest of the language references. Both are stable at
+version 1.0.0 and follow the same five-stratum layout (surface;
+semantics; surface conventions; theory and machinery; closure) plus
+eleven appendices (acceptance corpus, glossary, change log,
+normative-requirement index, reference implementation sketch, worked
+examples, style guide, anti-patterns, reserved future syntax,
+soundness proof sketch, bibliography, open questions, colophon).
+
+- [`docs/MATCH.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/MATCH.md)
+  -- *The `match` Construct, Language Specification, Version 1.0.0*.
+  Implementer-facing sections cover the EBNF grammar, the full
+  pattern sub-grammar, T-Match typing, Maranget-style exhaustiveness,
+  reachability, refinement narrowing, big-step / small-step
+  operational semantics, the soundness proof sketch, and the
+  diagnostic catalogue (`E004`, `E021`-`E025`, `E031`-`E034`).
+- [`docs/PICKUP.md`](https://github.com/am-kantox/cure-lang/blob/main/docs/PICKUP.md)
+  -- *The `pickup` Construct, Language Specification, Version 1.0.0*.
+  Mirrors `MATCH.md` for predicate dispatch: T-Pickup-Else /
+  T-Pickup-Cons, totality enforced by the mandatory terminator,
+  source-order short-circuit semantics, refinement-context
+  strengthening, the migration story for legacy `if` / `elif`
+  (`cure rewrite if-to-pickup`, `E-IF-REMOVED`), and the diagnostic
+  catalogue (`E-PICKUP-NO-ELSE`, `E-PICKUP-ELSE-NOT-LAST`,
+  `E-PICKUP-MULTIPLE-ELSE`, `E-PICKUP-GUARD-TYPE`,
+  `E-PICKUP-BRANCH-MISMATCH`).
+
+Tooling-relevant sections include twenty-five formatter-conformance
+clauses per construct (alignment, comment fidelity, idempotence,
+round-trip, performance bounds, plugin interface, editor-folding
+integration, and a final formatter grammar), language-server
+requirements (hover, code actions, smart-selection, foldable
+regions), and macro / quote interaction rules. The `cure rewrite
+if-to-pickup` migration tool, the `cure fmt` formatter, and the LSP
+server are all expected to satisfy these clauses.
+
+User-facing pages live at [`/match`](/match) and [`/pickup`](/pickup);
+`docs/LANGUAGE_SPEC.md` cross-references both as the normative
+sources of truth.
+
+---
+
 ## v0.32.0 additions
 
 ### `cure verify` -- offline proof verification

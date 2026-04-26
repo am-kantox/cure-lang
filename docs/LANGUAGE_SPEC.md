@@ -619,6 +619,14 @@ application as a bootable BEAM release under
 `start_phase` as thin wrappers over `:application`.
 
 ## Pattern Matching
+The `match` construct is specified normatively at version 1.0.0 in
+[`docs/MATCH.md`](MATCH.md), which covers grammar, the full pattern
+sub-grammar, static / dynamic / operational semantics, formatter
+conformance, the Maranget-style exhaustiveness algorithm, refinement
+narrowing, the diagnostic catalogue, and a soundness proof sketch.
+This section is an informal overview; for any conflict, `MATCH.md`
+is the authority.
+
 `match` (and `let`) support deep destructuring across every structural
 form in the language. As of v0.18.0 the supported pattern shapes are:
 ### Literals and variables
@@ -710,12 +718,45 @@ reported by the flat classifier (`E004`); nested gaps (tuples of ADTs,
 records in tuples, etc.) are reported with a concrete witness under
 code `E025`.
 
+## Conditional Dispatch (`pickup`)
+
+Cure has no `if` / `elif` / `else` chain. Predicate dispatch goes
+through the `pickup` construct, specified normatively at version
+1.0.0 in [`docs/PICKUP.md`](PICKUP.md). The mental model is one
+sentence: *`pickup` walks the clauses and picks up the first one
+whose guard is true.* Each block lists boolean guards in source
+order and terminates in a mandatory `else -> e` clause that makes
+the construct total by construction. Guards must type to `Bool`
+(no truthy / falsy coercion); evaluation short-circuits at the
+first `true`. The legacy `if`/`elif` shape is removed; the
+`cure rewrite if-to-pickup` tool migrates surviving sources.
+
+```cure
+pickup
+  status >= 500 -> :server_error
+  status >= 400 -> :client_error
+  status >= 300 -> :redirect
+  status >= 200 -> :ok
+  else          -> :informational
+```
+
+For the full diagnostic catalogue, formatter rules, refinement
+context-strengthening, tail-position guarantee, and migration story,
+see `docs/PICKUP.md`.
+
 ## Control Flow
 
 ### If/else
 
+Legacy `if`/`else` is removed; see
+[`docs/PICKUP.md`](PICKUP.md) for the canonical replacement. The
+shape historically rendered as `if x > 0 then "positive" else
+"non-positive"` is now written:
+
 ```cure
-if x > 0 then "positive" else "non-positive"
+pickup
+  x > 0 -> "positive"
+  else  -> "non-positive"
 ```
 
 ### Let bindings

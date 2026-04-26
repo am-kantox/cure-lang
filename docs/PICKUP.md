@@ -872,6 +872,7 @@ loop 1_000_000 0
 ## 25. Appendix C — Change Log
 
 - **1.0.0** — Initial release. Introduces `pickup` as the sole predicate-dispatch construct; removes `if`/`elif` from the language; reserves `else` globally; ships the `cure rewrite if-to-pickup` migration tool.
+- **v0.33.0 publication** — Specification published into HexDocs alongside `docs/MATCH.md` via `mix.exs` `docs.extras`. `docs/LANGUAGE_SPEC.md` gains a `## Conditional Dispatch (`pickup`)` section that points at this document as the normative source. The Cure website grows a dedicated `/pickup` user-facing page that mirrors the existing `/match` shape and cross-links this document. No normative content changed.
 
 ## 26. Appendix D — Index of Normative Requirements
 

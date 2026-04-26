@@ -1156,6 +1156,7 @@ match req
 ## 26. Appendix C — Change Log
 
 - **1.0.0** — Initial formal specification of the existing `match` construct. Consolidates and supersedes the pattern-matching content in `docs/LANGUAGE_SPEC.md` § "Pattern Matching"; refers to `docs/PATTERNS.md` as a complementary tutorial reference. Locks numeric diagnostic codes (`E004`, `E021`-`E025`, `E031`-`E034`) and introduces descriptive aliases.
+- **v0.33.0 publication** — Specification published into HexDocs alongside `docs/PICKUP.md` via `mix.exs` `docs.extras`. `docs/LANGUAGE_SPEC.md` § "Pattern Matching" cross-references this document as the normative source. The companion `pickup` page on the Cure website (`/pickup`) and the `/match` user-facing tutorial both link to this document. No normative content changed.
 
 ## 27. Appendix D — Index of Normative Requirements
 

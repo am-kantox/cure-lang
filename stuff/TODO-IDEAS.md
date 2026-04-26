@@ -204,7 +204,44 @@ accepted into v0.32.0:
   introducing the system top-down: apps -> supervisors -> actors ->
   FSMs -> types. Supports `--diagrams` (Mermaid) and `--format html`.
 
-## v0.33.0 -- planned next sprint
+## v0.33.0 -- accepted bundle
+
+Theme: **"Formalisation"**. The two branching constructs in the
+language -- `match` and `pickup` -- graduate from "described in a
+tutorial" to "specified, normatively, at version 1.0.0". v0.33.0
+ships the contract, not a behaviour change: the implementation
+already honours every clause of both specifications.
+
+- **`docs/MATCH.md`** -- *The `match` Construct, Language
+  Specification, Version 1.0.0*. EBNF grammar, the full pattern
+  sub-grammar, T-Match typing, Maranget-style exhaustiveness,
+  refinement narrowing, big-step / small-step operational semantics,
+  twenty-five formatter-conformance clauses, the diagnostic catalogue
+  (`E004`, `E021`-`E025`, `E031`-`E034`), the soundness proof sketch,
+  and reserved future syntax (or-patterns, view patterns, range
+  patterns, dependent patterns, as-patterns).
+- **`docs/PICKUP.md`** -- *The `pickup` Construct, Language
+  Specification, Version 1.0.0*. T-Pickup-Else / T-Pickup-Cons,
+  totality enforced by the mandatory terminator, source-order
+  short-circuit semantics, refinement-context strengthening, the
+  migration story for legacy `if` / `elif`
+  (`cure rewrite if-to-pickup`, `E-IF-REMOVED`), the diagnostic
+  catalogue (`E-PICKUP-NO-ELSE`, `E-PICKUP-ELSE-NOT-LAST`,
+  `E-PICKUP-MULTIPLE-ELSE`, `E-PICKUP-GUARD-TYPE`,
+  `E-PICKUP-BRANCH-MISMATCH`), reserved future syntax (`pickup as`,
+  `pickup with`, `pickup async`, trailing `where`).
+- **HexDocs integration** via `mix.exs` `docs.extras`.
+- **`docs/LANGUAGE_SPEC.md`** cross-references both as the normative
+  sources of truth.
+- **Website** -- new `/pickup` page mirroring the existing `/match`
+  shape; `/match` itself grew leading and trailing notes pointing at
+  the new normative documents; `/roadmap` and `/tooling` updated
+  accordingly.
+- **Blog post** -- `site/priv/posts/2026/04-26-cure-v0.33.0.md`.
+- **No language-surface behaviour changes.** Code that compiled and
+  ran under v0.32.0 compiles and runs identically under v0.33.0.
+
+## v0.34.0 -- planned next sprint
 
 Theme: **"Cure-native notebook"** (Item 10 from the brainstorm pool).
 
