@@ -860,6 +860,16 @@ defmodule Cure.CLI do
       Cure.Cover.start("_build/cure/ebin")
     end
 
+    # Tests typically reference both stdlib helpers (`Std.Test.assert_eq`)
+    # and modules defined in the project's own `lib/`. The escript starts
+    # with neither loaded, so without this step every test that calls
+    # into `lib/` or `Std.*` would crash with `:undef`. Mirror what
+    # `cmd_run/2` does for stdlib, then JIT-compile every `lib/**/*.cure`
+    # so user modules (`Money.hello/0`, etc.) are reachable from the
+    # test bodies below.
+    preload_stdlib()
+    load_project_lib()
+
     test_files = Path.wildcard("test/**/*.cure")
 
     if test_files == [] do
@@ -922,6 +932,28 @@ defmodule Cure.CLI do
 
       if fail > 0, do: exit({:shutdown, 1})
     end
+  end
+
+  # Compile and load every `lib/**/*.cure` in the current project so
+  # test bodies can call into user modules without each test having to
+  # bootstrap the project itself. Failures are surfaced as warnings
+  # rather than aborting the whole `cure test` run -- a broken module
+  # in `lib/` will already produce a follow-up `:undef` from the test
+  # that depends on it, which is more actionable than a single
+  # "compilation error" line.
+  defp load_project_lib do
+    "lib/**/*.cure"
+    |> Path.wildcard()
+    |> Enum.sort()
+    |> Enum.each(fn file ->
+      case Cure.Compiler.compile_and_load(File.read!(file), file: file, emit_events: false) do
+        {:ok, _module} ->
+          :ok
+
+        {:error, reason} ->
+          warn("#{file}: #{inspect(reason)}")
+      end
+    end)
   end
 
   defp run_doctests(filter) do
