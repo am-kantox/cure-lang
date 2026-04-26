@@ -46,4 +46,4 @@ cure-*.tar
 /priv/ebin/
 
 # The main executable escript
-cure
+/cure
