@@ -1092,102 +1092,6 @@ defmodule Cure.Types.Checker do
     end
   end
 
-  # A guard clause: type the guard at strict Bool and then the body.
-  defp type_check_pickup_clause(env, {:pickup_clause, cmeta, [guard, body]}) do
-    line = Keyword.get(cmeta, :line, 1)
-
-    case do_infer(env, guard) do
-      {:ok, gt, _} when gt in [:bool, :any] ->
-        # Path-sensitive refinement mirrors `if`'s positive-branch behaviour.
-        body_env = refine_env_from_condition(env, guard, true)
-
-        case do_infer(body_env, body) do
-          {:ok, t, _} -> {:ok, t}
-          err -> err
-        end
-
-      {:ok, gt, _} ->
-        {:error,
-         {:type_mismatch, "pickup guard must be Bool, got #{Type.display(gt)} (E079 / E-PICKUP-GUARD-TYPE)", line: line}}
-
-      err ->
-        err
-    end
-  end
-
-  defp type_check_pickup_clause(env, {:pickup_else, _cmeta, [body]}) do
-    case do_infer(env, body) do
-      {:ok, t, _} -> {:ok, t}
-      err -> err
-    end
-  end
-
-  # PICKUP §5.3 reachability. We only report the obvious constant-`true`
-  # short-circuit case here: any clause appearing strictly after a
-  # guard literal `true` is flagged W081, and the terminator inherits
-  # W082. Anything subtler is intentionally left to a future revision.
-  defp maybe_warn_pickup_reachability(clauses, line) do
-    clauses
-    |> Enum.with_index()
-    |> Enum.reduce(false, fn {clause, idx}, seen_true ->
-      cond do
-        seen_true and not pickup_else_clause?(clause) ->
-          warning =
-            {:pickup_unreachable, "pickup clause #{idx + 1} is unreachable (W081 / W-PICKUP-UNREACHABLE)", line: line}
-
-          Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
-          seen_true
-
-        seen_true and pickup_else_clause?(clause) ->
-          warning =
-            {:pickup_dead_else, "pickup terminator is unreachable (W082 / W-PICKUP-DEAD-ELSE)", line: line}
-
-          Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
-          seen_true
-
-        pickup_constant_true_guard?(clause) ->
-          true
-
-        true ->
-          false
-      end
-    end)
-
-    :ok
-  end
-
-  defp pickup_else_clause?({:pickup_else, _, _}), do: true
-  defp pickup_else_clause?(_), do: false
-
-  defp pickup_constant_true_guard?({:pickup_clause, _, [{:literal, _, true}, _]}), do: true
-  defp pickup_constant_true_guard?(_), do: false
-
-  # Reject branch-type combinations that have no common upper bound,
-  # used by both `match` and `pickup`. The check is conservative: it
-  # treats `:any` as universally compatible and folds successive joins
-  # left-to-right.
-  defp branch_types_compatible?([]), do: :ok
-  defp branch_types_compatible?([_]), do: :ok
-
-  defp branch_types_compatible?([first | rest]) do
-    Enum.reduce_while(rest, {:ok, first}, fn t, {:ok, acc} ->
-      cond do
-        acc == :any or t == :any ->
-          {:cont, {:ok, Type.join(acc, t)}}
-
-        Type.compatible?(acc, t) ->
-          {:cont, {:ok, Type.join(acc, t)}}
-
-        true ->
-          {:halt, {:incompatible, acc, t}}
-      end
-    end)
-    |> case do
-      {:ok, _} -> :ok
-      {:incompatible, _, _} = err -> err
-    end
-  end
-
   # -- Block -------------------------------------------------------------------
 
   defp do_infer(env, {:block, _meta, exprs}) do
@@ -1483,6 +1387,102 @@ defmodule Cure.Types.Checker do
     end
 
     {:ok, :any, env}
+  end
+
+  # A guard clause: type the guard at strict Bool and then the body.
+  defp type_check_pickup_clause(env, {:pickup_clause, cmeta, [guard, body]}) do
+    line = Keyword.get(cmeta, :line, 1)
+
+    case do_infer(env, guard) do
+      {:ok, gt, _} when gt in [:bool, :any] ->
+        # Path-sensitive refinement mirrors `if`'s positive-branch behaviour.
+        body_env = refine_env_from_condition(env, guard, true)
+
+        case do_infer(body_env, body) do
+          {:ok, t, _} -> {:ok, t}
+          err -> err
+        end
+
+      {:ok, gt, _} ->
+        {:error,
+         {:type_mismatch, "pickup guard must be Bool, got #{Type.display(gt)} (E079 / E-PICKUP-GUARD-TYPE)", line: line}}
+
+      err ->
+        err
+    end
+  end
+
+  defp type_check_pickup_clause(env, {:pickup_else, _cmeta, [body]}) do
+    case do_infer(env, body) do
+      {:ok, t, _} -> {:ok, t}
+      err -> err
+    end
+  end
+
+  # PICKUP §5.3 reachability. We only report the obvious constant-`true`
+  # short-circuit case here: any clause appearing strictly after a
+  # guard literal `true` is flagged W081, and the terminator inherits
+  # W082. Anything subtler is intentionally left to a future revision.
+  defp maybe_warn_pickup_reachability(clauses, line) do
+    clauses
+    |> Enum.with_index()
+    |> Enum.reduce(false, fn {clause, idx}, seen_true ->
+      cond do
+        seen_true and not pickup_else_clause?(clause) ->
+          warning =
+            {:pickup_unreachable, "pickup clause #{idx + 1} is unreachable (W081 / W-PICKUP-UNREACHABLE)", line: line}
+
+          Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
+          seen_true
+
+        seen_true and pickup_else_clause?(clause) ->
+          warning =
+            {:pickup_dead_else, "pickup terminator is unreachable (W082 / W-PICKUP-DEAD-ELSE)", line: line}
+
+          Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
+          seen_true
+
+        pickup_constant_true_guard?(clause) ->
+          true
+
+        true ->
+          false
+      end
+    end)
+
+    :ok
+  end
+
+  defp pickup_else_clause?({:pickup_else, _, _}), do: true
+  defp pickup_else_clause?(_), do: false
+
+  defp pickup_constant_true_guard?({:pickup_clause, _, [{:literal, _, true}, _]}), do: true
+  defp pickup_constant_true_guard?(_), do: false
+
+  # Reject branch-type combinations that have no common upper bound,
+  # used by both `match` and `pickup`. The check is conservative: it
+  # treats `:any` as universally compatible and folds successive joins
+  # left-to-right.
+  defp branch_types_compatible?([]), do: :ok
+  defp branch_types_compatible?([_]), do: :ok
+
+  defp branch_types_compatible?([first | rest]) do
+    Enum.reduce_while(rest, {:ok, first}, fn t, {:ok, acc} ->
+      cond do
+        acc == :any or t == :any ->
+          {:cont, {:ok, Type.join(acc, t)}}
+
+        Type.compatible?(acc, t) ->
+          {:cont, {:ok, Type.join(acc, t)}}
+
+        true ->
+          {:halt, {:incompatible, acc, t}}
+      end
+    end)
+    |> case do
+      {:ok, _} -> :ok
+      {:incompatible, _, _} = err -> err
+    end
   end
 
   defp bind_qualifier_vars(env, {:generator, _, [pattern, collection]}) do
