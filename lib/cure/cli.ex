@@ -763,35 +763,74 @@ defmodule Cure.CLI do
   defp cmd_deps do
     case Cure.Project.load() do
       {:ok, project} ->
-        info("Resolving dependencies for #{project.name}...")
-        Cure.Project.resolve_deps(project)
-        Cure.Project.write_lock(project)
-        info("Dependencies resolved. Cure.lock written.")
+        # `cure deps` may have to compile path/git dependencies that
+        # `use Std.*`. Preload the full stdlib up front so those
+        # imports resolve at compile time without extra plumbing.
+        preload_stdlib()
+
+        case project.dependencies do
+          [] ->
+            Cure.Project.write_lock(project)
+            info("No dependencies declared in Cure.toml; lockfile is up to date.")
+
+          deps ->
+            info("Resolving #{length(deps)} dependency(ies) for #{project.name}...")
+
+            case Cure.Project.resolve_deps(project) do
+              :ok ->
+                Cure.Project.write_lock(project)
+                info("Dependencies resolved. Cure.lock written.")
+
+              {:error, reason} ->
+                error("Failed to resolve dependencies: #{inspect(reason)}")
+                exit({:shutdown, 1})
+            end
+        end
 
       {:error, :no_project_file} ->
-        error("No Cure.toml found in current directory.")
+        error("No Cure.toml found in current directory. Run `cure new <name>` first.")
+        exit({:shutdown, 1})
 
       {:error, reason} ->
-        error("Error: #{inspect(reason)}")
+        error("Cannot load Cure.toml: #{inspect(reason)}")
+        exit({:shutdown, 1})
     end
   end
 
   defp cmd_deps_update do
     case Cure.Project.load() do
       {:ok, project} ->
-        info("Updating dependencies for #{project.name}...")
+        preload_stdlib()
 
-        Enum.each(project.dependencies, fn dep ->
-          if Map.get(dep, :git) do
-            Cure.Project.resolve_git_dep(dep, project.root)
-          end
-        end)
+        case project.dependencies do
+          [] ->
+            info("No dependencies to update.")
 
-        Cure.Project.write_lock(project)
-        info("Lockfile updated.")
+          deps ->
+            info("Updating #{length(deps)} dependency(ies) for #{project.name}...")
+
+            Enum.each(deps, fn dep ->
+              # `resolve_git_dep/2` clones into `_build/deps/<name>` and
+              # compiles the dep's `lib/`. Today it always returns
+              # `:ok` (it raises on failure), so the bare assignment
+              # below is sufficient; if it ever grows an `{:error, _}`
+              # tag we will get a `MatchError` here and notice.
+              if Map.get(dep, :git) do
+                :ok = Cure.Project.resolve_git_dep(dep, project.root)
+              end
+            end)
+
+            Cure.Project.write_lock(project)
+            info("Lockfile updated.")
+        end
+
+      {:error, :no_project_file} ->
+        error("No Cure.toml found in current directory.")
+        exit({:shutdown, 1})
 
       {:error, reason} ->
-        error("Error: #{inspect(reason)}")
+        error("Cannot load Cure.toml: #{inspect(reason)}")
+        exit({:shutdown, 1})
     end
   end
 
@@ -800,8 +839,13 @@ defmodule Cure.CLI do
       {:ok, project} ->
         IO.puts(Cure.Project.dep_tree(project))
 
+      {:error, :no_project_file} ->
+        error("No Cure.toml found in current directory.")
+        exit({:shutdown, 1})
+
       {:error, reason} ->
-        error("Error: #{inspect(reason)}")
+        error("Cannot load Cure.toml: #{inspect(reason)}")
+        exit({:shutdown, 1})
     end
   end
 
@@ -1240,7 +1284,7 @@ defmodule Cure.CLI do
       end
 
     Cure.Project.scaffold(name, template)
-    info("Created project '#{name}' (template: #{template})")
+    IO.puts(Cure.CLI.NewMessage.render(name, template))
   end
 
   # -- bench ---------------------------------------------------------------------

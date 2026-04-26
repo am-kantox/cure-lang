@@ -28,7 +28,14 @@ defmodule Cure.Stdlib.Paths do
        -- the canonical bundled location. Populated at compile time
        by `Mix.Tasks.Cure.BundleStdlib`; available verbatim in
        releases because `priv/` is part of every OTP application.
-    3. `lib/std` relative to the current working directory -- the
+    3. `$CURE_HOME/priv/std`, then `$CURE_HOME/lib/std` -- locations
+       derived from the optional `CURE_HOME` environment variable.
+       This is what powers the
+       `export CURE_HOME=/path/to/cure && alias cure=$CURE_HOME/cure`
+       workflow: the escript can be invoked from any directory and
+       still resolve the stdlib without depending on the current
+       working directory.
+    4. `lib/std` relative to the current working directory -- the
        legacy fallback, kept so Cure's own tests and scripts keep
        working when run straight from the repository checkout.
 
@@ -39,7 +46,13 @@ defmodule Cure.Stdlib.Paths do
     2. `<priv_dir>/ebin` -- the canonical bundled location, populated
        by `Mix.Tasks.Cure.BundleStdlibBeams`. Rides along with OTP
        releases the same way `priv/std` does.
-    3. `_build/cure/ebin` relative to the current working directory
+    3. `$CURE_HOME/priv/ebin`, then `$CURE_HOME/_build/cure/ebin` --
+       locations derived from the `CURE_HOME` environment variable.
+       The `priv/ebin` form matches a fully-bundled checkout (the
+       output of `mix compile`); the `_build` form matches a fresh
+       development checkout that has only ever run
+       `mix cure.compile_stdlib`.
+    4. `_build/cure/ebin` relative to the current working directory
        -- the legacy `mix cure.compile_stdlib` output, kept so
        checkouts that never produced a `priv/ebin/` bundle still work
        in development.
@@ -50,6 +63,8 @@ defmodule Cure.Stdlib.Paths do
   @legacy_cwd_source Path.join(["lib", "std"])
   @legacy_cwd_beam Path.join(["_build", "cure", "ebin"])
 
+  @cure_home_env_var "CURE_HOME"
+
   @doc """
   Return every candidate stdlib source directory that currently exists,
   in search order. Callers that want a single canonical dir should use
@@ -57,7 +72,9 @@ defmodule Cure.Stdlib.Paths do
   """
   @spec source_dirs() :: [String.t()]
   def source_dirs do
-    [configured_source_dir(), bundled_source_dir(), @legacy_cwd_source]
+    ([configured_source_dir(), bundled_source_dir()] ++
+       cure_home_source_dirs() ++
+       [@legacy_cwd_source])
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
     |> Enum.filter(&File.dir?/1)
@@ -82,7 +99,9 @@ defmodule Cure.Stdlib.Paths do
   """
   @spec beam_dirs() :: [String.t()]
   def beam_dirs do
-    [configured_beam_dir(), bundled_beam_dir(), @legacy_cwd_beam]
+    ([configured_beam_dir(), bundled_beam_dir()] ++
+       cure_home_beam_dirs() ++
+       [@legacy_cwd_beam])
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
     |> Enum.filter(&File.dir?/1)
@@ -164,6 +183,66 @@ defmodule Cure.Stdlib.Paths do
     case :code.priv_dir(:cure) do
       {:error, _} -> nil
       priv -> Path.join(to_string(priv), "ebin")
+    end
+  end
+
+  @doc """
+  Return the value of the `CURE_HOME` environment variable, normalised.
+
+  Trailing whitespace is stripped and an empty value is treated as
+  unset (returning `nil`). Use this to teach the `cure` escript where
+  the canonical Cure checkout lives so it can locate the stdlib
+  regardless of the caller's working directory.
+  """
+  @spec cure_home() :: String.t() | nil
+  def cure_home do
+    case System.get_env(@cure_home_env_var) do
+      value when is_binary(value) ->
+        case String.trim(value) do
+          "" -> nil
+          trimmed -> trimmed
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  @doc """
+  Return the candidate stdlib BEAM directories derived from
+  `CURE_HOME`, in priority order. Always returns a list (possibly
+  empty); callers are expected to filter for existence themselves.
+  """
+  @spec cure_home_beam_dirs() :: [String.t()]
+  def cure_home_beam_dirs do
+    case cure_home() do
+      nil ->
+        []
+
+      home ->
+        [
+          Path.join([home, "priv", "ebin"]),
+          Path.join([home, "_build", "cure", "ebin"])
+        ]
+    end
+  end
+
+  @doc """
+  Return the candidate stdlib source directories derived from
+  `CURE_HOME`, in priority order. Always returns a list (possibly
+  empty); callers are expected to filter for existence themselves.
+  """
+  @spec cure_home_source_dirs() :: [String.t()]
+  def cure_home_source_dirs do
+    case cure_home() do
+      nil ->
+        []
+
+      home ->
+        [
+          Path.join([home, "priv", "std"]),
+          Path.join([home, "lib", "std"])
+        ]
     end
   end
 end
