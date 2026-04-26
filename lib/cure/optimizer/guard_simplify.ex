@@ -130,6 +130,24 @@ defmodule Cure.Optimizer.GuardSimplify do
     {{:block, meta, exprs}, count}
   end
 
+  # Simplify guards inside pickup clauses; preserve the clause shape so
+  # later stages still see a structurally valid pickup AST.
+  defp simplify({:pickup, meta, clauses}, count) do
+    {clauses, count} =
+      Enum.map_reduce(clauses, count, fn
+        {:pickup_clause, cmeta, [g, b]}, c ->
+          {g, c} = simplify(g, c)
+          {b, c} = simplify(b, c)
+          {{:pickup_clause, cmeta, [g, b]}, c}
+
+        {:pickup_else, cmeta, [b]}, c ->
+          {b, c} = simplify(b, c)
+          {{:pickup_else, cmeta, [b]}, c}
+      end)
+
+    {{:pickup, meta, clauses}, count}
+  end
+
   defp simplify({:conditional, meta, [c, t, e]}, count) do
     {c, count} = simplify(c, count)
     {t, count} = simplify(t, count)

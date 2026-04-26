@@ -1171,6 +1171,9 @@ defmodule Cure.Compiler.Parser do
       :match ->
         parse_match(state)
 
+      :pickup ->
+        parse_pickup(state)
+
       :return ->
         parse_keyword_unary(state, :early_return)
 
@@ -1269,10 +1272,19 @@ defmodule Cure.Compiler.Parser do
   end
 
   # -- If / Elif / Else
+  #
+  # The legacy `if`/`elif` construct has been removed by the v1.0.0
+  # branching specs (PICKUP §17, MATCH §10). It is still parsed for
+  # source migration purposes but every encounter emits a deprecation
+  # event (`Cure.Pipeline.Events`, payload `:if_deprecated`) so editors,
+  # the LSP, and `mix cure.rewrite` can surface the migration hint. The
+  # spec-mandated diagnostic code `E-IF-REMOVED` is reserved by the
+  # error catalogue but not yet emitted as a hard error.
 
   defp parse_if(state) do
     token = peek(state)
     state = advance(state)
+    state = emit_if_deprecation(state, token)
 
     # Parse condition
     {condition, state} = parse_expr(state, 0)
@@ -1425,6 +1437,176 @@ defmodule Cure.Compiler.Parser do
     {:match_arm, meta, [body]}
     |> then(&{&1, state})
   end
+
+  # -- Pickup Expression -----------------------------------------------------
+  #
+  # `pickup` is the predicate-dispatch counterpart to `match` (see
+  # `docs/PICKUP.md`). Grammar (PICKUP §4):
+  #
+  #   pickup_expr     ::= "pickup" NEWLINE INDENT clause_list DEDENT
+  #   clause_list     ::= guard_clause { NEWLINE guard_clause } NEWLINE
+  #                       terminal_clause [ NEWLINE ]
+  #                     | terminal_clause [ NEWLINE ]
+  #   guard_clause    ::= expression "->" expression
+  #   terminal_clause ::= "else" "->" expression
+  #                     | "true" "->" expression
+  #
+  # The AST shape is `{:pickup, meta, clauses}` where each clause is
+  # either `{:pickup_clause, meta, [guard, body]}` (a guard clause) or
+  # `{:pickup_else, meta, [body]}` (the mandatory terminator). The parser
+  # itself enforces the well-formedness rules of PICKUP §5.2 and §4.1
+  # (non-empty block, single terminator, terminator-last) so downstream
+  # stages can rely on the structural shape; spec-mandated diagnostic
+  # codes are surfaced with the same `add_error/2` channel the rest of
+  # the parser uses.
+
+  defp parse_pickup(state) do
+    token = peek(state)
+    state = advance(state)
+    state = skip_newlines(state)
+
+    {clauses, state} =
+      case peek(state) do
+        %Token{type: :indent} ->
+          state = advance(state)
+          {clauses, state} = parse_pickup_clauses(state)
+          state = expect_dedent(state)
+          {clauses, state}
+
+        _ ->
+          # Inline form is not part of the spec, but we accept a
+          # single-line `pickup else -> expr` so REPL one-liners still
+          # parse. The well-formedness pass below will still catch a
+          # missing terminator. `parse_pickup_inline/1` already wraps
+          # the single clause in a list so the calling shape matches
+          # the indented case below.
+          parse_pickup_inline(state)
+      end
+
+    state = validate_pickup_clauses(clauses, token, state)
+
+    meta = [line: token.line, col: token.col]
+    {{:pickup, meta, clauses}, state}
+  end
+
+  defp parse_pickup_inline(state) do
+    {clause, state} = parse_pickup_clause(state)
+    {[clause], state}
+  end
+
+  defp parse_pickup_clauses(state) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: type} when type in [:dedent, :eof] ->
+        {[], state}
+
+      _ ->
+        {clause, state} = parse_pickup_clause(state)
+        state = skip_newlines(state)
+        {rest, state} = parse_pickup_clauses(state)
+        {[clause | rest], state}
+    end
+  end
+
+  defp parse_pickup_clause(state) do
+    case peek(state) do
+      %Token{type: :keyword, value: :else} = tok ->
+        state = advance(state)
+        state = expect(state, :arrow)
+        state = skip_newlines(state)
+        {body, state} = parse_expr_or_block(state)
+        meta = [line: tok.line, col: tok.col]
+        {{:pickup_else, meta, [body]}, state}
+
+      tok ->
+        {guard, state} = parse_expr(state, 0)
+        state = skip_newlines(state)
+        state = expect(state, :arrow)
+        state = skip_newlines(state)
+        {body, state} = parse_expr_or_block(state)
+        meta = [line: tok.line, col: tok.col]
+        {{:pickup_clause, meta, [guard, body]}, state}
+    end
+  end
+
+  # PICKUP §5.2 / §4.1 enforcement. The four well-formedness errors
+  # carried here (E-PICKUP-NO-ELSE, E-PICKUP-ELSE-NOT-LAST,
+  # E-PICKUP-MULTIPLE-ELSE, and the empty-body case) are raised at the
+  # parser tier so a malformed `pickup` never leaks into the type checker
+  # or codegen.
+  defp validate_pickup_clauses([], token, state) do
+    add_error(
+      state,
+      {:pickup_no_else,
+       "pickup block must contain at least one clause and a terminating `else ->` arm (E-PICKUP-NO-ELSE)",
+       [line: token.line, col: token.col]}
+    )
+  end
+
+  defp validate_pickup_clauses(clauses, token, state) do
+    {else_count, _last_else?, has_terminator?, after_terminator?} =
+      clauses
+      |> Enum.with_index()
+      |> Enum.reduce({0, false, false, false}, fn {clause, idx}, {ec, last_e, term, after_t} ->
+        is_last = idx == length(clauses) - 1
+        terminator? = pickup_terminator?(clause, is_last)
+
+        ec = if pickup_else?(clause), do: ec + 1, else: ec
+        last_e = if pickup_else?(clause), do: is_last, else: last_e
+
+        # Anything after a real terminator clause counts as `after_t`
+        # for the diagnostic below, mirroring PICKUP §4.1.
+        term = term or terminator?
+        after_t = after_t or (term and not terminator?)
+
+        {ec, last_e, term, after_t}
+      end)
+
+    state =
+      cond do
+        else_count > 1 ->
+          add_error(
+            state,
+            {:pickup_multiple_else, "pickup block has more than one `else ->` arm (E-PICKUP-MULTIPLE-ELSE)",
+             [line: token.line, col: token.col]}
+          )
+
+        after_terminator? ->
+          add_error(
+            state,
+            {:pickup_else_not_last, "pickup `else ->` must be the final clause (E-PICKUP-ELSE-NOT-LAST)",
+             [line: token.line, col: token.col]}
+          )
+
+        not has_terminator? ->
+          add_error(
+            state,
+            {:pickup_no_else, "pickup block must end in `else -> ...` (or trailing `true -> ...`) (E-PICKUP-NO-ELSE)",
+             [line: token.line, col: token.col]}
+          )
+
+        true ->
+          state
+      end
+
+    state
+  end
+
+  defp pickup_else?({:pickup_else, _, _}), do: true
+  defp pickup_else?(_), do: false
+
+  defp pickup_terminator?({:pickup_else, _, _}, _is_last), do: true
+
+  defp pickup_terminator?({:pickup_clause, _meta, [guard, _body]}, true) do
+    # Trailing `true ->` is the alternative form admitted by PICKUP §5.2.
+    case guard do
+      {:literal, _, true} -> true
+      _ -> false
+    end
+  end
+
+  defp pickup_terminator?(_, _), do: false
 
   # -- fn: named function or lambda ------------------------------------------
 
@@ -3912,6 +4094,26 @@ defmodule Cure.Compiler.Parser do
     end
 
     %{state | errors: [error | state.errors]}
+  end
+
+  # PICKUP §17 / MATCH §10: emit a deprecation event whenever the
+  # legacy `if` keyword is parsed. The event payload identifies the
+  # spec-reserved diagnostic code `E-IF-REMOVED` so subscribers (the
+  # LSP, the `mix cure.rewrite` task) can surface the migration hint.
+  # Subsequent `elif` branches reuse the same `parse_if/1` recursive
+  # call site -- and therefore the same emission point -- so a chained
+  # `if/elif/elif/else` produces one event per branch, which is the
+  # right granularity for editor diagnostics.
+  defp emit_if_deprecation(state, token) do
+    if state.emit_events do
+      payload =
+        {:if_deprecated, "`if`/`elif` are deprecated; rewrite as `pickup` (E-IF-REMOVED, see docs/PICKUP.md §17)",
+         line: token.line, col: token.col}
+
+      Events.emit(:parser, :deprecation, payload, Events.meta(state.file, token.line))
+    end
+
+    state
   end
 
   # After a parse error, skip forward until a safe statement boundary:

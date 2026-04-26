@@ -15,6 +15,26 @@ defmodule Cure.Optimizer.DeadCode do
 
   # -- Conditional with constant condition -----------------------------------
 
+  # Recurse into pickup arms so dead-code elimination on each branch is
+  # visible to the outer pass. We do not collapse the whole pickup even
+  # when every guard is statically false: PICKUP's terminator is
+  # mandatory and must remain reachable structurally.
+  defp elim({:pickup, meta, clauses}, count) do
+    {clauses, count} =
+      Enum.map_reduce(clauses, count, fn
+        {:pickup_clause, cmeta, [g, b]}, c ->
+          {g, c} = elim(g, c)
+          {b, c} = elim(b, c)
+          {{:pickup_clause, cmeta, [g, b]}, c}
+
+        {:pickup_else, cmeta, [b]}, c ->
+          {b, c} = elim(b, c)
+          {{:pickup_else, cmeta, [b]}, c}
+      end)
+
+    {{:pickup, meta, clauses}, count}
+  end
+
   defp elim({:conditional, meta, [condition, then_ast, else_ast]}, count) do
     {condition, count} = elim(condition, count)
     {then_ast, count} = elim(then_ast, count)

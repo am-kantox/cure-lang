@@ -7,13 +7,45 @@ defmodule Cure.QuoteTest do
     ast
   end
 
-  # Helper: round-trip through quote -> print -> re-quote, assert AST equality
+  # Helper: round-trip through quote -> print -> re-quote, assert AST equality.
+  #
+  # The comparison is performed modulo position metadata (`line`, `col`,
+  # `column`). Canonical block forms for `match` and `pickup` (per
+  # `docs/MATCH.md` §9 and `docs/PICKUP.md` §8) introduce newlines that
+  # shift positions even when the structural AST is identical, so a
+  # strict `==` would mistake those layout-only differences for round-
+  # trip failures.
   defp assert_round_trip(source) do
     {:ok, ast} = Cure.quote(source)
     printed = Cure.quoted_to_string(ast)
     {:ok, re_ast} = Cure.quote(printed)
-    assert ast == re_ast, "Round-trip failed for: #{source}\nPrinted: #{printed}"
+
+    assert strip_positions(ast) == strip_positions(re_ast),
+           "Round-trip failed for: #{source}\nPrinted: #{printed}"
+
     printed
+  end
+
+  # Strip `line`, `col`, `column` keys from every meta keyword list in
+  # the tree. Mirrors `Cure.Compiler.Formatter.strip_meta/1`.
+  defp strip_positions({type, meta, children}) when is_list(meta) do
+    {type, drop_position_keys(meta), strip_positions(children)}
+  end
+
+  defp strip_positions(list) when is_list(list), do: Enum.map(list, &strip_positions/1)
+
+  defp strip_positions(tuple) when is_tuple(tuple) do
+    tuple |> Tuple.to_list() |> Enum.map(&strip_positions/1) |> List.to_tuple()
+  end
+
+  defp strip_positions(other), do: other
+
+  defp drop_position_keys(meta) do
+    meta
+    |> Keyword.delete(:line)
+    |> Keyword.delete(:col)
+    |> Keyword.delete(:column)
+    |> Enum.map(fn {k, v} -> {k, strip_positions(v)} end)
   end
 
   # ── Cure.quote/2 ─────────────────────────────────────────────────────

@@ -14,6 +14,14 @@ defmodule Cure.Compiler.Printer do
 
   @default_indent "  "
 
+  # Spec-defined formatting parameters (PICKUP §8.7 / MATCH §9.7).
+  # Aligned form is dropped if the longest clause head exceeds the
+  # alignment limit, falling back to the unaligned form. Wrapping is
+  # triggered by either a multi-line right-hand side or a final
+  # rendered line exceeding `max_line_width`.
+  @alignment_limit 40
+  @max_line_width 100
+
   @doc """
   Render a MetaAST node as a Cure source string.
   """
@@ -130,23 +138,84 @@ defmodule Cure.Compiler.Printer do
     end
   end
 
-  # -- Pattern Match ---------------------------------------------------------
+  # -- Pattern Match (MATCH §9 -- Canonical Block Form) ---------------------
+  #
+  # Per the formal spec (`docs/MATCH.md` §9), the canonical surface form
+  # of a `match` expression is a block: the keyword and its scrutinee on
+  # one line, followed by clauses indented one `indent_step` deeper. The
+  # `->` tokens are aligned within a single block (§9.2, §9.14).
+  #
+  # Single-clause matches whose pattern is irrefutable are rewritten to
+  # the equivalent `let` binding (MATCH §9.6, hint H-MATCH-USE-LET).
+  # Multi-line right-hand sides force every clause in the block into the
+  # wrapped form (§9.9).
 
   defp to_string({:pattern_match, _meta, [scrutinee | arms]}, depth, indent) do
-    scrut_str = to_string(scrutinee, depth, indent)
+    cond do
+      arms == [] ->
+        # An empty `match` is malformed (E-MATCH-EMPTY), but the
+        # printer must still produce some surface text so type-checker
+        # diagnostics can attach to the keyword.
+        "match #{to_string(scrutinee, depth, indent)}"
 
-    arms_str =
-      arms
-      |> Enum.map(&match_arm_to_string(&1, depth, indent))
-      |> Enum.join(", ")
+      true ->
+        # MATCH §9.6 also describes a single-arm-irrefutable -> `let`
+        # rewrite hint (`H-MATCH-USE-LET`). Since Cure's surface has no
+        # `let … in …` form, the canonical printer leaves the `match`
+        # unchanged here; a dedicated formatter pass may surface the
+        # rewrite hint without altering the AST.
+        render_match_block(scrutinee, arms, depth, indent)
+    end
+  end
 
-    "match #{scrut_str} { #{arms_str} }"
+  # -- Pickup (PICKUP §8 -- Canonical Block Form) ---------------------------
+  #
+  # Per the formal spec (`docs/PICKUP.md` §8), the canonical surface
+  # form of a `pickup` expression is a block: the keyword on its own
+  # line, followed by clauses indented one `indent_step` deeper. The
+  # `->` tokens are aligned within a single block (§8.2, §8.14).
+  #
+  # A degenerate `pickup` -- whose only clause is the terminator -- is
+  # rewritten to the body expression (§8.6, hint H-PICKUP-DEGENERATE).
+  # A trailing `true ->` clause is normalised to `else ->` (§8.3, hint
+  # H-PICKUP-PREFER-ELSE). Multi-line right-hand sides force every
+  # clause into the wrapped form (§8.9).
+
+  defp to_string({:pickup, _meta, clauses}, depth, indent) do
+    clauses = normalize_pickup_terminator(clauses)
+
+    case clauses do
+      [{:pickup_else, _, [body]}] ->
+        # PICKUP §8.6: degenerate `pickup` -- single terminator only --
+        # collapses to the body.
+        to_string(body, depth, indent)
+
+      [] ->
+        # The parser rejects this with E-PICKUP-NO-ELSE; for
+        # defensive printing we still emit the keyword.
+        "pickup"
+
+      _ ->
+        render_pickup_block(clauses, depth, indent)
+    end
   end
 
   # -- Match Arm -------------------------------------------------------------
 
   defp to_string({:match_arm, meta, [body]}, depth, indent) do
     match_arm_to_string({:match_arm, meta, [body]}, depth, indent)
+  end
+
+  # Inline pickup clauses are not normally rendered on their own (the
+  # `:pickup` clause above always handles them as a list), but we keep a
+  # safe fallback so trees produced by macro expansion or partial
+  # quoting still print legibly.
+  defp to_string({:pickup_clause, _meta, [guard, body]}, depth, indent) do
+    "#{to_string(guard, depth, indent)} -> #{to_string(body, depth, indent)}"
+  end
+
+  defp to_string({:pickup_else, _meta, [body]}, depth, indent) do
+    "else -> #{to_string(body, depth, indent)}"
   end
 
   # -- Function Call ---------------------------------------------------------
@@ -1001,4 +1070,221 @@ defmodule Cure.Compiler.Printer do
   defp maybe_append(parts, nil), do: parts
   defp maybe_append(parts, atom) when is_atom(atom), do: parts ++ [Atom.to_string(atom)]
   defp maybe_append(parts, _), do: parts
+
+  # ── Match Block Rendering (MATCH §9) ────────────────────────────────────
+  #
+  # The strategy is the one prescribed by the spec:
+  #
+  #   1. Render every clause's head text (`pattern` or `pattern when guard`)
+  #      and every clause's right-hand side text using the inline
+  #      printer.
+  #   2. If any branch is multi-line (its rendered RHS contains a
+  #      newline) or any aligned line would exceed `max_line_width`,
+  #      switch the entire block to the wrapped form.
+  #   3. Otherwise, align all `->` arrows by padding heads to the
+  #      width of the widest head, unless that width exceeds
+  #      `alignment_limit`, in which case fall back to the unaligned
+  #      form.
+
+  defp render_match_block(scrutinee, arms, depth, indent) do
+    pad_kw = String.duplicate(indent, depth)
+    pad = pad_kw <> indent
+    scrut_str = to_string(scrutinee, depth, indent)
+
+    heads = Enum.map(arms, &match_arm_head(&1, depth + 1, indent))
+    rhs_inline = Enum.map(arms, &match_arm_rhs_inline(&1, depth + 1, indent))
+    multiline_rhs? = Enum.any?(rhs_inline, &multiline?/1)
+
+    max_head = max_grapheme_width(heads)
+    align? = max_head <= @alignment_limit
+
+    aligned_lines =
+      if align? do
+        Enum.zip(heads, rhs_inline)
+        |> Enum.map(fn {h, r} ->
+          pad_str = String.duplicate(" ", max_head - grapheme_width(h))
+          pad <> h <> pad_str <> " -> " <> r
+        end)
+      else
+        Enum.zip(heads, rhs_inline)
+        |> Enum.map(fn {h, r} -> pad <> h <> " -> " <> r end)
+      end
+
+    too_long? = Enum.any?(aligned_lines, fn line -> grapheme_width(line) > @max_line_width end)
+
+    clauses_str =
+      cond do
+        multiline_rhs? or too_long? ->
+          arms
+          |> Enum.zip(heads)
+          |> Enum.map(fn {arm, head} -> render_match_arm_wrapped(arm, head, depth + 1, indent) end)
+          |> Enum.join("\n" <> pad)
+
+        true ->
+          aligned_lines
+          |> Enum.map(&String.trim_leading(&1, pad_kw <> indent))
+          |> Enum.join("\n" <> pad)
+      end
+
+    "match " <> scrut_str <> "\n" <> pad <> clauses_str
+  end
+
+  defp match_arm_head({:match_arm, meta, [_body]}, depth, indent) do
+    pattern = Keyword.get(meta, :pattern)
+    guard = Keyword.get(meta, :guard)
+    pat_str = to_string(pattern, depth, indent)
+
+    if guard do
+      pat_str <> " when " <> to_string(guard, depth, indent)
+    else
+      pat_str
+    end
+  end
+
+  defp match_arm_rhs_inline({:match_arm, _meta, [body]}, depth, indent) do
+    to_string(body, depth, indent)
+  end
+
+  defp render_match_arm_wrapped({:match_arm, _meta, [body]}, head, depth, indent) do
+    inner_pad = String.duplicate(indent, depth + 1)
+    body_str = wrapped_body_to_string(body, depth, indent)
+    head <> " ->\n" <> inner_pad <> body_str
+  end
+
+  # ── Pickup Block Rendering (PICKUP §8) ───────────────────────────────────
+
+  defp render_pickup_block(clauses, depth, indent) do
+    pad_kw = String.duplicate(indent, depth)
+    pad = pad_kw <> indent
+
+    heads = Enum.map(clauses, &pickup_clause_head(&1, depth + 1, indent))
+    rhs_inline = Enum.map(clauses, &pickup_clause_rhs_inline(&1, depth + 1, indent))
+    multiline_rhs? = Enum.any?(rhs_inline, &multiline?/1)
+
+    max_head = max_grapheme_width(heads)
+    align? = max_head <= @alignment_limit
+
+    aligned_lines =
+      if align? do
+        Enum.zip(heads, rhs_inline)
+        |> Enum.map(fn {h, r} ->
+          pad_str = String.duplicate(" ", max_head - grapheme_width(h))
+          pad <> h <> pad_str <> " -> " <> r
+        end)
+      else
+        Enum.zip(heads, rhs_inline)
+        |> Enum.map(fn {h, r} -> pad <> h <> " -> " <> r end)
+      end
+
+    too_long? = Enum.any?(aligned_lines, fn line -> grapheme_width(line) > @max_line_width end)
+
+    clauses_str =
+      cond do
+        multiline_rhs? or too_long? ->
+          clauses
+          |> Enum.zip(heads)
+          |> Enum.map(fn {clause, head} ->
+            render_pickup_clause_wrapped(clause, head, depth + 1, indent)
+          end)
+          |> Enum.join("\n" <> pad)
+
+        true ->
+          aligned_lines
+          |> Enum.map(&String.trim_leading(&1, pad_kw <> indent))
+          |> Enum.join("\n" <> pad)
+      end
+
+    "pickup\n" <> pad <> clauses_str
+  end
+
+  defp pickup_clause_head({:pickup_else, _meta, [_body]}, _depth, _indent), do: "else"
+
+  defp pickup_clause_head({:pickup_clause, _meta, [guard, _body]}, depth, indent) do
+    to_string(guard, depth, indent)
+  end
+
+  defp pickup_clause_rhs_inline({:pickup_else, _meta, [body]}, depth, indent) do
+    to_string(body, depth, indent)
+  end
+
+  defp pickup_clause_rhs_inline({:pickup_clause, _meta, [_guard, body]}, depth, indent) do
+    to_string(body, depth, indent)
+  end
+
+  defp render_pickup_clause_wrapped({:pickup_else, _meta, [body]}, _head, depth, indent) do
+    inner_pad = String.duplicate(indent, depth + 1)
+    body_str = wrapped_body_to_string(body, depth, indent)
+    "else ->\n" <> inner_pad <> body_str
+  end
+
+  defp render_pickup_clause_wrapped({:pickup_clause, _meta, [_guard, body]}, head, depth, indent) do
+    inner_pad = String.duplicate(indent, depth + 1)
+    body_str = wrapped_body_to_string(body, depth, indent)
+    head <> " ->\n" <> inner_pad <> body_str
+  end
+
+  # PICKUP §8.3: a trailing `true ->` clause is normalised to `else ->`.
+  # Non-terminal `true ->` clauses are left alone (the type checker
+  # will raise W-PICKUP-UNREACHABLE for the clauses that follow).
+  defp normalize_pickup_terminator([]), do: []
+
+  defp normalize_pickup_terminator(clauses) do
+    {init, [last]} = Enum.split(clauses, length(clauses) - 1)
+
+    normalised_last =
+      case last do
+        {:pickup_clause, meta, [{:literal, _, true}, body]} ->
+          {:pickup_else, meta, [body]}
+
+        _ ->
+          last
+      end
+
+    init ++ [normalised_last]
+  end
+
+  # When the right-hand side is a multi-line block, we render it as a
+  # block expression with the appropriate indentation. Otherwise we
+  # render it inline (using the standard printer), which is fine for
+  # any expression that fits on a single line.
+  defp wrapped_body_to_string({:block, meta, exprs} = block, depth, indent) do
+    case Keyword.get(meta, :block_shape) do
+      :brace ->
+        body = Enum.map_join(exprs, "; ", &to_string(&1, depth + 1, indent))
+        "{ " <> body <> " }"
+
+      :end ->
+        body = Enum.map_join(exprs, "; ", &to_string(&1, depth + 1, indent))
+        body <> "; end"
+
+      _ ->
+        # Render each statement on its own line, indented one step
+        # deeper than the clause head.
+        inner_pad = String.duplicate(indent, depth + 1)
+
+        exprs
+        |> Enum.map(&to_string(&1, depth + 1, indent))
+        |> Enum.join("\n" <> inner_pad)
+        |> case do
+          "" -> to_string(block, depth + 1, indent)
+          rendered -> rendered
+        end
+    end
+  end
+
+  defp wrapped_body_to_string(other, depth, indent) do
+    to_string(other, depth + 1, indent)
+  end
+
+  defp multiline?(str) when is_binary(str), do: String.contains?(str, "\n")
+
+  defp grapheme_width(str) when is_binary(str), do: String.length(str)
+
+  defp max_grapheme_width([]), do: 0
+
+  defp max_grapheme_width(list) do
+    list
+    |> Enum.map(&grapheme_width/1)
+    |> Enum.max()
+  end
 end

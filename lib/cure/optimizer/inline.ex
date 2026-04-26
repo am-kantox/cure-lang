@@ -145,6 +145,14 @@ defmodule Cure.Optimizer.Inline do
     has_side_effects?(c) or has_side_effects?(t) or has_side_effects?(e)
   end
 
+  defp has_side_effects?({:pickup, _, clauses}) do
+    Enum.any?(clauses, fn
+      {:pickup_clause, _, [g, b]} -> has_side_effects?(g) or has_side_effects?(b)
+      {:pickup_else, _, [b]} -> has_side_effects?(b)
+      _ -> false
+    end)
+  end
+
   defp has_side_effects?({:assignment, _, [_, val]}), do: has_side_effects?(val)
 
   defp has_side_effects?(_), do: false
@@ -153,6 +161,15 @@ defmodule Cure.Optimizer.Inline do
   defp ast_size({:unary_op, _, [operand]}), do: 1 + ast_size(operand)
   defp ast_size({:function_call, _, args}), do: 1 + Enum.sum(Enum.map(args, &ast_size/1))
   defp ast_size({:conditional, _, [c, t, e]}), do: 1 + ast_size(c) + ast_size(t) + ast_size(e)
+
+  defp ast_size({:pickup, _, clauses}) do
+    Enum.reduce(clauses, 1, fn
+      {:pickup_clause, _, [g, b]}, acc -> acc + ast_size(g) + ast_size(b)
+      {:pickup_else, _, [b]}, acc -> acc + ast_size(b)
+      _, acc -> acc
+    end)
+  end
+
   defp ast_size(_), do: 1
 
   # -- Phase 2: substitute call sites -----------------------------------------
@@ -207,6 +224,22 @@ defmodule Cure.Optimizer.Inline do
     {{:conditional, meta, [c, t, e]}, count}
   end
 
+  defp do_inline({:pickup, meta, clauses}, inlinables, count) do
+    {clauses, count} =
+      Enum.map_reduce(clauses, count, fn
+        {:pickup_clause, cmeta, [g, b]}, c ->
+          {g, c} = do_inline(g, inlinables, c)
+          {b, c} = do_inline(b, inlinables, c)
+          {{:pickup_clause, cmeta, [g, b]}, c}
+
+        {:pickup_else, cmeta, [b]}, c ->
+          {b, c} = do_inline(b, inlinables, c)
+          {{:pickup_else, cmeta, [b]}, c}
+      end)
+
+    {{:pickup, meta, clauses}, count}
+  end
+
   defp do_inline({:assignment, meta, [pat, val]}, inlinables, count) do
     {val, count} = do_inline(val, inlinables, count)
     {{:assignment, meta, [pat, val]}, count}
@@ -239,6 +272,17 @@ defmodule Cure.Optimizer.Inline do
 
   defp substitute({:conditional, meta, [c, t, e]}, bindings) do
     {:conditional, meta, [substitute(c, bindings), substitute(t, bindings), substitute(e, bindings)]}
+  end
+
+  defp substitute({:pickup, meta, clauses}, bindings) do
+    {:pickup, meta,
+     Enum.map(clauses, fn
+       {:pickup_clause, cmeta, [g, b]} ->
+         {:pickup_clause, cmeta, [substitute(g, bindings), substitute(b, bindings)]}
+
+       {:pickup_else, cmeta, [b]} ->
+         {:pickup_else, cmeta, [substitute(b, bindings)]}
+     end)}
   end
 
   defp substitute(ast, _bindings), do: ast

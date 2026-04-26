@@ -736,6 +736,10 @@ defmodule Cure.Compiler.Codegen do
       {:pattern_match, meta, [scrutinee | arms]} ->
         compile_pattern_match(meta, scrutinee, arms, state)
 
+      # Pickup -- predicate dispatch (docs/PICKUP.md)
+      {:pickup, meta, clauses} ->
+        compile_pickup(meta, clauses, state)
+
       # Block
       {:block, _meta, exprs} ->
         compile_block(exprs, state)
@@ -1338,6 +1342,66 @@ defmodule Cure.Compiler.Codegen do
        ]}
 
     {form, state}
+  end
+
+  # -- Pickup (predicate dispatch, docs/PICKUP.md) -----------------------------
+  #
+  # `pickup` lowers to a right-nested `case` expression on `Bool`,
+  # preserving guard evaluation order and ensuring no speculative guard
+  # execution. The compiler reuses the existing `:case` Erlang form so
+  # downstream optimisers (BEAM core, Cure's own dead-code pass) can
+  # already reason about the structure.
+  #
+  # PICKUP §15 forbids speculative guard execution; the right-nested
+  # `case` lowering trivially honours that because the next guard is
+  # only evaluated inside the `false` arm of the previous one.
+
+  defp compile_pickup(meta, clauses, state) do
+    line = Keyword.get(meta, :line, state.line)
+    {form, state} = compile_pickup_clauses(clauses, line, state)
+    {form, state}
+  end
+
+  # The terminator clause: emit its body as the bare expression.
+  defp compile_pickup_clauses([{:pickup_else, _meta, [body]}], _line, state) do
+    do_compile_expr(body, state)
+  end
+
+  # A trailing `true ->` clause is the alternative-form terminator
+  # PICKUP §5.2 admits; treat it as the else.
+  defp compile_pickup_clauses(
+         [{:pickup_clause, _cmeta, [{:literal, _, true}, body]}],
+         _line,
+         state
+       ) do
+    do_compile_expr(body, state)
+  end
+
+  # Guard clause followed by anything: emit a 2-arm `case`. We share
+  # the state across guard / body compilation to keep variable bindings
+  # introduced by the guard expression visible to the body.
+  defp compile_pickup_clauses([{:pickup_clause, cmeta, [guard, body]} | rest], line, state) do
+    cline = Keyword.get(cmeta, :line, line)
+
+    {guard_form, state} = do_compile_expr(guard, state)
+    {body_form, state} = do_compile_expr(body, state)
+    {else_form, state} = compile_pickup_clauses(rest, line, state)
+
+    form =
+      {:case, cline, guard_form,
+       [
+         {:clause, cline, [{:atom, cline, true}], [], [body_form]},
+         {:clause, cline, [{:atom, cline, false}], [], [else_form]}
+       ]}
+
+    {form, state}
+  end
+
+  # Defensive fallback: an empty clause list (the parser should already
+  # have rejected this with E-PICKUP-NO-ELSE) lowers to `:ok` so codegen
+  # remains total.
+  defp compile_pickup_clauses([], line, state) do
+    {{:atom, line, :ok}, state}
   end
 
   # -- Pattern Match (match expr) ----------------------------------------------

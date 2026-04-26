@@ -114,6 +114,26 @@ defmodule Cure.Optimizer.ConstantFold do
     {{:list, meta, elems}, count}
   end
 
+  # `pickup` -- predicate dispatch. Fold every guard and body in place
+  # so constant predicates (`0 < 1`) collapse the same way they would
+  # inside an `if` chain. PICKUP §15 admits this fold; the structural
+  # well-formedness checks in the parser keep the clause list legal.
+  defp fold({:pickup, meta, clauses}, count) do
+    {clauses, count} =
+      Enum.map_reduce(clauses, count, fn
+        {:pickup_clause, cmeta, [g, b]}, c ->
+          {g, c} = fold(g, c)
+          {b, c} = fold(b, c)
+          {{:pickup_clause, cmeta, [g, b]}, c}
+
+        {:pickup_else, cmeta, [b]}, c ->
+          {b, c} = fold(b, c)
+          {{:pickup_else, cmeta, [b]}, c}
+      end)
+
+    {{:pickup, meta, clauses}, count}
+  end
+
   defp fold({:pattern_match, meta, [scrutinee | arms]}, count) do
     {scrutinee, count} = fold(scrutinee, count)
     {{:pattern_match, meta, [scrutinee | arms]}, count}

@@ -61,9 +61,14 @@ defmodule Cure.V0_21_0Test do
       assert {:container, _, [{:container, _type_meta, [_, _]}]} = ast
     end
 
-    test "E033 is registered" do
-      assert {:ok, text} = Errors.explain("E033")
+    test "E072 is registered (formerly E033)" do
+      assert {:ok, text} = Errors.explain("E072")
       assert text =~ "Multi-line Type Layout Invalid"
+    end
+
+    test "E033 is reassigned to E-MATCH-BRANCH-MISMATCH per docs/MATCH.md §20" do
+      assert {:ok, text} = Errors.explain("E033")
+      assert text =~ "E-MATCH-BRANCH-MISMATCH"
     end
   end
 
@@ -98,9 +103,14 @@ defmodule Cure.V0_21_0Test do
       assert {:ok, _mod, _warnings} = compile(source)
     end
 
-    test "E032 is registered" do
-      assert {:ok, text} = Errors.explain("E032")
+    test "E071 is registered (formerly E032)" do
+      assert {:ok, text} = Errors.explain("E071")
       assert text =~ "Function Type Payload Invalid"
+    end
+
+    test "E032 is reassigned to W-MATCH-UNREACHABLE per docs/MATCH.md §20" do
+      assert {:ok, text} = Errors.explain("E032")
+      assert text =~ "W-MATCH-UNREACHABLE"
     end
   end
 

@@ -46,7 +46,7 @@ defmodule Cure.Compiler.Lexer do
   # at block-prefix position.
   @keywords ~w(
     mod fn let type rec proto impl fsm local use as
-    match if elif else then for do end
+    match pickup if elif else then for do end
     in try catch finally throw return yield
     spawn send receive after
     actor

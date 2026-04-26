@@ -38,6 +38,9 @@ defmodule Cure.Types.PatternChecker do
 
   @type check_result :: :exhaustive | {:non_exhaustive, [String.t()]} | {:redundant, [integer()]}
 
+  @typedoc "Indices (0-based) of clauses that are statically unreachable."
+  @type reachability_result :: [non_neg_integer()]
+
   # -- Public API --------------------------------------------------------------
 
   @doc """
@@ -70,6 +73,54 @@ defmodule Cure.Types.PatternChecker do
     # Extract first pattern from each clause
     first_patterns = Enum.map(clause_pattern_lists, &hd/1)
     check_match(param_type, first_patterns)
+  end
+
+  @doc """
+  Compute the indices of clauses that are statically unreachable.
+
+  A clause is unreachable when an earlier clause covers every value
+  that the later one would match. The implementation here is sound
+  but conservative — it reports the obvious cases mandated by
+  `docs/MATCH.md` §6.4 (a wildcard / variable / open-tail constructor
+  pattern absorbs everything that follows; a duplicated literal /
+  closed constructor head with the same arity is shadowed) and stays
+  silent when the analysis would be unsound (e.g. clauses with
+  arbitrary `when` guards).
+
+  Returns a list of zero-based indices into the input list.
+  """
+  @spec check_reachability(term(), [tuple()]) :: reachability_result()
+  def check_reachability(_scrutinee_type, patterns) when is_list(patterns) do
+    shapes = Enum.map(patterns, &classify_pattern/1)
+
+    {_seen_wildcard, _absorbed_shapes, unreachable} =
+      shapes
+      |> Enum.with_index()
+      |> Enum.reduce({false, MapSet.new(), []}, fn {shape, idx}, {wild?, seen, acc} ->
+        cond do
+          # Index 0 is always reachable.
+          idx == 0 ->
+            new_wild? = wild? or shape == :wildcard
+            {new_wild?, MapSet.put(seen, shape), acc}
+
+          # Any clause after a wildcard/variable absorber is unreachable.
+          wild? ->
+            {true, seen, [idx | acc]}
+
+          # An exact head-shape repeat is unreachable when the head shape
+          # is closed (literal, constructor at fixed arity, empty list,
+          # tuple of arity n, fully-keyed map etc.). The classifier
+          # already collapses these to ground terms.
+          shape != :wildcard and MapSet.member?(seen, shape) ->
+            {wild?, seen, [idx | acc]}
+
+          true ->
+            new_wild? = shape == :wildcard
+            {new_wild?, MapSet.put(seen, shape), acc}
+        end
+      end)
+
+    Enum.reverse(unreachable)
   end
 
   @doc """

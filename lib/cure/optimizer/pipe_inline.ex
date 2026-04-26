@@ -66,6 +66,26 @@ defmodule Cure.Optimizer.PipeInline do
     {{:conditional, meta, [c, t, e]}, count}
   end
 
+  # `pickup` -- predicate dispatch (docs/PICKUP.md). Recurse through
+  # every guard and body so pipe inlining still applies inside the
+  # arms. The clause shape is preserved so downstream codegen still
+  # sees a well-formed pickup AST.
+  defp inline({:pickup, meta, clauses}, count) do
+    {clauses, count} =
+      Enum.map_reduce(clauses, count, fn
+        {:pickup_clause, cmeta, [guard, body]}, c ->
+          {guard, c} = inline(guard, c)
+          {body, c} = inline(body, c)
+          {{:pickup_clause, cmeta, [guard, body]}, c}
+
+        {:pickup_else, cmeta, [body]}, c ->
+          {body, c} = inline(body, c)
+          {{:pickup_else, cmeta, [body]}, c}
+      end)
+
+    {{:pickup, meta, clauses}, count}
+  end
+
   defp inline({:assignment, meta, [pattern, value]}, count) do
     {value, count} = inline(value, count)
     {{:assignment, meta, [pattern, value]}, count}

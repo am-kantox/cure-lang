@@ -675,7 +675,45 @@ defmodule Cure.Compiler.Errors do
     statically.
     """,
     "E032" => """
-    E032: Function Type Payload Invalid
+    E032: Match Clause Unreachable (W-MATCH-UNREACHABLE)
+
+    A `match` arm is provably shadowed by an earlier arm, so its
+    pattern can never match (its guard, if any, is therefore never
+    evaluated). The compiler emits this as a warning under MATCH §6.4
+    so unreachable clauses surface during compilation rather than at
+    review time.
+
+    Example:
+      match x
+        _ -> :a       # wildcard absorbs everything
+        0 -> :b       # warning E032: unreachable
+
+    Fix: reorder the arms so more specific patterns come first, drop
+    the redundant arm, or tighten the earlier pattern (or its guard)
+    so the later arm is reachable. Numeric code reserved by
+    `docs/MATCH.md` §20 -- the descriptive alias is `W-MATCH-UNREACHABLE`.
+    """,
+    "E033" => """
+    E033: Match Branches Have No Common Type (E-MATCH-BRANCH-MISMATCH)
+
+    The right-hand sides of two or more `match` arms produce values
+    whose types do not admit a least upper bound under the
+    language's existing subtyping rules. The result type of the
+    whole `match` is therefore undefined.
+
+    Example:
+      match x
+        "yes" -> 1     # Int
+        42    -> "two" # String
+      # error E033: branches have no common upper bound
+
+    Fix: change the bodies so all arms produce the same type, or
+    explicitly widen via `assert_type` or a sum-type wrapper. Numeric
+    code reserved by `docs/MATCH.md` §20 -- the descriptive alias is
+    `E-MATCH-BRANCH-MISMATCH`.
+    """,
+    "E071" => """
+    E071: Function Type Payload Invalid
 
     An ADT constructor payload carries a value whose type cannot be
     resolved. The most common trigger is a bare identifier that does
@@ -688,9 +726,12 @@ defmodule Cure.Compiler.Errors do
 
     Fix: use a concrete type, a declared type alias, or a function
     arrow for callable payloads.
+
+    History: this diagnostic was previously code `E032`. The number
+    was reassigned to `W-MATCH-UNREACHABLE` per `docs/MATCH.md` §20.
     """,
-    "E033" => """
-    E033: Multi-line Type Layout Invalid
+    "E072" => """
+    E072: Multi-line Type Layout Invalid
 
     A `type` ADT declaration spans multiple lines but the layout
     cannot be absorbed by `parse_type_def/1`. This usually means the
@@ -707,6 +748,167 @@ defmodule Cure.Compiler.Errors do
       type Shape =
         | Circle(Int)
         | Square(Int)
+
+    History: this diagnostic was previously code `E033`. The number
+    was reassigned to `E-MATCH-BRANCH-MISMATCH` per `docs/MATCH.md`
+    §20.
+    """,
+    "E073" => """
+    E073: Empty Match Block (E-MATCH-EMPTY)
+
+    A `match` expression has no clauses. Empty `match` blocks are
+    rejected at the macro-invocation site per `docs/MATCH.md` §17,
+    so a macro that constructs a `match` AST without any clauses is
+    flagged here rather than at runtime.
+
+    Fix: ensure every macro-generated `match` has at least one clause,
+    or guard the macro so the empty case never reaches expansion.
+    """,
+    "E074" => """
+    E074: Bare Nullary Constructor in Pattern (E-MATCH-NULLARY-NEEDS-PARENS)
+
+    A pattern position carries a bare PascalCase identifier such as
+    `None`. `docs/MATCH.md` §5.12 requires nullary constructors to be
+    written with explicit empty parentheses so the parser can tell
+    them apart from a regular variable binding (which is lowercase).
+
+    Example:
+      match opt
+        Some(x) -> x
+        None    -> default     # error: write `None()`
+
+    Fix: rewrite the pattern as `None()`. The compiler ships a code
+    action that performs the rewrite automatically.
+    """,
+    "E075" => """
+    E075: Constructor Arity Mismatch in Pattern (E-MATCH-CONSTRUCTOR-ARITY)
+
+    A constructor pattern is applied to a different number of
+    arguments than the constructor was declared with. `docs/MATCH.md`
+    §5.12 requires the pattern arity to match the declaration.
+
+    Example:
+      type Pair = P(Int, Int)
+
+      match p
+        P(x) -> x         # error: P/2 received 1 argument
+
+    Fix: change the pattern to match the declared arity, or change
+    the type so the constructor accepts the new shape.
+    """,
+    "E076" => """
+    E076: pickup Without else (E-PICKUP-NO-ELSE)
+
+    A `pickup` block does not end in a mandatory terminating clause.
+    `docs/PICKUP.md` §5.2 requires every `pickup` to end in either
+    `else -> ...` (canonical) or a trailing `true -> ...` (alternative
+    form normalised by the formatter).
+
+    Example:
+      pickup
+        x > 0 -> :positive
+        x < 0 -> :negative
+      # error E076: missing terminator
+
+    Fix: add a final `else -> ...` arm. The language server provides
+    an "Add missing else" code action.
+    """,
+    "E077" => """
+    E077: pickup else Not Last (E-PICKUP-ELSE-NOT-LAST)
+
+    A `pickup` block has a clause after the `else ->` terminator.
+    `docs/PICKUP.md` §4.1 forbids any clause after the terminator,
+    because subsequent clauses would be unreachable by construction.
+
+    Fix: move the `else ->` arm to the end of the block, or delete
+    the trailing clauses.
+    """,
+    "E078" => """
+    E078: pickup Has Multiple else (E-PICKUP-MULTIPLE-ELSE)
+
+    A `pickup` block contains more than one `else ->` arm. Per
+    `docs/PICKUP.md` §4.1 the terminator is unique.
+
+    Fix: keep one terminator and inline or relocate the other arms.
+    """,
+    "E079" => """
+    E079: pickup Guard Not Bool (E-PICKUP-GUARD-TYPE)
+
+    A `pickup` guard expression has a type other than `Bool`. `pickup`
+    is strict about guard typing per `docs/PICKUP.md` §5.1; there is
+    no truthy/falsy coercion.
+
+    Example:
+      pickup
+        "yes" -> :positive    # error: guard is String
+        else  -> :other
+
+    Fix: rewrite the guard as a Boolean expression, e.g.
+    `name == "yes"` or `is_positive?(n)`.
+    """,
+    "E080" => """
+    E080: pickup Branch Type Mismatch (E-PICKUP-BRANCH-MISMATCH)
+
+    The right-hand sides of two or more `pickup` clauses produce
+    values whose types do not admit a least upper bound. `pickup`'s
+    branch-join rule is identical to `match`'s; see `docs/PICKUP.md`
+    §5.6.
+
+    Fix: align the branch types, wrap one branch in a sum type, or
+    use `assert_type` to widen explicitly.
+    """,
+    "W081" => """
+    W081: pickup Guard Unreachable (W-PICKUP-UNREACHABLE)
+
+    A `pickup` guard is provably shadowed by a constant-true earlier
+    guard, so it (and any subsequent guards) can never be evaluated.
+    `docs/PICKUP.md` §5.3 mandates a sound, possibly incomplete
+    reachability check; the implementation reports the obvious
+    constant-`true` short-circuit case here.
+
+    Fix: reorder the clauses, drop the dead arm, or replace the
+    constant-true guard with a real condition.
+    """,
+    "W082" => """
+    W082: pickup Terminator Unreachable (W-PICKUP-DEAD-ELSE)
+
+    A `pickup` terminator can be shown unreachable because some
+    earlier guard is statically `true`. The terminator is preserved
+    syntactically so the totality property of `pickup` still holds,
+    but the dead branch is reported as a warning per
+    `docs/PICKUP.md` §5.3.
+
+    Fix: drop the unreachable terminator or, if it is the intended
+    branch, demote the redundant constant-true guard above it.
+    """,
+    "H083" => """
+    H083: pickup `true ->` Normalised to `else ->` (H-PICKUP-PREFER-ELSE)
+
+    The formatter rewrote a trailing `true -> ...` arm into the
+    canonical `else -> ...` form. Both forms compile identically, but
+    `else ->` reads as the default arm and is the surface form
+    `docs/PICKUP.md` §8.3 prescribes.
+    """,
+    "H084" => """
+    H084: Degenerate `pickup` Reduced (H-PICKUP-DEGENERATE)
+
+    A `pickup` block whose only clause is the terminator was reduced
+    to its right-hand side by the formatter. Per `docs/PICKUP.md`
+    §8.6 the wrapping `pickup` carries no behaviour beyond evaluating
+    its single body, so removing it produces equivalent code.
+    """,
+    "E085" => """
+    E085: `if` Removed -- Use `pickup` (E-IF-REMOVED)
+
+    `docs/PICKUP.md` §17 retires the `if`/`elif`/`then` keywords in
+    favour of `pickup`. The current release keeps the parser
+    permissive so legacy sources still compile, but `cure check`
+    surfaces this hint so authors can migrate. The `mix cure.rewrite`
+    task produces the canonical replacement automatically.
+
+    Fix: replace the `if` chain with a `pickup` block, or run
+    `mix cure.rewrite if-to-pickup <path>` to convert the file in
+    place.
     """,
     "E034" => """
     E034: Let Pattern Not Exhaustive
