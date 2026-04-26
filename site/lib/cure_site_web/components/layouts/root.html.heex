@@ -8,9 +8,39 @@
       name="description"
       content="Dependently-typed programming language for the BEAM with first-class FSMs and SMT-backed verification."
     />
-    <.live_title default="Cure" suffix=" -- Dependently-Typed BEAM Language">
+    <.live_title default="Cure" suffix=" — Dependently-Typed BEAM Language">
       {assigns[:page_title]}
     </.live_title>
+
+    <%!-- OpenGraph / Twitter card metadata for link previews --%>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cure — Dependently-Typed BEAM Language" />
+    <meta
+      property="og:title"
+      content={(assigns[:page_title] || "Cure") <> " — Dependently-Typed BEAM Language"}
+    />
+    <meta
+      property="og:description"
+      content="Dependently-typed programming language for the BEAM with first-class FSMs and SMT-backed verification."
+    />
+    <meta property="og:image" content={url(~p"/images/logo-128x128-nobg.png")} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="128" />
+    <meta property="og:image:height" content="128" />
+    <meta property="og:image:alt" content="Cure language logo" />
+    <meta property="og:url" content={Phoenix.Controller.current_url(@conn)} />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      name="twitter:title"
+      content={(assigns[:page_title] || "Cure") <> " — Dependently-Typed BEAM Language"}
+    />
+    <meta
+      name="twitter:description"
+      content="Dependently-typed programming language for the BEAM with first-class FSMs and SMT-backed verification."
+    />
+    <meta name="twitter:image" content={url(~p"/images/logo-128x128-nobg.png")} />
+    <meta name="twitter:image:alt" content="Cure language logo" />
+
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <Yeesh.Live.TerminalComponent.xterm_style />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>

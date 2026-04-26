@@ -134,7 +134,8 @@ defmodule CureSite.MarkdownConverter do
     # while Earmark and plain CommonMark renderers drop the `language-`
     # prefix. The regex accepts both forms so we can stay agnostic if
     # the renderer ever changes.
-    code_block_regex = ~r|<pre><code\s+class="(?:language-)?(?<lang>[^"\s]+)">(?<body>[^<]*)</code></pre>|
+    code_block_regex =
+      ~r|<pre><code\s+class="(?:language-)?(?<lang>[^"\s]+)">(?<body>[^<]*)</code></pre>|
 
     Regex.replace(code_block_regex, html, fn _full, lang, escaped_body ->
       case Makeup.Registry.fetch_lexer_by_name(lang) do
