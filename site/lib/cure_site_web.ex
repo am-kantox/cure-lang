@@ -17,7 +17,11 @@ defmodule CureSiteWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  # `robots.txt` is intentionally NOT listed here: it is rendered by
+  # `CureSiteWeb.SitemapController.robots/2` so the `Sitemap:`
+  # directive can carry an absolute URL derived from the running
+  # endpoint instead of a hardcoded host.
+  def static_paths, do: ~w(assets fonts images favicon.ico)
 
   def router do
     quote do

@@ -41,6 +41,19 @@
     <meta name="twitter:image" content={url(~p"/images/logo-128x128-nobg.png")} />
     <meta name="twitter:image:alt" content="Cure language logo" />
 
+    <%!-- Sitemap discovery for crawlers that honour the link tag --%>
+    <link rel="sitemap" type="application/xml" title="Sitemap" href={~p"/sitemap.xml"} />
+
+    <%!-- Schema.org / JSON-LD structured data. The baseline
+         WebSite + Organization records are always emitted; route-
+         specific schemas (TechArticle, APIReference, HowTo, ...) are
+         opted in via `assigns[:json_ld]`. --%>
+    <%= for json <- CureSiteWeb.JsonLd.entries(assigns) do %>
+      <script type="application/ld+json">
+        <%= Phoenix.HTML.raw(json) %>
+      </script>
+    <% end %>
+
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <Yeesh.Live.TerminalComponent.xterm_style />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>

@@ -23,6 +23,7 @@ defmodule CureSiteWeb.PlaygroundLive do
     {:ok,
      socket
      |> assign(:page_title, "Cure Playground")
+     |> assign(:json_ld, CureSiteWeb.JsonLd.for_playground())
      |> assign(:source, source)
      |> assign(:highlighted, highlighted)
      |> assign(:type_result, type_result)

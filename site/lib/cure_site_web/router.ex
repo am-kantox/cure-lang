@@ -14,13 +14,38 @@ defmodule CureSiteWeb.Router do
     plug :accepts, ["json"]
   end
 
-  # Chrome DevTools probes this path; return 204 to silence the error.
+  # `/.well-known/llms.txt` (and casing variants) take precedence
+  # over the generic catch-all `noop` so LLM-oriented crawlers see
+  # the document instead of a 204 No Content. Chrome DevTools and
+  # similar probes still hit the catch-all underneath.
+  scope "/.well-known", CureSiteWeb do
+    get "/llms.txt", LlmsController, :index
+    get "/llm.txt", LlmsController, :index
+    get "/LLM.txt", LlmsController, :index
+    get "/LLMS.txt", LlmsController, :index
+  end
+
   scope "/.well-known" do
     get "/*path", CureSiteWeb.WellKnownController, :noop
   end
 
   scope "/", CureSiteWeb do
     pipe_through :browser
+
+    # Crawler discovery: served from the router so the absolute URLs
+    # they emit reflect the live endpoint configuration. Both routes
+    # take precedence over `priv/static/*` because `static_paths/0`
+    # no longer lists `robots.txt`.
+    get "/sitemap.xml", SitemapController, :index
+    get "/robots.txt", SitemapController, :robots
+
+    # `llms.txt` (https://llmstxt.org). Phoenix routes are case-
+    # sensitive, so each casing variant the spec suggests gets its
+    # own entry. All four funnel through `LlmsController.index/2`.
+    get "/llms.txt", LlmsController, :index
+    get "/llm.txt", LlmsController, :index
+    get "/LLM.txt", LlmsController, :index
+    get "/LLMS.txt", LlmsController, :index
 
     get "/", PageController, :home
     get "/blog", BlogController, :index

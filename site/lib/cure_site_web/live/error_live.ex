@@ -20,9 +20,15 @@ defmodule CureSiteWeb.ErrorLive do
         _ -> nil
       end
 
+    json_ld =
+      if status,
+        do: CureSiteWeb.JsonLd.for_error(status),
+        else: CureSiteWeb.JsonLd.for_repl()
+
     {:ok,
      socket
      |> assign(:page_title, if(status, do: error_title(status), else: "Cure REPL"))
+     |> assign(:json_ld, json_ld)
      |> assign(:status, status)}
   end
 
