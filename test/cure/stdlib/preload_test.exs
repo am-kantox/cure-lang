@@ -168,6 +168,15 @@ defmodule Cure.Stdlib.PreloadTest do
       empty = make_tmp!()
       Application.put_env(:cure, :stdlib_beam_dir, empty)
 
+      # `mix cure.compile_stdlib` (now part of the umbrella `:compile`
+      # alias) registers `_build/cure/ebin` on the global Erlang code
+      # path, so a bare `Code.ensure_loaded?/1` would lazily reload the
+      # module from disk after we purge it, defeating the point of
+      # this test. Hide every directory that currently provides a
+      # `<module>.beam` for the duration of the test and restore them
+      # afterwards.
+      hidden_paths = hide_module_from_code_path(module)
+
       # Evict the module first. We rely on `priv/std/list.cure` being
       # bundled already (Mix.Tasks.Cure.BundleStdlib runs on every
       # compile).
@@ -179,6 +188,8 @@ defmodule Cure.Stdlib.PreloadTest do
         assert Preload.compile_missing_from_sources(:collections) == :ok
         assert Code.ensure_loaded?(module)
       after
+        Enum.each(hidden_paths, &:code.add_patha/1)
+
         case previous_beam do
           nil -> Application.delete_env(:cure, :stdlib_beam_dir)
           value -> Application.put_env(:cure, :stdlib_beam_dir, value)
@@ -236,5 +247,25 @@ defmodule Cure.Stdlib.PreloadTest do
         _ -> nil
       end
     end)
+  end
+
+  # Remove every directory currently on the Erlang code path that
+  # holds a BEAM file matching `module` and return the list of
+  # removed directories (charlists). Callers are expected to restore
+  # them with `:code.add_patha/1` once the test no longer wants the
+  # module to be lazily reloadable from disk.
+  defp hide_module_from_code_path(module) do
+    beam_basename = "#{module}.beam"
+
+    hidden =
+      Enum.filter(:code.get_path(), fn dir ->
+        dir
+        |> List.to_string()
+        |> Path.join(beam_basename)
+        |> File.exists?()
+      end)
+
+    Enum.each(hidden, &:code.del_path/1)
+    hidden
   end
 end
