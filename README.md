@@ -6,100 +6,6 @@ first-class finite state machines and SMT-backed verification.
 Cure compiles `.cure` source files to BEAM bytecode, enabling programs to run
 natively on the Erlang VM alongside Erlang and Elixir code.
 
-## Status
-
-All core milestones complete. The full compilation pipeline is operational:
-lexer, parser, bidirectional type checker with record types, refinement types
-and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
-FSM compilation with structural verification, effect system, documentation
-generator, formatter, stdlib, CLI, CI, and example programs.
-
-v0.30.0 themes itself "John" -- a tribute to **John Carbajal**,
-whose knack for spotting the one line on a dashboard that actually
-mattered inspired the release's headline feature. `mix cure.john`,
-`cure john`, and the `:john` REPL meta-command all funnel into one
-panoramic diagnostic that gathers everything worth knowing about
-Cure, the BEAM VM, the project currently under the cursor, and the
-last few log entries, and prints it as Markdown-to-ANSI. See
-[`docs/JOHN.md`](docs/JOHN.md) for the authoritative reference.
-Everything else in v0.30.0 is quiet: a handful of bugfixes and
-documentation refreshes.
-
-v0.29.0 themes itself "Make Documentation Great" and is the
-documentation release. `cure doc` now produces an ExDoc-like
-two-pane site driven by a new `[doc]` section in `Cure.toml`
-(`main`, `title`, `extras`, `[doc.groups_for_modules]`); module docs
-render as Markdown (via the NIF-free `:md` library) with
-Makeup-powered syntax highlighting for `cure` / `elixir` / `erlang`
-fenced code. Every module under `lib/std/` carries a module-level
-`## Examples` block, four high-traffic `Std.Core` functions carry
-per-function examples, and the Cure website ships `/stdlib` and
-`/stdlib/:module` pages (`CureSite.Stdlib` bundles the same `.cure`
-sources at site compile time). The REPL's `:help` / `:doc` output
-graduates to a block-aware Markdown-to-ANSI renderer, the parser
-merges consecutive `##` doc-comment blocks across blank-line gaps, a
-standalone highlight.js language description ships under
-`highlightjs-cure/`, and both the Vim (`vicure/`) and VS Code
-(`vscode-cure/`) plugins are re-aligned with the current grammar.
-See [`docs/DOC.md`](docs/DOC.md) for the `cure doc` reference and
-[`docs/TUTORIAL.md`](docs/TUTORIAL.md) Chapter 13 for a walkthrough.
-
-v0.28.0 shipped "Talk Back" -- parser error recovery
-(`E063`), "did you mean?" suggestions everywhere,
-`cure fmt --dry-run`, `cure bless` (Socratic type-error assistant),
-`@record` + `cure replay` (FSM time-travel), a Playground with
-live type-checking and a sandboxed evaluator, and a type-checker
-bug fix for ill-typed polymorphic lambdas. v0.28.1 and v0.28.2
-followed with REPL top-level declarations (`Cure.REPL.Session`)
-and session-signature installation into the type-checker env.
-
-v0.27.0 themes itself "See Your System Breathe" and adds the
-observability and verification surface around v0.26.0's OTP
-applications. It ships `Cure.OTel` (OpenTelemetry-compatible span
-bridge), `cure top` (snapshot-based runtime observer), `cure trace`
-(typed :dbg wrapper), `Cure.Temporal` (LTL-style bounded model
-checker over FSMs), `Cure.Protocol` (session-typed binary protocols
-between actors), `Cure.Types.Synth` (typed-hole suggestions via
-`cure synth`), three new stdlib modules (`Std.Time`, `Std.Regex`,
-`Std.CRDT`), and OSC 8 clickable-filepath error messages via
-`Cure.Term.Hyperlink`. A LiveView Playground lands on
-[cure-lang.org/playground](https://cure-lang.org/playground) and
-`examples/cure_atelier/` exercises every new surface end to end. See
-[`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md),
-[`docs/TEMPORAL.md`](docs/TEMPORAL.md),
-[`docs/PROTOCOL.md`](docs/PROTOCOL.md), and
-[`docs/PLAYGROUND.md`](docs/PLAYGROUND.md) for the on-disk references.
-
-v0.26.0 promoted the supervision surface into a full OTP application
-lifecycle. A new `app` container declares the project's OTP application
-in Cure source; it compiles to a loaded `Application` callback module,
-emits an `<name>.app` OTP resource file, and is buildable as a
-self-contained BEAM release with `cure release` (or `mix cure.release`).
-The release introduces `[application]` and `[release]` sections in
-`Cure.toml`, adds `Std.App` to the stdlib (a thin wrapper around
-`:application`), catalogues five new error codes (`E051`-`E055`), and
-ships `examples/cure_forge/` as the canonical end-to-end showcase.
-See [`docs/APP.md`](docs/APP.md) for the on-disk reference and
-[cure-lang.org/applications](https://cure-lang.org/applications) for
-the web version.
-
-v0.25.0 lands typed supervision trees on top of OTP. The release
-introduces the Melquiades Operator `<-|` (unicode alias `✉`) for typed
-sends, an `actor` container that compiles to a loaded `GenServer`
-module, a `sup` container that compiles to a verified `Supervisor`
-behaviour module, and a new stdlib surface (`Std.Actor`,
-`Std.Process`, `Std.Supervisor`) that exposes the runtime from Cure
-source. See [`docs/SUPERVISION.md`](docs/SUPERVISION.md) for the
-on-disk reference and [cure-lang.org/actors](https://cure-lang.org/actors)
-for the web version.
-
-v0.24.0 rewrites the interactive REPL on top of a raw-mode line editor
-with live `Makeup`-powered syntax highlighting, persistent history,
-`Ctrl+R` incremental reverse search, Tab completion, a minimal vi mode,
-and a `Marcli`-rendered `:help`. See
-[`docs/REPL.md`](docs/REPL.md) for the on-disk reference and
-[cure-lang.org/repl](https://cure-lang.org/repl) for the web version.
-
 ## Architecture
 
 ```mermaid
@@ -469,6 +375,98 @@ mix credo --strict
 mix dialyzer
 ```
 
+## Status
+
+All core milestones complete. The full compilation pipeline is operational:
+lexer, parser, bidirectional type checker with record types, refinement types
+and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
+FSM compilation with structural verification, effect system, documentation
+generator, formatter, stdlib, CLI, CI, and example programs.
+### Release history
+- **v0.32.0 -- Trust, Export, Recall, Narrate**: proof-carrying packages
+  (`mix cure.verify`), cross-language ADT export to proto3
+  (`mix cure.export_types`), REPL session snapshots (`cure snap`), and a
+  narrative architecture generator (`cure story`). Error codes `E065`-`E070`.
+- **v0.30.2 / v0.30.1**: `john` polish -- UTF-8 fixes for `mix cure.john`,
+  structured `erl_crash.dump` summaries, ASCII-only banners, dialyzer cleanups.
+- **v0.30.0 -- John**: a single panoramic diagnostic exposed via
+  `mix cure.john`, `cure john`, and the `:john` REPL meta-command; reports
+  Cure / BEAM / system / project / runtime state as Markdown-to-ANSI.
+- **v0.29.0 -- Make Documentation Great**: `cure doc` produces an ExDoc-like
+  two-pane site driven by `[doc]` in `Cure.toml`; stdlib gains `## Examples`
+  blocks; website ships `/stdlib`; REPL gets a block-aware Markdown renderer;
+  Vim and VS Code plugins re-aligned with the current grammar.
+- **v0.28.0 -- Talk Back**: parser error recovery (`E063`), "did you mean?"
+  suggestions, `cure fmt --dry-run`, `cure bless` Socratic type-error
+  assistant, `@record` + `cure replay` FSM time-travel, Playground with live
+  type-checking and sandboxed evaluator. Patches v0.28.1 / v0.28.2 promoted
+  REPL top-level declarations (`Cure.REPL.Session`) into the checker env.
+- **v0.27.0 -- See Your System Breathe**: observability and verification:
+  `Cure.OTel`, `cure top`, `cure trace`, `Cure.Temporal` (LTL bounded model
+  checker), `Cure.Protocol` (session-typed binary protocols),
+  `Cure.Types.Synth` (typed-hole suggestions); new stdlib modules `Std.Time`,
+  `Std.Regex`, `Std.CRDT`; OSC 8 clickable error paths; LiveView Playground.
+- **v0.26.0 -- Applications and Releases**: `app` container, `[application]`
+  / `[release]` sections in `Cure.toml`, `cure release` packaging, `Std.App`.
+  Error codes `E051`-`E055`.
+- **v0.25.0 -- Typed Supervision Trees**: Melquiades Operator `<-|` (alias
+  `✉`), typed `actor` and `sup` containers compiling to `GenServer` /
+  `Supervisor` modules, `Std.Actor` / `Std.Process` / `Std.Supervisor`.
+- **v0.24.0 -- The REPL You Deserve**: raw-mode line editor with live
+  Makeup-powered syntax highlighting, persistent history, `Ctrl+R`
+  incremental search, Tab completion, minimal vi mode, Marcli-rendered
+  `:help`.
+- **v0.23.0 -- Packaging, Proof, and Polish**: remote package registry
+  (`Cure.Project.Registry`), Ed25519 signing, transparency log,
+  `cure publish`, `cure doctor`, `cure fix`, `cure test --cover`, `Std.Json`,
+  `Std.Http`, property shrinking. Error codes `E038`-`E042`.
+- **v0.22.0 -- Loose Ends**: multi-statement lambda bodies (brace and `end`
+  forms), binary comprehension generators, `byte_size` refinements on
+  trailing binary segments, first-class FSM state struct.
+- **v0.21.0 -- Through the Segments**: Erlang-style binary destructuring
+  with exhaustiveness (`E031`), multi-line `type` ADTs, ADT function-arrow
+  payloads, deep `let` destructuring, `@derive(Functor, Monoid, JSON)`,
+  algebra formatter as default, `Std.Access`.
+- **v0.20.0 -- The Shape of Things**: plain `#` comments as AST nodes, full
+  bitstring segment grammar (`<<x::utf8, rest::binary>>`),
+  `Inspect.Algebra`-style pretty printer, structural pattern refinement
+  narrowing.
+- **v0.19.0 -- Bring the Furniture**: `proof` containers, `assert_type`,
+  record field defaults, `@derive(Show, Eq, Ord)`, property-based testing,
+  lazy iterator protocol, package-version resolver, mutual-recursion
+  totality, multi-head cons patterns.
+- **v0.18.0 -- Deep Destructuring**: nested patterns across tuples, lists,
+  maps, records, and ADT constructors; pin operator `^x`; repeated-variable
+  equality guards; record field punning; nested-exhaustiveness analyser.
+- **v0.17.0 -- Proofs & Polish: Toward Idris**: dependent pairs / Pi types /
+  propositional equality, type-level normaliser, unification with implicit
+  args, typed holes, totality checker, path-sensitive refinement, REPL,
+  `cure watch`, LSP inlay hints / rename / semantic tokens, `cure new`,
+  `Cure.lock`, `cure bench`, doctests, MIT license, VS Code extension
+  scaffold.
+- **v0.16.0 -- Finitomata-Inspired FSM Rewrite**: dual-mode FSM compilation,
+  hard (`event!`) / soft (`event?`) suffixes, lifecycle callbacks
+  (`on_enter`, `on_exit`, `on_failure`, `on_timer`), introspection API.
+- **v0.15.0 -- Developer Experience**: public `Cure.quote` / printer API,
+  effect system, HTML doc generator, formatter, first REPL, `Std.Test`.
+- **v0.14.0 -- Real-World Readiness**: `Cure.toml` package management (path
+  deps), cross-module protocol registry, `cure test` with `Std.Test`.
+- **v0.13.0 -- Depth Over Breadth**: dependent-type verification at call
+  sites, type-level arithmetic in return types, LSP code actions /
+  definition / incremental compile, advanced optimizer (inlining /
+  monomorphisation / guard simplification), `Std.Map` / `Std.Set` /
+  `Std.Option` / `Std.Functor`.
+- **v0.12.0 -- The Complete Rewrite**: rewrite from Erlang to Elixir,
+  import resolution, dependent-type representation, typeclass derive, LSP
+  symbols, Z3 model parser, FSM type-safety analysis, Levenshtein-based
+  suggestions.
+- **v0.11.0 -- First Roadmap Complete**: nine self-hosted stdlib modules,
+  protocol/typeclass system, Z3 SMT integration with refinement types,
+  guard refinement, type-directed optimizer, pattern-exhaustiveness
+  checker, FSM runtime, LSP, CLI escript, MCP server.
+- **v0.10.0 -- Project Bootstrap**: initial Elixir project, lexer with
+  indentation tracking, Pratt parser, BEAM codegen, type-system foundation,
+  FSM `gen_statem` compiler, CLI, CI, examples.
 ## License
 
 To be determined.
