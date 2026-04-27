@@ -1420,18 +1420,40 @@ defmodule Cure.Compiler.Errors do
 
   @doc """
   Suggest similar names for typos using Levenshtein distance.
+
+  Both `name` and every entry in `candidates` are coerced to strings
+  before comparison. Atoms are converted via `Atom.to_string/1`; any
+  other shape (including `nil`) is dropped from the candidate list and
+  causes `nil` to be returned when it appears as the `name`. This
+  defends against atom keys leaking out of the type-environment scope
+  maps (e.g. the lexer keyword `:else`), which would otherwise crash
+  `String.length/1` deep inside the Levenshtein loop.
   """
-  @spec suggest(String.t(), [String.t()]) :: String.t() | nil
+  @spec suggest(term(), [term()]) :: String.t() | nil
   def suggest(name, candidates) do
-    candidates
-    |> Enum.map(fn c -> {c, levenshtein(name, c)} end)
-    |> Enum.filter(fn {_, d} -> d > 0 and d <= 2 end)
-    |> Enum.sort_by(fn {_, d} -> d end)
-    |> case do
-      [{best, _} | _] -> best
-      _ -> nil
+    case to_string_safe(name) do
+      nil ->
+        nil
+
+      name_str ->
+        candidates
+        |> Enum.map(&to_string_safe/1)
+        |> Enum.filter(&is_binary/1)
+        |> Enum.map(fn c -> {c, levenshtein(name_str, c)} end)
+        |> Enum.filter(fn {_, d} -> d > 0 and d <= 2 end)
+        |> Enum.sort_by(fn {_, d} -> d end)
+        |> case do
+          [{best, _} | _] -> best
+          _ -> nil
+        end
     end
   end
+
+  # Best-effort coercion to a binary; returns `nil` for anything that
+  # cannot be sensibly displayed as text.
+  defp to_string_safe(value) when is_binary(value), do: value
+  defp to_string_safe(value) when is_atom(value) and not is_nil(value), do: Atom.to_string(value)
+  defp to_string_safe(_), do: nil
 
   @doc """
   Format an error with source context showing the offending line.

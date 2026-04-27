@@ -122,7 +122,10 @@ mod Spline
   local fn monotone_from(prev_x: Float, rest: List(Knot)) -> Bool =
     match rest
       [] -> true
-      [Knot{x: cx} | t] -> if prev_x < cx then monotone_from(cx, t) else false
+      [Knot{x: cx} | t] ->
+        pickup
+          prev_x < cx -> monotone_from(cx, t)
+          else        -> false
 
   # ---------------------------------------------------------------------------
   # Tridiagonal system setup
@@ -230,7 +233,9 @@ mod Spline
       _ -> fit_checked(knots)
 
   local fn fit_checked(knots: List(Knot)) -> Result(Spline, String) =
-    if monotone?(knots) then Ok(build_spline(knots)) else Error("spline: x values must be strictly increasing")
+    pickup
+      monotone?(knots) -> Ok(build_spline(knots))
+      else             -> Error("spline: x values must be strictly increasing")
 
   local fn build_spline(knots: List(Knot)) -> Spline =
     let rows = build_rows(knots)
@@ -244,16 +249,22 @@ mod Spline
   ## Evaluate the spline at `x`. Returns `Error` when `x` is outside
   ## `[spline.x_min, spline.x_max]`.
   fn evaluate(spline: Spline, x: Float) -> Result(Float, String) =
-    if x < spline.x_min then Error("spline: x below domain") else evaluate_upper(spline, x)
+    pickup
+      x < spline.x_min -> Error("spline: x below domain")
+      else             -> evaluate_upper(spline, x)
 
   local fn evaluate_upper(spline: Spline, x: Float) -> Result(Float, String) =
-    if x > spline.x_max then Error("spline: x above domain") else find_and_eval(spline.segments, x)
+    pickup
+      x > spline.x_max -> Error("spline: x above domain")
+      else             -> find_and_eval(spline.segments, x)
 
   local fn find_and_eval(segs: List(Segment), x: Float) -> Result(Float, String) =
     match segs
       [] -> Error("spline: no segment contains x")
       [s | rest] ->
-        if x <= s.x + s.h then Ok(eval_seg(s, x)) else find_and_eval(rest, x)
+        pickup
+          x <= s.x + s.h -> Ok(eval_seg(s, x))
+          else           -> find_and_eval(rest, x)
 
   local fn eval_seg(s: Segment, x: Float) -> Float =
     match s
@@ -268,10 +279,14 @@ mod Spline
     match spline.segments
       [] -> 0.0
       [first_seg | _] ->
-        if x < spline.x_min then eval_seg(first_seg, spline.x_min) else clamp_upper(spline, x)
+        pickup
+          x < spline.x_min -> eval_seg(first_seg, spline.x_min)
+          else             -> clamp_upper(spline, x)
 
   local fn clamp_upper(spline: Spline, x: Float) -> Float =
-    if x > spline.x_max then eval_seg(last_segment(spline.segments), spline.x_max) else inside_value(spline, x)
+    pickup
+      x > spline.x_max -> eval_seg(last_segment(spline.segments), spline.x_max)
+      else             -> inside_value(spline, x)
 
   local fn inside_value(spline: Spline, x: Float) -> Float =
     match evaluate(spline, x)
@@ -280,16 +295,22 @@ mod Spline
 
   ## First derivative S'(x). Returns `Error` outside the spline's domain.
   fn derivative(spline: Spline, x: Float) -> Result(Float, String) =
-    if x < spline.x_min then Error("spline: x below domain") else derivative_upper(spline, x)
+    pickup
+      x < spline.x_min -> Error("spline: x below domain")
+      else             -> derivative_upper(spline, x)
 
   local fn derivative_upper(spline: Spline, x: Float) -> Result(Float, String) =
-    if x > spline.x_max then Error("spline: x above domain") else find_and_diff(spline.segments, x)
+    pickup
+      x > spline.x_max -> Error("spline: x above domain")
+      else             -> find_and_diff(spline.segments, x)
 
   local fn find_and_diff(segs: List(Segment), x: Float) -> Result(Float, String) =
     match segs
       [] -> Error("spline: no segment contains x")
       [s | rest] ->
-        if x <= s.x + s.h then Ok(diff_seg(s, x)) else find_and_diff(rest, x)
+        pickup
+          x <= s.x + s.h -> Ok(diff_seg(s, x))
+          else           -> find_and_diff(rest, x)
 
   local fn diff_seg(s: Segment, x: Float) -> Float =
     match s
@@ -303,14 +324,18 @@ mod Spline
     match spline.segments
       [] -> []
       [Segment{a: y0} | _] ->
-        if n <= 1 then [%[spline.x_min, y0]] else sample_many(spline, n)
+        pickup
+          n <= 1 -> [%[spline.x_min, y0]]
+          else   -> sample_many(spline, n)
 
   local fn sample_many(spline: Spline, n: Int) -> List(Tuple) =
     let step = fdiv(spline.x_max - spline.x_min, int_to_float(n - 1))
     sample_loop(spline, 0, n, step)
 
   local fn sample_loop(spline: Spline, i: Int, n: Int, step: Float) -> List(Tuple) =
-    if i >= n then [] else sample_cons(spline, i, n, step)
+    pickup
+      i >= n -> []
+      else   -> sample_cons(spline, i, n, step)
 
   local fn sample_cons(spline: Spline, i: Int, n: Int, step: Float) -> List(Tuple) =
     let xi = spline.x_min + int_to_float(i) * step

@@ -1,6 +1,8 @@
 mod ResultHandling
   fn safe_divide(a: Int, b: Int) -> Result(Int, String) =
-    if b == 0 then Error("division by zero") else Ok(a / b)
+    pickup
+      b == 0 -> Error("division by zero")
+      else   -> Ok(a / b)
 
   fn double_result(r: Result(Int, String)) -> Result(Int, String) =
     Std.Core.map_ok(r, fn(x) -> x * 2)

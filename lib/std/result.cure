@@ -12,7 +12,10 @@ mod Std.Result
   ##
   ## ok(42)
   ##   |> map(fn(x) -> x * 2)
-  ##   |> and_then(fn(x) -> if x > 0 then ok(x) else error(:neg))
+  ##   |> and_then(fn(x) ->
+  ##        pickup
+  ##          x > 0 -> ok(x)
+  ##          else  -> error(:neg))
   ##   |> unwrap(0)                          # => 84
   ## ```
   ##

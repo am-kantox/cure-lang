@@ -56,10 +56,16 @@ mod Std.Set
 
   ## Set intersection.
   fn intersection(a: Map, b: Map) -> Map =
-    Std.List.foldl(to_list(a), new(), fn(elem) -> fn(acc) ->
-      if member(elem, b) then add(elem, acc) else acc)
+    let keep = fn(elem) -> fn(acc) ->
+      pickup
+        member(elem, b) -> add(elem, acc)
+        else            -> acc
+    Std.List.foldl(to_list(a), new(), keep)
 
   ## Set difference `a \ b`.
   fn difference(a: Map, b: Map) -> Map =
-    Std.List.foldl(to_list(a), new(), fn(elem) -> fn(acc) ->
-      if member(elem, b) then acc else add(elem, acc))
+    let drop = fn(elem) -> fn(acc) ->
+      pickup
+        member(elem, b) -> acc
+        else            -> add(elem, acc)
+    Std.List.foldl(to_list(a), new(), drop)

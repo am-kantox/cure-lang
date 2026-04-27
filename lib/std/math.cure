@@ -70,18 +70,30 @@ mod Std.Math
   fn pi() -> Float
 
   ## Integer maximum.
-  fn max(a: Int, b: Int) -> Int = if a >= b then a else b
+  fn max(a: Int, b: Int) -> Int =
+    pickup
+      a >= b -> a
+      else   -> b
 
   ## Integer minimum.
-  fn min(a: Int, b: Int) -> Int = if a <= b then a else b
+  fn min(a: Int, b: Int) -> Int =
+    pickup
+      a <= b -> a
+      else   -> b
 
   ## Clamp `value` into the inclusive range `[lo, hi]`.
   fn clamp(value: Int, lo: Int, hi: Int) -> Int =
-    if value < lo then lo else if value > hi then hi else value
+    pickup
+      value < lo -> lo
+      value > hi -> hi
+      else       -> value
 
   ## Sign of `x`: `1` for positive, `0 - 1` for negative, `0` for zero.
   fn sign(x: Int) -> Int =
-    if x > 0 then 1 else if x < 0 then 0 - 1 else 0
+    pickup
+      x > 0 -> 1
+      x < 0 -> 0 - 1
+      else  -> 0
 
   ## Additive inverse.
   fn negate(x: Int) -> Int = 0 - x
@@ -95,4 +107,6 @@ mod Std.Math
   ## Integer division that returns `0` on divide-by-zero instead of
   ## raising. Truncates toward zero otherwise.
   fn safe_div(a: Int, b: Int) -> Int =
-    if b == 0 then 0 else a / b
+    pickup
+      b == 0 -> 0
+      else   -> a / b

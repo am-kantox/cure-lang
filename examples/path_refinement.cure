@@ -1,13 +1,15 @@
 mod PathRefinement
-  # Path-sensitive refinement demo (v0.17.0).
+  # Path-sensitive refinement demo.
   #
-  # Inside the matching branch of an `if` or `match` guard, Cure's
-  # type checker refines the type of any variable that appears in the
-  # guarding expression. This example shows the pattern at work.
+  # Inside the matching branch of a `pickup` guard or `match` guard,
+  # Cure's type checker refines the type of any variable that appears
+  # in the guarding expression. This example shows the pattern at work.
 
-  # safe_reciprocal: x != 0 is enforced on the then-branch.
+  # safe_reciprocal: x != 0 is enforced on the matching branch.
   fn safe_reciprocal(x: Int) -> Int =
-    if x != 0 then 100 / x else 0
+    pickup
+      x != 0 -> 100 / x
+      else   -> 0
 
   # to_percentage: clamp into [0, 100].
   fn to_percentage(n: Int) -> Int

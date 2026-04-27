@@ -4,6 +4,74 @@ All notable changes to Cure are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added -- `Std.Iter` becomes a peer of `Std.List`
+
+The lazy half of the collections story is fleshed out. `Std.Iter`
+previously shipped only `empty`, `from_list`, `range`, `fold`, `take`,
+and `to_list` (v0.19.0). It is now a complete lazy-iterator API,
+designed so a chain like
+
+```cure path=null start=null
+foo |> lazy |> map(...) |> filter(...) |> take(5)
+```
+
+reads left to right and only materialises at the terminal consumer.
+
+- **`lazy/1`** -- documented entry point for the lazy-pipeline idiom.
+  Identical to `from_list/1`; the alternate name signals at the call
+  site that the rest of the chain should be read as lazy.
+- **Producers** -- `iterate(x0, f)`, `unfold(seed, f)`, `repeat(x)`,
+  `cycle(list)`. The first three are infinite and must be paired
+  with a slicer. `cycle/1` collapses to `empty/0` for an empty input
+  so consumers terminate.
+- **Transformers (lazy in, lazy out)** -- `map(it, f)`,
+  `filter(it, pred)`, `flat_map(it, f)`, `concat(a, b)`,
+  `zip_with(a, b, f)` (curried), `intersperse(it, sep)`. None of
+  these force the iterator; they wrap a thunk that defers work.
+- **Slicers (lazy in, lazy out)** -- `take_while(it, pred)`,
+  `drop(it, n)`, `drop_while(it, pred)`. `drop/2` with non-positive
+  `n` is a no-op.
+- **Consumers (terminal)** -- `each(it, f)`, `count(it, pred)`,
+  `any(it, pred)`, `all(it, pred)`, `find(it, pred, default)`.
+  `any` and `all` short-circuit; `find` returns at the first hit.
+  Existing `fold`, `take`, and `to_list` continue to materialise.
+
+### Added -- documentation
+
+- **`docs/STDLIB.md`** -- `Std.Iter` section rewritten. Covers the
+  `lazy/1` idiom, the four function categories (constructors,
+  transformers, slicers, consumers), and per-function signatures.
+- **`lib/std/iter.cure` moduledoc** -- expanded with the
+  lazy-pipeline idiom, a Fibonacci `unfold` worked example, and
+  the existing fold/take examples preserved verbatim.
+
+### Added -- tests
+
+- **`test/cure/stdlib/iter_test.exs`** -- 43 tests covering every
+  new function, edge cases (empty inputs, predicates that never
+  match, drop past the end, cycle of empty, single-element
+  intersperse), and a laziness-verification test that drives a
+  ten-million-element range through `map` + `take(5)` and asserts
+  `map`'s callback ran exactly five times.
+
+### Notes on backward compatibility
+
+No language-surface or behaviour changes. `Std.Iter`'s pre-existing
+functions keep their signatures and semantics; the additions are
+purely additive. Code that compiled and ran against the v0.19.0
+shape compiles and runs unchanged.
+
+No new operator was introduced. The `|~>` "lazy pipe" was
+considered and rejected: in Cure, `|>` is a syntactic transform
+(`a |> f(b)` desugars to `f(a, b)`), and a sibling operator that
+flipped module dispatch would either require a global eager-to-lazy
+rewrite map (fragile) or polymorphic dispatch by argument shape (in
+which case the operator stops earning its keep relative to a plain
+`lazy/1` call). Explicit dispatch via `lazy/1` keeps the language
+small and the call site honest about when laziness begins.
+
 ## [0.33.0] -- Formalisation
 
 v0.33.0 is the formalisation release. The two branching constructs in

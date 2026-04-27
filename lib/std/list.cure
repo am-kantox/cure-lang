@@ -111,7 +111,9 @@ mod Std.List
     match list
       [] -> []
       [h | t] ->
-        if pred(h) then [h | filter(t, pred)] else filter(t, pred)
+        pickup
+          pred(h) -> [h | filter(t, pred)]
+          else    -> filter(t, pred)
 
   ## Left fold. `f` is curried: `f(elem)(acc) -> acc`.
   ## Reduces `list` starting from the head.
@@ -148,11 +150,16 @@ mod Std.List
   fn nth(list: List(T), idx: Int, default: T) -> T =
     match list
       [] -> default
-      [h | t] -> if idx == 0 then h else nth(t, idx - 1, default)
+      [h | t] ->
+        pickup
+          idx == 0 -> h
+          else     -> nth(t, idx - 1, default)
 
   ## First `n` elements; `[]` when `n <= 0`.
   fn take(list: List(T), n: Int) -> List(T) =
-    if n <= 0 then [] else take_rest(list, n)
+    pickup
+      n <= 0 -> []
+      else   -> take_rest(list, n)
 
   ## Private recursive step for `take/2`.
   local fn take_rest(list: List(T), n: Int) -> List(T) =
@@ -162,7 +169,9 @@ mod Std.List
 
   ## Drop the first `n` elements; returns `list` unchanged when `n <= 0`.
   fn drop(list: List(T), n: Int) -> List(T) =
-    if n <= 0 then list else drop_rest(list, n)
+    pickup
+      n <= 0 -> list
+      else   -> drop_rest(list, n)
 
   ## Private recursive step for `drop/2`.
   local fn drop_rest(list: List(T), n: Int) -> List(T) =
@@ -176,25 +185,37 @@ mod Std.List
   fn contains(list: List(T), elem: T) -> Bool =
     match list
       [] -> false
-      [h | t] -> if h == elem then true else contains(t, elem)
+      [h | t] ->
+        pickup
+          h == elem -> true
+          else      -> contains(t, elem)
 
   ## First element satisfying `pred`; returns `default` when nothing matches.
   fn find(list: List(T), pred: T -> Bool, default: T) -> T =
     match list
       [] -> default
-      [h | t] -> if pred(h) then h else find(t, pred, default)
+      [h | t] ->
+        pickup
+          pred(h) -> h
+          else    -> find(t, pred, default)
 
   ## `true` when at least one element satisfies `pred`.
   fn any(list: List(T), pred: T -> Bool) -> Bool =
     match list
       [] -> false
-      [h | t] -> if pred(h) then true else any(t, pred)
+      [h | t] ->
+        pickup
+          pred(h) -> true
+          else    -> any(t, pred)
 
   ## `true` when every element satisfies `pred` (vacuously true for `[]`).
   fn all(list: List(T), pred: T -> Bool) -> Bool =
     match list
       [] -> true
-      [h | t] -> if pred(h) then all(t, pred) else false
+      [h | t] ->
+        pickup
+          pred(h) -> all(t, pred)
+          else    -> false
 
   # -- Destructuring helpers (v0.18.0) ---------------------------------------
 
@@ -222,4 +243,8 @@ mod Std.List
 
   ## Count of elements satisfying `pred`.
   fn count(list: List(T), pred: T -> Bool) -> Int =
-    foldl(list, 0, fn(x) -> fn(acc) -> if pred(x) then acc + 1 else acc)
+    let step = fn(x) -> fn(acc) ->
+      pickup
+        pred(x) -> acc + 1
+        else    -> acc
+    foldl(list, 0, step)

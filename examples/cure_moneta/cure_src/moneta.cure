@@ -110,7 +110,10 @@ mod Moneta
   ## record-based guard never matches them.
   impl Show for Money
     fn show(m: Money) -> String =
-      let sign = if m.amount < 0 then "-" else ""
+      let sign =
+        pickup
+          m.amount < 0 -> "-"
+          else         -> ""
       let abs_amt = abs_int(m.amount)
       let major = abs_amt / m.fractional_units
       let minor = abs_amt % m.fractional_units
@@ -131,7 +134,11 @@ mod Moneta
 
   # Compose the major.minor string; omits the decimal point for integer currencies.
   local fn format_amount(cstr: String, major: Int, minor: Int, fractional_units: Int) -> String =
-    if fractional_units == 1 then cstr <> " " <> int_to_string(major) else cstr <> " " <> int_to_string(major) <> "." <> pad_minor(minor, fractional_units)
+    pickup
+      fractional_units == 1 ->
+        cstr <> " " <> int_to_string(major)
+      else ->
+        cstr <> " " <> int_to_string(major) <> "." <> pad_minor(minor, fractional_units)
 
   # Left-pad `minor` with zeros so it occupies exactly `minor_digits` characters.
   # Examples: pad_minor(5, 100) = "05", pad_minor(50, 1000) = "050".
@@ -142,10 +149,14 @@ mod Moneta
     str_repeat("0", pad) <> s
 
   # Decimal places for a given fractional_units count.
-  # Uses a chained single-line if-else-if, which the parser and stdlib both support
-  # (see Std.Math.clamp, Std.Math.sign for the same idiom).
+  # Chained `pickup` clauses pick up the first matching guard in source order.
   local fn minor_digits(n: Int) -> Int =
-    if n <= 1 then 0 else if n <= 10 then 1 else if n <= 100 then 2 else if n <= 1000 then 3 else 4
+    pickup
+      n <= 1    -> 0
+      n <= 10   -> 1
+      n <= 100  -> 2
+      n <= 1000 -> 3
+      else      -> 4
 
   # ---------------------------------------------------------------------------
   # Eq protocol
@@ -194,14 +205,26 @@ mod Moneta
 
   ## Add two Money values. Fails if they have different currencies.
   fn add(a: Money, b: Money) -> Result(Money, String) =
-    if a.currency == b.currency then Ok(Money{a | amount: a.amount + b.amount}) else Error("currency mismatch: cannot add " <> show_currency(a.currency) <> " and " <> show_currency(b.currency))
+    pickup
+      a.currency == b.currency ->
+        Ok(Money{a | amount: a.amount + b.amount})
+      else ->
+        Error("currency mismatch: cannot add " <> show_currency(a.currency) <> " and " <> show_currency(b.currency))
 
   ## Subtract `b` from `a`. Fails if currencies differ or result would be negative.
   fn subtract(a: Money, b: Money) -> Result(Money, String) =
-    if a.currency == b.currency then subtract_same_currency(a, b) else Error("currency mismatch: cannot subtract " <> show_currency(b.currency) <> " from " <> show_currency(a.currency))
+    pickup
+      a.currency == b.currency ->
+        subtract_same_currency(a, b)
+      else ->
+        Error("currency mismatch: cannot subtract " <> show_currency(b.currency) <> " from " <> show_currency(a.currency))
 
   local fn subtract_same_currency(a: Money, b: Money) -> Result(Money, String) =
-    if a.amount >= b.amount then Ok(Money{a | amount: a.amount - b.amount}) else Error("insufficient funds: balance " <> show(a) <> " < " <> show(b))
+    pickup
+      a.amount >= b.amount ->
+        Ok(Money{a | amount: a.amount - b.amount})
+      else ->
+        Error("insufficient funds: balance " <> show(a) <> " < " <> show(b))
 
   ## Scale Money by a positive integer factor (e.g. unit price * quantity).
   ## The refinement type {n: Int | n > 0} is checked at compile time by Z3.
@@ -236,7 +259,10 @@ mod Moneta
   local fn find_account(accounts: List(Account), id: Int) -> Result(Account, String) =
     match accounts
       [] -> Error("account not found: " <> int_to_string(id))
-      [a | rest] -> if a.id == id then Ok(a) else find_account(rest, id)
+      [a | rest] ->
+        pickup
+          a.id == id -> Ok(a)
+          else       -> find_account(rest, id)
 
   # Return a new Ledger with the given account replaced.
   local fn update_account(ledger: Ledger, updated: Account) -> Ledger =
@@ -246,7 +272,10 @@ mod Moneta
   local fn replace_account(accounts: List(Account), updated: Account) -> List(Account) =
     match accounts
       [] -> []
-      [a | rest] -> if a.id == updated.id then [updated | rest] else [a | replace_account(rest, updated)]
+      [a | rest] ->
+        pickup
+          a.id == updated.id -> [updated | rest]
+          else               -> [a | replace_account(rest, updated)]
 
   # ---------------------------------------------------------------------------
   # Ledger mutations

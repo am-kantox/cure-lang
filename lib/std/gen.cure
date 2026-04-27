@@ -42,7 +42,9 @@ mod Std.Gen
   ## Uniformly choose an integer in the inclusive range `[lo, hi]`.
   ## Falls back to `lo` when `hi <= lo`.
   fn int_in(lo: Int, hi: Int) -> Int =
-    if hi <= lo then lo else rand_uniform(hi - lo + 1) + lo - 1
+    pickup
+      hi <= lo -> lo
+      else     -> rand_uniform(hi - lo + 1) + lo - 1
 
   ## A fair `Bool`: 50/50.
   fn bool() -> Bool =
@@ -62,7 +64,9 @@ mod Std.Gen
 
   ## Generate a list of exactly `n` integers in `[lo, hi]`.
   fn list_of_int(n: Int, lo: Int, hi: Int) -> List(Int) =
-    if n <= 0 then [] else [int_in(lo, hi) | list_of_int(n - 1, lo, hi)]
+    pickup
+      n <= 0 -> []
+      else   -> [int_in(lo, hi) | list_of_int(n - 1, lo, hi)]
 
   ## Generate a list of length up to `max_len` (inclusive), filled
   ## with integers in `[lo, hi]`. A good default shrink is "shorter

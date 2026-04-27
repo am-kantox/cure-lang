@@ -18,6 +18,8 @@ mod Calculator
     | _ -> "zero"
 
   fn safe_divide(a: Int, b: Int) -> Result(Int, String) =
-    if b == 0 then Error("division by zero") else Ok(a / b)
+    pickup
+      b == 0 -> Error("division by zero")
+      else   -> Ok(a / b)
 
   fn main() -> Int = factorial(10)

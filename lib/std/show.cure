@@ -47,7 +47,10 @@ mod Std.Show
   ## `Show` impl for `Bool`: "true" or "false".
   impl Show for Bool
     ## Render a boolean as the literal words `true` or `false`.
-    fn show(x: Bool) -> String = if x then "true" else "false"
+    fn show(x: Bool) -> String =
+      pickup
+        x    -> "true"
+        else -> "false"
 
   ## `Show` impl for `Atom`: prefixed with `:` to match source syntax.
   impl Show for Atom

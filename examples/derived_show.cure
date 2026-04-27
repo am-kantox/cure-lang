@@ -16,4 +16,6 @@ mod DerivedShow
     let p = Point{x: 1, y: 2}
     let q = Point{x: 1, y: 2}
     # `eq` is the synthesised Eq method.
-    if eq(p, q) then 1 else 0
+    pickup
+      eq(p, q) -> 1
+      else     -> 0

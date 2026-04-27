@@ -129,7 +129,9 @@ mod Motif
     repeat_acc(p, n, empty_pattern())
 
   local fn repeat_acc(p: Tuple, n: Int, acc: Tuple) -> Tuple =
-    if n <= 0 then acc else repeat_acc(p, n - 1, concat(acc, p))
+    pickup
+      n <= 0 -> acc
+      else   -> repeat_acc(p, n - 1, concat(acc, p))
 
   ## Prepend a single step onto a pattern.
   fn cons_step(s: Step, p: Tuple) -> Tuple = Std.Vector.cons(s, p)
@@ -186,7 +188,12 @@ mod Motif
     Std.List.append(ons, offs)
 
   local fn roll_events(pitch: Int, vel: Int, reps: Int, channel: Channel) -> List(Event) =
-    if reps <= 0 then [] else Std.List.append([NoteOn(pitch, vel, channel), NoteOff(pitch, channel)], roll_events(pitch, vel, reps - 1, channel))
+    pickup
+      reps <= 0 -> []
+      else      ->
+        Std.List.append(
+          [NoteOn(pitch, vel, channel), NoteOff(pitch, channel)],
+          roll_events(pitch, vel, reps - 1, channel))
 
   ## Render a whole pattern as a flat Event list. Every step is bracketed
   ## by a Tick so downstream consumers can align events to a tempo grid.
@@ -218,4 +225,16 @@ mod Motif
     pitch_class(step) <> int_to_string(octave)
 
   local fn pitch_class(step: Int) -> String =
-    if step == 0 then "C" else if step == 1 then "C#" else if step == 2 then "D" else if step == 3 then "D#" else if step == 4 then "E" else if step == 5 then "F" else if step == 6 then "F#" else if step == 7 then "G" else if step == 8 then "G#" else if step == 9 then "A" else if step == 10 then "A#" else "B"
+    pickup
+      step == 0  -> "C"
+      step == 1  -> "C#"
+      step == 2  -> "D"
+      step == 3  -> "D#"
+      step == 4  -> "E"
+      step == 5  -> "F"
+      step == 6  -> "F#"
+      step == 7  -> "G"
+      step == 8  -> "G#"
+      step == 9  -> "A"
+      step == 10 -> "A#"
+      else       -> "B"

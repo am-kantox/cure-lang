@@ -105,7 +105,9 @@ mod Std.Access
   impl Access for Map
     ## Wrap `Std.Map.get/2` in an `Option`.
     fn fetch(container: Map, key: Any) -> Option(Any) =
-      if Std.Map.has_key(key, container) then Some(Std.Map.get(key, container)) else None()
+      pickup
+        Std.Map.has_key(key, container) -> Some(Std.Map.get(key, container))
+        else                             -> None()
 
     ## Protocol `get_and_update` for maps; honours the `:pop` sentinel.
     fn get_and_update(container: Map, key: Any, f: Option(Any) -> Any) -> Tuple =
@@ -123,12 +125,10 @@ mod Std.Access
 
     ## Protocol `pop` for maps. Raises on records (struct maps).
     fn pop(container: Map, key: Any) -> Tuple =
-      if Std.Map.has_key(:__struct__, container)
-        struct_pop_guard(container)
-      elif Std.Map.has_key(key, container)
-        %[Std.Map.get(key, container), Std.Map.remove(key, container)]
-      else
-        %[nil, container]
+      pickup
+        Std.Map.has_key(:__struct__, container) -> struct_pop_guard(container)
+        Std.Map.has_key(key, container)         -> %[Std.Map.get(key, container), Std.Map.remove(key, container)]
+        else                                    -> %[nil, container]
 
   # -- impl Access for List (keyword-style: List of %[key, value] pairs) ----
 
@@ -292,7 +292,9 @@ mod Std.Access
     match opt
       Some(v) -> v
       None()  ->
-        if required then raise_missing(k) else default
+        pickup
+          required -> raise_missing(k)
+          else     -> default
 
   ## Private: raise `:key_error` and return `k` for typing.
   local fn raise_missing(k: Any) -> Any =
@@ -375,7 +377,9 @@ mod Std.Access
     match list
       []      -> %[nil, []]
       [h | t] ->
-        if i == 0 then list_pop_here(h, t, rest) else list_pop_skip(h, t, i, rest)
+        pickup
+          i == 0 -> list_pop_here(h, t, rest)
+          else   -> list_pop_skip(h, t, i, rest)
 
   ## Private: pop-at the current head.
   local fn list_pop_here(h: Any, t: List(Any), rest: List(Accessor)) -> Tuple =
@@ -406,7 +410,9 @@ mod Std.Access
     match list
       []      -> %[[], []]
       [h | t] ->
-        if pred(h) then list_pop_filtered_match(h, t, pred, rest) else list_pop_filtered_skip(h, t, pred, rest)
+        pickup
+          pred(h) -> list_pop_filtered_match(h, t, pred, rest)
+          else    -> list_pop_filtered_skip(h, t, pred, rest)
 
   ## Private: matched branch of `list_pop_filtered`.
   local fn list_pop_filtered_match(h: Any, t: List(Any), pred: Any -> Bool, rest: List(Accessor)) -> Tuple =
@@ -437,7 +443,9 @@ mod Std.Access
     match list
       []      -> []
       [h | t] ->
-        if i == 0 then [update_in(h, rest, f) | t] else [h | list_update_at(t, i - 1, rest, f)]
+        pickup
+          i == 0 -> [update_in(h, rest, f) | t]
+          else   -> [h | list_update_at(t, i - 1, rest, f)]
 
   ## Private: update every element of a list.
   local fn list_update_all(list: List(Any), rest: List(Accessor), f: Any -> Any) -> List(Any) =
@@ -450,14 +458,18 @@ mod Std.Access
     match list
       []      -> []
       [h | t] ->
-        if pred(h) then [update_in(h, rest, f) | list_update_filtered(t, pred, rest, f)] else [h | list_update_filtered(t, pred, rest, f)]
+        pickup
+          pred(h) -> [update_in(h, rest, f) | list_update_filtered(t, pred, rest, f)]
+          else    -> [h | list_update_filtered(t, pred, rest, f)]
 
   ## Private: get-and-update the `i`-th element of a list.
   local fn list_gau_at(list: List(Any), i: Int, rest: List(Accessor), f: Any -> Any) -> Tuple =
     match list
       []      -> %[nil, []]
       [h | t] ->
-        if i == 0 then list_gau_here(h, t, rest, f) else list_gau_rest(h, t, i, rest, f)
+        pickup
+          i == 0 -> list_gau_here(h, t, rest, f)
+          else   -> list_gau_rest(h, t, i, rest, f)
 
   ## Private: get-and-update the current head of the list.
   local fn list_gau_here(h: Any, t: List(Any), rest: List(Accessor), f: Any -> Any) -> Tuple =
@@ -488,7 +500,9 @@ mod Std.Access
     match list
       []      -> %[[], []]
       [h | t] ->
-        if pred(h) then list_gau_filtered_match(h, t, pred, rest, f) else list_gau_filtered_skip(h, t, pred, rest, f)
+        pickup
+          pred(h) -> list_gau_filtered_match(h, t, pred, rest, f)
+          else    -> list_gau_filtered_skip(h, t, pred, rest, f)
 
   ## Private: matched branch of `list_gau_filtered`.
   local fn list_gau_filtered_match(h: Any, t: List(Any), pred: Any -> Bool, rest: List(Accessor), f: Any -> Any) -> Tuple =
@@ -514,7 +528,9 @@ mod Std.Access
       [head | rest]  ->
         match head
           %[k, v] ->
-            if k == key then Some(v) else kw_fetch(rest, key)
+            pickup
+              k == key -> Some(v)
+              else     -> kw_fetch(rest, key)
           _ ->
             kw_fetch(rest, key)
 
@@ -525,7 +541,9 @@ mod Std.Access
       [head | rest]  ->
         match head
           %[k, _v] ->
-            if k == key then [%[key, value] | rest] else [head | kw_put(rest, key, value)]
+            pickup
+              k == key -> [%[key, value] | rest]
+              else     -> [head | kw_put(rest, key, value)]
           _ ->
             [head | kw_put(rest, key, value)]
 
@@ -536,7 +554,9 @@ mod Std.Access
       [head | rest]  ->
         match head
           %[k, _v] ->
-            if k == key then rest else [head | kw_remove(rest, key)]
+            pickup
+              k == key -> rest
+              else     -> [head | kw_remove(rest, key)]
           _ ->
             [head | kw_remove(rest, key)]
 
@@ -549,4 +569,6 @@ mod Std.Access
 
   ## Private: read the current value under `key` into an `Option`.
   local fn map_current(container: Map, key: Any) -> Option(Any) =
-    if Std.Map.has_key(key, container) then Some(Std.Map.get(key, container)) else None()
+    pickup
+      Std.Map.has_key(key, container) -> Some(Std.Map.get(key, container))
+      else                             -> None()

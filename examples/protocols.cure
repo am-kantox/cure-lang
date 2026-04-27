@@ -9,7 +9,10 @@ mod Protocols
 
   # Implement for Bool
   impl Stringify for Bool
-    fn stringify(x: Bool) -> String = if x then "true" else "false"
+    fn stringify(x: Bool) -> String =
+      pickup
+        x    -> "true"
+        else -> "false"
 
   # Implement for String (identity)
   impl Stringify for String

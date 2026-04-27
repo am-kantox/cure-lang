@@ -27,25 +27,37 @@ mod Std.Ord
   impl Ord for Int
     ## Integer three-way compare.
     fn compare(a: Int, b: Int) -> Atom =
-      if a < b then :lt else if a > b then :gt else :eq
+      pickup
+        a < b -> :lt
+        a > b -> :gt
+        else  -> :eq
 
   ## `Ord` impl for `Float`.
   impl Ord for Float
     ## Float three-way compare (NaNs follow BEAM's term-order).
     fn compare(a: Float, b: Float) -> Atom =
-      if a < b then :lt else if a > b then :gt else :eq
+      pickup
+        a < b -> :lt
+        a > b -> :gt
+        else  -> :eq
 
   ## `Ord` impl for `String`. Uses byte-wise ordering of the binary.
   impl Ord for String
     ## String three-way compare.
     fn compare(a: String, b: String) -> Atom =
-      if a < b then :lt else if a > b then :gt else :eq
+      pickup
+        a < b -> :lt
+        a > b -> :gt
+        else  -> :eq
 
   ## `Ord` impl for `Atom`. Uses BEAM atom ordering.
   impl Ord for Atom
     ## Atom three-way compare.
     fn compare(a: Atom, b: Atom) -> Atom =
-      if a < b then :lt else if a > b then :gt else :eq
+      pickup
+        a < b -> :lt
+        a > b -> :gt
+        else  -> :eq
 
   ## Strict less-than derived from `compare/2`.
   fn lt(a: T, b: T) -> Bool = compare(a, b) == :lt

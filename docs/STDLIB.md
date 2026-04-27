@@ -613,25 +613,75 @@ fn port() -> Int  = Std.App.get_env(:my_app, :port, 4000)
 ```
 
 ## Lazy evaluation and randomness
-### Std.Iter (v0.19.0)
-Minimal lazy iterators. Comprehensions in Cure are eager today (they
-lower to `:lists.map`), so this module ships a hand-rolled shape plus
-two of the most common consumers so programs can stop early without
-materialising the tail.
-
-An iterator is a zero-argument lambda returning either
+### Std.Iter
+Lazy iterators -- the lazy half of the collections story. Where
+`Std.List` materialises every step into a fresh cons cell, `Std.Iter`
+defers work until a terminal consumer demands it. An iterator is a
+zero-argument lambda (typed `Atom -> Any`) returning either
 `Some(%[element, next_iter])` or `None()` -- close to Elixir's
 `Stream` shape.
+#### The `lazy` idiom
+`lazy/1` is the documented entry point for a lazy pipeline. It is an
+alias for `from_list/1`; the alternate name signals at the call site
+that the rest of the chain should be read as lazy:
+```cure path=null start=null
+use Std.Iter
+
+# Squares of the first five even integers in [1, 1_000_000].
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  |> lazy
+  |> filter(fn(x) -> x % 2 == 0)
+  |> map(fn(x) -> x * x)
+  |> take(5)
+# => [4, 16, 36, 64, 100]
+```
+Nothing materialises until the terminal consumer (`take/2`, `to_list/1`,
+`fold/3`, `count/2`, `any/2`, `all/2`, `find/3`, or `each/2`). Wrap an
+open-ended chain with `take/2` or `take_while/2` before forcing.
 #### Constructors
-- `empty()`  -- iterator that is immediately exhausted.
+- `empty() -> Atom -> Any`  -- iterator that is immediately exhausted.
 - `from_list(list) -> Atom -> Any`  -- walks a list left-to-right.
+- `lazy(list) -> Atom -> Any`  -- alias for `from_list/1` that
+  documents intent at the call site.
 - `range(lo, hi) -> Atom -> Any`  -- inclusive integer range.
-#### Consumers
+- `iterate(x0, f) -> Atom -> Any`  -- infinite stream
+  `x0, f(x0), f(f(x0)), ...`. Always pair with a slicer.
+- `unfold(seed, f) -> Atom -> Any`  -- stream-style unfold;
+  `f(seed)` returns `Some(%[value, next_seed])` or `None()`.
+- `repeat(x) -> Atom -> Any`  -- infinite stream of `x`.
+- `cycle(list) -> Atom -> Any`  -- walk `list` repeatedly; an empty
+  input collapses to `empty/0`.
+#### Transformers (lazy in, lazy out)
+- `map(it, f) -> Atom -> Any`  -- apply `f` on demand.
+- `filter(it, pred) -> Atom -> Any`  -- keep passing elements.
+- `flat_map(it, f) -> Atom -> Any`  -- map and flatten one level;
+  `f` returns an iterator per element.
+- `concat(a, b) -> Atom -> Any`  -- yield from `a`, then from `b`.
+- `zip_with(a, b, f) -> Atom -> Any`  -- element-wise combination
+  with a curried `f`. Stops at the shorter side.
+- `intersperse(it, sep) -> Atom -> Any`  -- insert `sep` between
+  consecutive elements.
+#### Slicers (lazy in, lazy out)
+- `take_while(it, pred) -> Atom -> Any`  -- keep elements while
+  `pred` holds.
+- `drop(it, n) -> Atom -> Any`  -- skip the first `n` elements.
+  Non-positive `n` is a no-op.
+- `drop_while(it, pred) -> Atom -> Any`  -- skip the leading prefix
+  satisfying `pred`.
+#### Consumers (terminal)
 - `fold(it, acc, f) -> T`  -- left fold; `f` is curried
   (`elem -> acc -> acc`).
-- `take(it, n) -> List(Any)`  -- take at most `n` elements.
-- `to_list(it) -> List(Any)`  -- eagerly materialise; guard infinite
-  iterators with `take/2`.
+- `take(it, n) -> List(Any)`  -- take at most `n` elements as a
+  plain list. Safe on infinite iterators.
+- `to_list(it) -> List(Any)`  -- eagerly materialise; guard
+  infinite iterators with `take/2` or `take_while/2`.
+- `each(it, f) -> Atom`  -- apply `f` for side effects; returns
+  `:ok` once the iterator is exhausted.
+- `count(it, pred) -> Int`  -- count elements satisfying `pred`.
+- `any(it, pred) -> Bool`  -- short-circuits at the first hit.
+- `all(it, pred) -> Bool`  -- short-circuits at the first miss.
+- `find(it, pred, default) -> T`  -- first matching element, or
+  `default` when nothing matches.
 ### Std.Gen (v0.19.0)
 Tiny stateless generator API used by `Std.Test`. Generators are
 zero-argument lambdas returning a fresh value on every call;

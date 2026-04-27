@@ -21,7 +21,9 @@ mod Brainloop
       Sub -> Ok(left - right)
       Mul -> Ok(left * right)
       Div ->
-        if right == 0 then Error(:div_zero) else Ok(left / right)
+        pickup
+          right == 0 -> Error(:div_zero)
+          else       -> Ok(left / right)
 
   ## Decide whether an op is commutative. Used for the constant-
   ## folding optimiser lifted out of the main interpreter.

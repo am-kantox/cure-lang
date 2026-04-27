@@ -51,7 +51,9 @@ mod Std.Vector
   ## All-but-first elements of the vector; returns `empty()` when empty.
   fn tail(vec: Tuple) -> Tuple =
     let len = length(vec)
-    if len > 0 then from_list(Std.List.tail(to_list(vec))) else empty()
+    pickup
+      len > 0 -> from_list(Std.List.tail(to_list(vec)))
+      else    -> empty()
 
   ## Concatenate two vectors.
   fn append(a: Tuple, b: Tuple) -> Tuple =

@@ -50,4 +50,7 @@ mod Std.Eq
     fn eq(a: Atom, b: Atom) -> Bool = a == b
 
   ## Inequality derived from `eq/2`.
-  fn ne(a: T, b: T) -> Bool = if eq(a, b) then false else true
+  fn ne(a: T, b: T) -> Bool =
+    pickup
+      eq(a, b) -> false
+      else     -> true

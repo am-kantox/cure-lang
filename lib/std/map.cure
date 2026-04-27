@@ -43,7 +43,9 @@ mod Std.Map
 
   ## Look up `key`, returning `default` when missing.
   fn get_or(key: K, map: Map, default: V) -> V =
-    if has_key(key, map) then get(key, map) else default
+    pickup
+      has_key(key, map) -> get(key, map)
+      else              -> default
 
   ## Return `map` without `key`.
   @extern(:maps, :remove, 2)

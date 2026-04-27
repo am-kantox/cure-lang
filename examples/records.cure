@@ -92,7 +92,9 @@ mod Records
   fn greet(p: Person) -> String = "Hello, " <> p.name
 
   fn older_of(a: Person, b: Person) -> Person =
-    if a.age > b.age then a else b
+    pickup
+      a.age > b.age -> a
+      else          -> b
 
   # Nested field access: access the origin of a Rectangle, then its x coord.
   fn rect_origin_x(r: Rectangle) -> Int = r.origin.x

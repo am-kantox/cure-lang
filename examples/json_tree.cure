@@ -45,7 +45,9 @@ mod JsonTree
     match obj
       []                        -> default
       [%[k, v] | rest] ->
-        if k == key then v else lookup(rest, key, default)
+        pickup
+          k == key -> v
+          else     -> lookup(rest, key, default)
 
   fn obj_get(j: Json, key: String, default: Json) -> Json =
     match j

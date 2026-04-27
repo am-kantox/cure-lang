@@ -74,7 +74,10 @@ mod Std.Option
   ## `None`.
   fn filter(opt: Option(T), pred: T -> Bool) -> Option(T) =
     match opt
-      Some(v) -> if pred(v) then Some(v) else None()
+      Some(v) ->
+        pickup
+          pred(v) -> Some(v)
+          else    -> None()
       None() -> None()
 
   ## Pair two Options. Returns `Some(%[va, vb])` when both sides are

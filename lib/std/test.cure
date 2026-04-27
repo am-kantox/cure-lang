@@ -37,23 +37,33 @@ mod Std.Test
 
   ## Assert `condition` is `true`; raises `:assertion_failed` on false.
   fn assert(condition: Bool) -> Atom =
-    if condition then :ok else raise_error(:assertion_failed)
+    pickup
+      condition -> :ok
+      else      -> raise_error(:assertion_failed)
 
   ## Assert `a == b`; raises `:not_equal` on mismatch.
   fn assert_eq(a: T, b: T) -> Atom =
-    if a == b then :ok else raise_error(:not_equal)
+    pickup
+      a == b -> :ok
+      else   -> raise_error(:not_equal)
 
   ## Assert `a != b`; raises `:unexpectedly_equal` when they match.
   fn assert_ne(a: T, b: T) -> Atom =
-    if a != b then :ok else raise_error(:unexpectedly_equal)
+    pickup
+      a != b -> :ok
+      else   -> raise_error(:unexpectedly_equal)
 
   ## Assert `a > b`; raises `:not_greater` otherwise.
   fn assert_gt(a: T, b: T) -> Atom =
-    if a > b then :ok else raise_error(:not_greater)
+    pickup
+      a > b -> :ok
+      else  -> raise_error(:not_greater)
 
   ## Assert `a < b`; raises `:not_less` otherwise.
   fn assert_lt(a: T, b: T) -> Atom =
-    if a < b then :ok else raise_error(:not_less)
+    pickup
+      a < b -> :ok
+      else  -> raise_error(:not_less)
 
   # -- Property-based testing (v0.19.0) --------------------------------------
 
