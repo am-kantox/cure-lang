@@ -108,7 +108,7 @@ defmodule Cure.MixProject do
       # into `priv/ebin/`. That directory rides along with every OTP
       # release so the embedded REPL can call into the stdlib at runtime
       # without relying on the build-time `_build/cure/ebin` artefact.
-      compile: ["cure.compile_stdlib", "cure.bundle_stdlib", "compile", "cure.bundle_stdlib_beams", "cure.escript"]
+      compile: ["compile", "cure.bundle_stdlib", "cure.compile_stdlib", "cure.bundle_stdlib_beams", "cure.escript"]
     ]
   end
 
