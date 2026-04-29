@@ -269,12 +269,25 @@ defmodule Cure.Types.Checker do
     # the underlying refinement.
     env = install_imports(stmts, env)
 
+    # Pre-pass: lift every top-level user-defined `type` alias into
+    # `env.types` *before* walking function signatures. Without this,
+    # a `fn f(x: Pos) -> Pos = ...` whose alias `type Pos = {x: Int | x > 0}`
+    # appears later in the same module would register against the
+    # bare nominal `{:named, "Pos"}` and the body's `:int` would fail
+    # the structural subtype check. This mirrors what
+    # `Cure.Types.Stdlib.collect_types/1` does for stdlib sources.
+    env = install_local_type_aliases(stmts, env)
+
     Enum.reduce(stmts, env, fn
       {:function_def, meta, _body}, env ->
         register_fn_signature(meta, env)
 
       # Already installed in the pre-pass above; nothing to do here.
       {:import, _meta, _}, env ->
+        env
+
+      # Top-level type aliases were processed in the pre-pass above.
+      {:type_annotation, _meta, _}, env ->
         env
 
       # Register protocol method signatures so calling them type-checks,
@@ -337,6 +350,47 @@ defmodule Cure.Types.Checker do
     end)
   end
 
+  # Pre-pass: register every top-level user-defined `type` alias in the
+  # current module's `env.types`. Refinement aliases
+  # (`type Pos = {x: Int | x > 0}`) are stored as `{:refinement, base,
+  # var, pred}` via `Refinement.from_type_annotation/2`; plain aliases
+  # (`type Foo = Bar`) are stored as the resolved canonical type. Names
+  # that fail to parse cleanly are silently skipped so a malformed
+  # declaration upstream cannot derail signature collection.
+  defp install_local_type_aliases(stmts, env) do
+    Enum.reduce(stmts, env, fn
+      {:type_annotation, meta, children}, env ->
+        register_type_annotation(meta, children, env)
+
+      _, env ->
+        env
+    end)
+  end
+
+  defp register_type_annotation(meta, children, env) do
+    name = Keyword.get(meta, :name)
+
+    cond do
+      not is_binary(name) ->
+        env
+
+      Keyword.get(meta, :refinement) ->
+        case Cure.Types.Refinement.from_type_annotation(meta, children) do
+          nil -> env
+          ref -> Env.extend_type(env, name, ref)
+        end
+
+      true ->
+        case children do
+          [inner] ->
+            Env.extend_type(env, name, Env.deref(env, Type.resolve(inner)))
+
+          _ ->
+            env
+        end
+    end
+  end
+
   # Pre-pass: process every `:import` node first so the short-name
   # value and type bindings are visible to all subsequent signature
   # collection. Mirrors the order codegen uses to resolve imports.
@@ -358,15 +412,76 @@ defmodule Cure.Types.Checker do
     end)
   end
 
-  # Register a `type Name(Params) = V1 | V2(T) | ...` declaration:
-  # the type itself goes into `Env.types` so that `{:named, Name}`
-  # references can be resolved (e.g. for record-style subtyping); each
-  # variant goes into the value scope so it can be referenced from
-  # function bodies.
+  # Register a `type Name(Params) = V1 | V2(T) | ...` declaration.
+  #
+  # The same surface syntax serves two purposes:
+  #
+  #   * **ADT (sum) form** -- when at least one variant is parameterised
+  #     (`Some(T)`) or when the variant names are *fresh* tags that do
+  #     not name an existing type alias. Each variant becomes a value
+  #     in the value scope (`Env.extend`) and the outer name is
+  #     registered in `env.types` as `{:adt, name_atom, param_vars}`
+  #     so `{:named, Name}` references can be subtype-checked against
+  #     it.
+  #
+  #   * **Union form** -- when *every* variant is a bare nullary name
+  #     that already names a registered type alias. In that case we
+  #     treat `type X = A | B | C` as the structural union of the
+  #     resolved alias types and register `X` in `env.types` as
+  #     `{:union, [t_A, t_B, t_C]}`. Variant names are *not* re-bound
+  #     in the value scope -- they remain types, not values.
+  #
+  # The pre-pass `install_local_type_aliases/2` runs before this point,
+  # so the lookups against `env.types` are stable regardless of the
+  # order in which the user wrote their declarations.
   defp register_enum_container(meta, body, env) do
     name = Keyword.get(meta, :name)
     type_params = Keyword.get(meta, :type_params, [])
 
+    cond do
+      is_binary(name) and type_params == [] and union_shaped?(body, env) ->
+        register_union_container(name, body, env)
+
+      true ->
+        register_adt_container(name, type_params, body, env)
+    end
+  end
+
+  # A `:enum` body is union-shaped when it is non-empty, every entry is
+  # a nullary variant (bare `:variable` with `variant: true`), and every
+  # such name already resolves to a registered type alias in
+  # `env.types`. A single parameterised variant or a single fresh tag
+  # demotes the whole declaration to ADT semantics.
+  defp union_shaped?([], _env), do: false
+
+  defp union_shaped?(body, env) do
+    Enum.all?(body, fn
+      {:variable, vmeta, vname} when is_binary(vname) and is_list(vmeta) ->
+        Keyword.get(vmeta, :variant, false) and
+          match?({:ok, _}, Env.lookup_type(env, vname))
+
+      _ ->
+        false
+    end)
+  end
+
+  defp register_union_container(name, body, env) do
+    members =
+      Enum.flat_map(body, fn
+        {:variable, _vmeta, vname} ->
+          case Env.lookup_type(env, vname) do
+            {:ok, t} -> [t]
+            _ -> []
+          end
+
+        _ ->
+          []
+      end)
+
+    Env.extend_type(env, name, {:union, members})
+  end
+
+  defp register_adt_container(name, type_params, body, env) do
     env =
       if is_binary(name) do
         type_atom = String.to_atom(String.downcase(name))
@@ -476,7 +591,8 @@ defmodule Cure.Types.Checker do
 
       # Multi-clause function
       clauses != nil ->
-        type_errors = check_multi_clause(name, clauses, declared_ret, env, emit?, file, line)
+        typed_params = Keyword.get(meta, :params, [])
+        type_errors = check_multi_clause(name, clauses, typed_params, declared_ret, env, emit?, file, line)
 
         # Infer effects from all clause bodies
         if emit? do
@@ -585,9 +701,22 @@ defmodule Cure.Types.Checker do
     end
   end
 
-  defp check_multi_clause(name, clauses, declared_ret, env, emit?, file, line) do
+  defp check_multi_clause(name, clauses, typed_params, declared_ret, env, emit?, file, line) do
     # Extract guards for coverage analysis
     guard_asts = Enum.map(clauses, fn %{guard: guard} -> guard end)
+
+    # The function-level signature carries the declared parameter types
+    # (`fn classify(x: Int) -> ...`). We resolve those once so each
+    # clause can bind its own pattern variables with the right declared
+    # type, instead of every clause defaulting to `:any`. Without this,
+    # `GuardRefinement.refine_env/3` would wrap `x` in a
+    # `{:refinement, :any, "x", guard}` and arithmetic in the clause
+    # body would fail `Type.numeric?/1` even when `x: Int`.
+    declared_param_types =
+      Enum.map(typed_params, fn
+        {:param, pmeta, _pname} -> resolve_with_env(env, Keyword.get(pmeta, :type))
+        _ -> :any
+      end)
 
     # Guard coverage analysis: check if guards cover all cases
     # Use the first variable-typed param for SMT analysis
@@ -629,9 +758,20 @@ defmodule Cure.Types.Checker do
     end
 
     # Type-check each clause with guard-refined environment
-    clause_types =
+    clause_results =
       Enum.map(clauses, fn %{params: params, guard: guard, body: body_list} ->
         clause_env = Env.push_scope(env)
+
+        # Pair each clause pattern with the declared parameter type when
+        # the arities line up. Mismatched arities (which the parser would
+        # normally reject anyway) fall back to `:any` so we don't crash
+        # on a malformed clause.
+        clause_pattern_types =
+          if length(params) == length(declared_param_types) do
+            Enum.zip(params, declared_param_types)
+          else
+            Enum.map(params, &{&1, :any})
+          end
 
         # Bind pattern variables (v0.21.0: route every pattern through
         # `bind_pattern_vars/3` so structured patterns such as binary
@@ -639,16 +779,46 @@ defmodule Cure.Types.Checker do
         # `[h | t]`, and ADT constructors `Ok(v)` introduce their
         # inner variables instead of being silently dropped).
         clause_env =
-          Enum.reduce(params, clause_env, fn pattern, e ->
-            bind_pattern_vars(e, pattern, :any)
+          Enum.reduce(clause_pattern_types, clause_env, fn {pattern, ptype}, e ->
+            bind_pattern_vars(e, pattern, ptype)
           end)
 
-        # The flat param_info list still drives guard refinement.
+        # The flat param_info list still drives guard refinement, now
+        # using the declared base type so refinements are anchored at
+        # `:int` / `:float` rather than `:any`.
         param_info =
-          Enum.flat_map(params, fn
-            {:variable, _, vname} -> [{vname, :any}]
+          Enum.flat_map(clause_pattern_types, fn
+            {{:variable, _, vname}, ptype} -> [{vname, ptype}]
             _ -> []
           end)
+
+        # Phase 2: install refinement assumptions for refinement-typed
+        # parameters of this clause so call-site obligations within the
+        # body can rely on them.
+        {assumptions, var_types} = collect_refinement_assumptions(param_info)
+
+        clause_env = %{
+          clause_env
+          | refinement_assumptions: assumptions,
+            refinement_var_types: var_types
+        }
+
+        # Phase 2 (multi-clause): merge the clause's guard predicate into
+        # the SMT assumptions so the per-clause return obligation can
+        # rely on it. `GuardRefinement.refine_env/3` only updates the
+        # env-level refinement display; the SMT discharge needs the
+        # raw guard AST.
+        clause_env =
+          case guard do
+            nil ->
+              clause_env
+
+            guard_ast ->
+              %{
+                clause_env
+                | refinement_assumptions: clause_env.refinement_assumptions ++ [guard_ast]
+              }
+          end
 
         # Apply guard refinement
         clause_env = GuardRefinement.refine_env(clause_env, guard, param_info)
@@ -656,23 +826,36 @@ defmodule Cure.Types.Checker do
         case body_list do
           [body_ast] ->
             case infer(clause_env, body_ast, emit?, file) do
-              {:ok, t, _} -> {:ok, t}
-              err -> err
+              {:ok, t, _} ->
+                refinement_errors =
+                  verify_return_refinement(name, body_ast, declared_ret, clause_env, emit?, file, line)
+
+                {:ok, t, refinement_errors}
+
+              err ->
+                err
             end
 
           _ ->
-            {:ok, :any}
+            {:ok, :any, []}
         end
       end)
 
-    errors = for {:error, e} <- clause_types, do: e
+    body_errors = for {:error, e} <- clause_results, do: e
+    refinement_errors = for {:ok, _, errs} <- clause_results, do: errs
+    all_refinement_errors = List.flatten(refinement_errors)
 
-    if errors != [] do
-      errors
-    else
-      types = for {:ok, t} <- clause_types, do: t
-      joined = Enum.reduce(types, :never, &Type.join/2)
-      check_return_type(name, joined, declared_ret, emit?, file, line)
+    cond do
+      body_errors != [] ->
+        body_errors
+
+      all_refinement_errors != [] ->
+        all_refinement_errors
+
+      true ->
+        types = for {:ok, t, _} <- clause_results, do: t
+        joined = Enum.reduce(types, :never, &Type.join/2)
+        check_return_type(name, joined, declared_ret, emit?, file, line)
     end
   end
 
@@ -2316,6 +2499,59 @@ defmodule Cure.Types.Checker do
   defp verify_return_refinement(name, body_ast, {:refinement, base, binder, pred}, env, emit?, file, line)
        when base in [:int, :float] do
     goal = substitute_in_predicate(pred, %{binder => body_ast})
+
+    discharge_return_obligation(
+      name,
+      {:refinement, base, binder, pred},
+      goal,
+      env,
+      emit?,
+      file,
+      line
+    )
+  end
+
+  # Union return type: the body satisfies the union iff it satisfies at
+  # least one member. Refinement members contribute their own predicate
+  # (substituted with the body AST). Non-refinement members reduce to
+  # `true` (the body is structurally a member already), short-circuiting
+  # the SMT discharge entirely.
+  defp verify_return_refinement(name, body_ast, {:union, ts}, env, emit?, file, line) when is_list(ts) do
+    cond do
+      ts == [] ->
+        []
+
+      Enum.any?(ts, &non_refinement_or_non_numeric?/1) ->
+        # At least one member is structurally satisfied -- no obligation
+        # to discharge.
+        []
+
+      true ->
+        goals =
+          Enum.map(ts, fn {:refinement, _base, binder, pred} ->
+            substitute_in_predicate(pred, %{binder => body_ast})
+          end)
+
+        goal = build_disjunction(goals)
+        discharge_return_obligation(name, {:union, ts}, goal, env, emit?, file, line)
+    end
+  end
+
+  defp verify_return_refinement(_name, _body_ast, _ret_type, _env, _emit?, _file, _line), do: []
+
+  defp non_refinement_or_non_numeric?({:refinement, base, _, _}) when base in [:int, :float], do: false
+  defp non_refinement_or_non_numeric?(_), do: true
+
+  defp build_disjunction([single]), do: single
+
+  defp build_disjunction([head | rest]) do
+    {:binary_op, [operator: :or, category: :boolean], [head, build_disjunction(rest)]}
+  end
+
+  # Common discharge tail shared by single-refinement and union return
+  # obligations. The displayed type powers the diagnostic so users see
+  # what they declared, not the conjunctive SMT obligation.
+  defp discharge_return_obligation(name, declared, goal, env, emit?, file, line) do
     assumptions = Map.get(env, :refinement_assumptions, [])
     var_types = Map.get(env, :refinement_var_types, %{})
 
@@ -2327,7 +2563,7 @@ defmodule Cure.Types.Checker do
         err =
           {:refinement_violation,
            "function '#{name}' return value violates refinement " <>
-             Type.display({:refinement, base, binder, pred}) <> " (E090)", line: line}
+             Type.display(declared) <> " (E090)", line: line}
 
         if emit? do
           Events.emit(:type_checker, :type_error, err, Events.meta(file, line))
@@ -2339,7 +2575,7 @@ defmodule Cure.Types.Checker do
         warn =
           {:refinement_unknown,
            "function '#{name}': could not prove return value satisfies refinement " <>
-             Type.display({:refinement, base, binder, pred}) <> " (W091)", line: line}
+             Type.display(declared) <> " (W091)", line: line}
 
         if emit? do
           Events.emit(:type_checker, :type_warning, warn, Events.meta(file, line))
@@ -2348,8 +2584,6 @@ defmodule Cure.Types.Checker do
         []
     end
   end
-
-  defp verify_return_refinement(_name, _body_ast, _ret_type, _env, _emit?, _file, _line), do: []
 
   defp verify_refinement_args(name, param_types, args, line, env) do
     if length(param_types) != length(args) do

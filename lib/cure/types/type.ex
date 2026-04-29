@@ -22,6 +22,12 @@ defmodule Cure.Types.Type do
   - `{:type_var, id}` -- fresh unification variable (future use)
   - `{:refinement, base_type, var_name, predicate_ast}` -- structural only
   - `{:effun, [param_types], return_type, effects}` -- effectful function type
+  - `{:union, [type1, type2, ...]}` -- structural union of pre-existing
+    types. Produced when the type checker classifies
+    `type X = A | B | C` as a union of *existing* type aliases
+    (rather than as an enum with three new nullary tags). Subtype:
+    `t <: {:union, ts}` iff `t <: t_i` for some `i`;
+    `{:union, ts} <: t` iff `t_i <: t` for every `i`.
 
   ## Named type resolution
 
@@ -77,6 +83,11 @@ defmodule Cure.Types.Type do
   # and defer any mismatch to the concrete instantiation site. Same rationale as
   # the `:any` escape hatch in the arithmetic check.
   def numeric?({:type_var, _}), do: true
+  # A union is numeric iff every member is numeric. This makes
+  # `type AnyNum = Int | Float` behave like a numeric type for
+  # arithmetic operators while a mixed union (`Int | String`)
+  # correctly fails the check.
+  def numeric?({:union, ts}), do: ts != [] and Enum.all?(ts, &numeric?/1)
   def numeric?(_), do: false
 
   @doc "Returns the valid effect kind atoms."
@@ -215,6 +226,19 @@ defmodule Cure.Types.Type do
       r1 == r2
   end
 
+  # Union types.
+  #
+  # The LHS-union rule comes first so a `union <: t` query iterates the
+  # union's members. Each recursive call dispatches against the t-side
+  # rules below (including the RHS-union case for `union <: union`).
+  def subtype?({:union, ts}, sup) when is_list(ts) do
+    Enum.all?(ts, fn ti -> subtype?(ti, sup) end)
+  end
+
+  def subtype?(sub, {:union, ts}) when is_list(ts) do
+    Enum.any?(ts, fn ti -> subtype?(sub, ti) end)
+  end
+
   def subtype?(_, _), do: false
 
   @doc "Returns true if `a` and `b` are compatible (either is subtype of the other, or either is `:any`)."
@@ -227,6 +251,11 @@ defmodule Cure.Types.Type do
 
   def compatible?({:refinement, base, _, _}, t), do: compatible?(base, t)
   def compatible?(t, {:refinement, base, _, _}), do: compatible?(t, base)
+  # Two values are compatible with a union when at least one of its
+  # members is compatible with the other side. Mirrors the LUB-style
+  # treatment of `:any`.
+  def compatible?({:union, ts}, b), do: Enum.any?(ts, &compatible?(&1, b))
+  def compatible?(a, {:union, ts}), do: Enum.any?(ts, &compatible?(a, &1))
   def compatible?(a, b), do: subtype?(a, b) or subtype?(b, a)
 
   # -- Join (least upper bound) ------------------------------------------------
@@ -457,6 +486,7 @@ defmodule Cure.Types.Type do
   def display({:type_var, id}), do: "t#{id}"
   def display({:type_hole, _}), do: "_"
   def display({:refinement, base, var, _pred}), do: "{#{var}: #{display(base)} | ...}"
+  def display({:union, ts}), do: Enum.map_join(ts, " | ", &display/1)
   def display({:sigma, _, _, _} = s), do: Cure.Types.Sigma.display(s)
 
   def display({:eq, t, _a, _b}), do: "Eq(#{display(t)}, _, _)"

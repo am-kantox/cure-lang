@@ -652,6 +652,137 @@ defmodule Cure.Types.CheckerTest do
       assert {:ok, _} = Checker.check_module(ast, emit_events: false)
     end
 
+    test "local refinement aliases declared with `type` are visible to function signatures" do
+      # Regression for the gap left at the end of Phase 1: only stdlib
+      # type aliases were being lifted into `env.types`. User-defined
+      # local aliases (`type Pos = {x: Int | x > 0}`) were silently
+      # dropped by `collect_signatures/2`, so the function signature
+      # for `classify` resolved its return type to a bare nominal
+      # `{:named, "Pos"}` and the multi-clause body's `Int` failed the
+      # structural subtype check with
+      # "declared return type Pos but body has type Int".
+      #
+      # After the fix, `install_local_type_aliases/2` resolves `Pos`,
+      # `Neg`, `Zer` to their underlying refinements before any
+      # function signature is registered. The structural subtype check
+      # then accepts `:int` as a candidate inhabitant via the gradual
+      # rule `subtype?(t, {:refinement, base, _, _}) -> subtype?(t, base)`.
+      src = """
+      mod LocalAliasesMod
+        type Pos = {x: Int | x > 0}
+        type Neg = {x: Int | x < 0}
+        type Zer = {x: Int | x == 0}
+
+        fn classify(x: Int) -> Pos
+          | x when x > 0 -> x
+          | x when x < 0 -> 0 - x
+          | _            -> 1
+      """
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(src, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+
+      assert {:ok, _} = Checker.check_module(ast, emit_events: false)
+    end
+
+    test "`type X = A | B | C` of pre-existing aliases is a union, not a fresh ADT" do
+      # Regression for the user's `type All = Pos | Neg | Zer` case.
+      # The parser produces an `:enum` container with three nullary
+      # variants regardless of whether `Pos`, `Neg`, `Zer` are fresh
+      # tags or pre-existing type aliases. The checker now disambiguates:
+      # if every variant name is already in `env.types`, the declaration
+      # registers a structural union `{:union, [t_Pos, t_Neg, t_Zer]}`
+      # in `env.types` and does *not* re-bind the names in the value
+      # scope. The body of `classify` returns `Int` values; subtype
+      # `:int <: union` succeeds because each member's gradual rule
+      # reduces to `:int <: :int`.
+      src = """
+      mod UnionAliasMod
+        type Pos = {x: Int | x > 0}
+        type Neg = {x: Int | x < 0}
+        type Zer = {x: Int | x == 0}
+
+        type All = Pos | Neg | Zer
+
+        fn classify(x: Int) -> All
+          | x when x > 0 -> x
+          | x when x < 0 -> 0 - x
+          | _            -> 1
+      """
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(src, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+
+      assert {:ok, _} = Checker.check_module(ast, emit_events: false)
+    end
+
+    test "`type X = A | B | C` with fresh tags still registers an ADT" do
+      # When none of the variant names match an existing alias in
+      # `env.types`, the declaration falls through to the original ADT
+      # path, which registers each tag as a value of `{:named, X}`.
+      # The classifier below returns the tag values, not Int.
+      src = """
+      mod FreshTagsMod
+        type Sign = PositiveTag | NegativeTag | ZeroTag
+
+        fn classify(x: Int) -> Sign
+          | x when x > 0 -> PositiveTag
+          | x when x < 0 -> NegativeTag
+          | _            -> ZeroTag
+      """
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(src, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+
+      assert {:ok, _} = Checker.check_module(ast, emit_events: false)
+    end
+
+    test "forward-referenced local refinement alias still resolves" do
+      # Even when the alias declaration comes textually *after* the
+      # function that consumes it, the dedicated pre-pass guarantees
+      # `env.types` carries the resolved refinement before any
+      # `register_fn_signature/2` call inspects the AST.
+      src = """
+      mod ForwardAliasMod
+        fn keep(n: Pos) -> Pos = n
+        type Pos = {x: Int | x > 0}
+      """
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(src, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+
+      assert {:ok, _} = Checker.check_module(ast, emit_events: false)
+    end
+
+    test "declared Int parameter survives multi-clause guard refinement" do
+      # Regression for the bug where `check_multi_clause` bound every
+      # clause's pattern variables with `:any`, causing
+      # `GuardRefinement.refine_env/3` to wrap them in
+      # `{:refinement, :any, ...}`. The body of `| x when x < 0 -> -x`
+      # then failed `Type.numeric?/1` (which checks the refinement's
+      # base) and the checker emitted
+      # "unary '-' expects numeric operand, got {x: Any | ...}".
+      src = """
+      mod MultiClauseRefine
+        type Sign = PositiveTag | NegativeTag | ZeroTag
+
+        fn classify(x: Int) -> Sign
+          | x when x > 0 -> PositiveTag
+          | x when x < 0 -> NegativeTag
+          | _            -> ZeroTag
+
+        fn negate(x: Int) -> Int
+          | x when x > 0 -> 0 - x
+          | x when x < 0 -> 0 - x
+          | _            -> 0
+      """
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(src, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+
+      assert {:ok, _} = Checker.check_module(ast, emit_events: false)
+    end
+
     test "both variant kinds compile end-to-end with check_types: true" do
       source = """
       mod PositiveExample
