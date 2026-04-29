@@ -67,7 +67,14 @@ defmodule Cure.Types.Checker do
     # Every module starts with every stdlib function addressable by its
     # fully qualified name (`Std.List.map`). Short-name bindings are
     # installed later on demand from each `use` statement.
-    env = Env.new() |> Stdlib.install_qualified()
+    # Phase 1 (v0.34): also seed `env.types` with every stdlib type alias
+    # under its qualified name; short-name type aliases are installed
+    # alongside their value-level counterparts when an `:import` is
+    # processed in `collect_signatures/2`.
+    env =
+      Env.new()
+      |> Stdlib.install_qualified()
+      |> Stdlib.install_qualified_types()
 
     case ast do
       {:container, meta, body} when is_list(meta) ->
@@ -187,6 +194,7 @@ defmodule Cure.Types.Checker do
     env =
       Env.new()
       |> Stdlib.install_qualified()
+      |> Stdlib.install_qualified_types()
       |> install_default_imports()
       |> install_extra_bindings(extra_bindings)
 
@@ -210,7 +218,9 @@ defmodule Cure.Types.Checker do
   # `Std.List.map(...)`.
   defp install_default_imports(env) do
     Enum.reduce(Stdlib.all().short_by_module, env, fn {mod, _}, acc ->
-      Stdlib.install_import(acc, mod)
+      acc
+      |> Stdlib.install_import(mod)
+      |> Stdlib.install_import_types(mod)
     end)
   end
 
@@ -251,21 +261,21 @@ defmodule Cure.Types.Checker do
   end
 
   defp collect_signatures(stmts, env) do
+    # Phase 1: install all imports up front so that any subsequent
+    # `:function_def` resolves its parameter and return types against
+    # the already-imported aliases. Without this pre-pass, a function
+    # whose `use Std.Mod` line follows it textually would still see
+    # `Positive` as a bare nominal `{:named, "Positive"}` instead of
+    # the underlying refinement.
+    env = install_imports(stmts, env)
+
     Enum.reduce(stmts, env, fn
       {:function_def, meta, _body}, env ->
         register_fn_signature(meta, env)
 
-      # `use Std.Mod` (and later, user modules) -- install the short-name
-      # bindings for this module so unqualified calls like `map(...)` can
-      # still be resolved to a concrete signature.
-      {:import, meta, _}, env when is_list(meta) ->
-        source = Keyword.get(meta, :source)
-
-        if is_binary(source) do
-          Stdlib.install_import(env, source)
-        else
-          env
-        end
+      # Already installed in the pre-pass above; nothing to do here.
+      {:import, _meta, _}, env ->
+        env
 
       # Register protocol method signatures so calling them type-checks,
       # and record field schemas for type-safe field access.
@@ -310,12 +320,98 @@ defmodule Cure.Types.Checker do
               _, e -> e
             end)
 
+          # ADT (sum type) declared as `type Name = A | B(T) | ...`. Each
+          # nullary variant becomes a value of the named ADT so a bare
+          # reference like `Positive` type-checks; each parameterised
+          # variant becomes a constructor function whose return type is
+          # the named ADT, so `Some(42)` type-checks against `Option(T)`.
+          :enum ->
+            register_enum_container(meta, body, env)
+
           _ ->
             env
         end
 
       _, env ->
         env
+    end)
+  end
+
+  # Pre-pass: process every `:import` node first so the short-name
+  # value and type bindings are visible to all subsequent signature
+  # collection. Mirrors the order codegen uses to resolve imports.
+  defp install_imports(stmts, env) do
+    Enum.reduce(stmts, env, fn
+      {:import, meta, _}, env when is_list(meta) ->
+        source = Keyword.get(meta, :source)
+
+        if is_binary(source) do
+          env
+          |> Stdlib.install_import(source)
+          |> Stdlib.install_import_types(source)
+        else
+          env
+        end
+
+      _, env ->
+        env
+    end)
+  end
+
+  # Register a `type Name(Params) = V1 | V2(T) | ...` declaration:
+  # the type itself goes into `Env.types` so that `{:named, Name}`
+  # references can be resolved (e.g. for record-style subtyping); each
+  # variant goes into the value scope so it can be referenced from
+  # function bodies.
+  defp register_enum_container(meta, body, env) do
+    name = Keyword.get(meta, :name)
+    type_params = Keyword.get(meta, :type_params, [])
+
+    env =
+      if is_binary(name) do
+        type_atom = String.to_atom(String.downcase(name))
+        param_vars = Enum.map(type_params, fn p -> {:type_var, to_string(p)} end)
+        Env.extend_type(env, name, {:adt, type_atom, param_vars})
+      else
+        env
+      end
+
+    named_self = if is_binary(name), do: {:named, name}, else: :any
+
+    Enum.reduce(body, env, fn
+      # Nullary variant: bare PascalCase identifier inside the type RHS.
+      {:variable, vmeta, vname}, e when is_binary(vname) and is_list(vmeta) ->
+        if Keyword.get(vmeta, :variant, false) do
+          Env.extend(e, vname, named_self)
+        else
+          e
+        end
+
+      # Parameterised variant: `Some(T)` is parsed as a function-def-shaped
+      # node carrying `variant: true` and a list of type-expression ASTs.
+      # We register the constructor with `:any` for each parameter type:
+      # the *return* type (the declared ADT) is the load-bearing fact for
+      # the fix, and keeping arg types permissive preserves the historical
+      # behaviour where, for example, calling `Note(pitch, vel)` with
+      # arguments whose declared types are refinement aliases of `Int`
+      # type-checks without forcing the user to unwrap them.
+      {:function_def, vmeta, _}, e when is_list(vmeta) ->
+        if Keyword.get(vmeta, :variant, false) do
+          vname = Keyword.get(vmeta, :name)
+          raw_params = Keyword.get(vmeta, :params, [])
+          param_types = List.duplicate(:any, length(raw_params))
+
+          if is_binary(vname) do
+            Env.extend(e, vname, {:fun, param_types, named_self})
+          else
+            e
+          end
+        else
+          e
+        end
+
+      _, e ->
+        e
     end)
   end
 
@@ -329,7 +425,7 @@ defmodule Cure.Types.Checker do
     param_types =
       Enum.map(params, fn {:param, pmeta, _name} ->
         type_ast = Keyword.get(pmeta, :type)
-        Type.resolve(type_ast)
+        resolve_with_env(env, type_ast)
       end)
 
     param_names =
@@ -337,8 +433,8 @@ defmodule Cure.Types.Checker do
 
     ret_type =
       cond do
-        extern != nil and return_type_ast != nil -> Type.resolve(return_type_ast)
-        return_type_ast != nil -> Type.resolve(return_type_ast)
+        extern != nil and return_type_ast != nil -> resolve_with_env(env, return_type_ast)
+        return_type_ast != nil -> resolve_with_env(env, return_type_ast)
         true -> :any
       end
 
@@ -363,7 +459,7 @@ defmodule Cure.Types.Checker do
     line = Keyword.get(meta, :line, 1)
     declared_effects = Keyword.get(meta, :effects)
 
-    declared_ret = if return_type_ast, do: Type.resolve(return_type_ast), else: nil
+    declared_ret = if return_type_ast, do: resolve_with_env(env, return_type_ast), else: nil
 
     cond do
       # @extern: trust declared types, classify effects
@@ -438,13 +534,18 @@ defmodule Cure.Types.Checker do
     param_info =
       Enum.map(params, fn {:param, pmeta, pname} ->
         type_ast = Keyword.get(pmeta, :type)
-        {pname, Type.resolve(type_ast)}
+        {pname, resolve_with_env(env, type_ast)}
       end)
 
     fn_env =
       Enum.reduce(param_info, fn_env, fn {pname, ptype}, e ->
         Env.extend(e, pname, ptype)
       end)
+
+    # Phase 2: install refinement assumptions for refinement-typed parameters
+    # so the body and any nested call-site obligations can rely on them.
+    {assumptions, var_types} = collect_refinement_assumptions(param_info)
+    fn_env = %{fn_env | refinement_assumptions: assumptions, refinement_var_types: var_types}
 
     # Apply guard refinement: if a guard is present, refine param types
     guard_ast = Keyword.get(Keyword.new(), :guards)
@@ -454,7 +555,8 @@ defmodule Cure.Types.Checker do
       [body_ast] ->
         case infer(fn_env, body_ast, emit?, file) do
           {:ok, body_type, _env} ->
-            check_return_type(name, body_type, declared_ret, emit?, file, line)
+            check_return_type(name, body_type, declared_ret, emit?, file, line) ++
+              verify_return_refinement(name, body_ast, declared_ret, fn_env, emit?, file, line)
 
           {:error, err} ->
             [err]
@@ -804,14 +906,31 @@ defmodule Cure.Types.Checker do
     else
       case Env.lookup(env, name) do
         {:ok, {:fun, param_types, ret_type}} ->
-          check_fn_call(name, param_types, ret_type, args, line, env)
+          case check_fn_call(name, param_types, ret_type, args, line, env) do
+            {:ok, _, _} = ok ->
+              case verify_refinement_args(name, param_types, args, line, env) do
+                [] -> ok
+                [err | _] -> {:error, err}
+              end
+
+            err ->
+              err
+          end
 
         {:ok, {:constrained_fun, param_types, ret_type, guard_ast, param_names}} ->
           case check_fn_call(name, param_types, ret_type, args, line, env) do
             {:ok, _, _} = ok ->
-              # Verify guard constraint via SMT
+              # Verify legacy `when`-guard constraint via SMT.
               verify_call_constraint(name, guard_ast, param_names, args, line, env)
-              ok
+
+              # Phase 2: refinement-typed parameters share the same
+              # SMT discharge pathway. A counterexample aborts the call
+              # with an error; an `:unknown` SMT result is reported as
+              # a warning by the helper itself.
+              case verify_refinement_args(name, param_types, args, line, env) do
+                [] -> ok
+                [err | _] -> {:error, err}
+              end
 
             err ->
               err
@@ -846,7 +965,7 @@ defmodule Cure.Types.Checker do
 
     with {:ok, val_type, env} <- do_infer(env, value) do
       if annotation_ast do
-        declared = Type.resolve(annotation_ast)
+        declared = resolve_with_env(env, annotation_ast)
 
         if Type.subtype?(val_type, declared) do
           env = bind_pattern_vars(env, pattern, declared)
@@ -2063,4 +2182,224 @@ defmodule Cure.Types.Checker do
 
   defp extract_line({_, meta, _}) when is_list(meta), do: Keyword.get(meta, :line, 1)
   defp extract_line(_), do: 1
+
+  # Phase 1 (v0.34) helper: resolve a parser type-expression AST and
+  # then dereference any nominal alias against `env.types`. Stdlib type
+  # aliases brought in by `use Std.Mod` -- and user-defined enum types
+  # registered earlier in the same module -- become visible at every
+  # signature/check site without any further plumbing.
+  defp resolve_with_env(env, type_ast) do
+    Env.deref(env, Type.resolve(type_ast))
+  end
+
+  # -- Phase 2 (v0.34): refinement obligations -------------------------------
+  #
+  # The helpers below turn refinement-typed parameters and return types into
+  # concrete SMT obligations. The flow is:
+  #
+  #   1. `collect_refinement_assumptions/1` walks the parameter list. For
+  #      each `{:refinement, base, binder, predicate}` parameter, it
+  #      substitutes the parser-supplied binder variable with the actual
+  #      parameter name, producing a predicate that talks about real
+  #      parameter names. These predicates are stashed on the function
+  #      env as `refinement_assumptions` and the corresponding
+  #      `name -> base_type` map is stashed as `refinement_var_types`
+  #      so that the SMT translator declares each free variable with the
+  #      right sort.
+  #
+  #   2. `verify_return_refinement/7` constructs the return obligation by
+  #      substituting the binder of the declared return refinement with
+  #      the body AST. The implication
+  #          assumption_1 /\ ... /\ assumption_n  =>  obligation
+  #      is discharged by checking the unsatisfiability of
+  #          assumption_1 /\ ... /\ assumption_n /\ NOT obligation
+  #      via `discharge_refinement/3`.
+  #
+  #   3. `verify_refinement_args/5` does the same per-argument at every
+  #      call site, substituting the binder with the argument AST. It
+  #      generalises `verify_call_constraint/6` so that refinement-typed
+  #      parameters get the same treatment as legacy `when` guards.
+  #
+  # SMT outcomes are mapped to:
+  #   * `:proved`    -> obligation discharged, no diagnostic
+  #   * `:failed`    -> counterexample exists, emit `E090` error
+  #   * `:unknown`   -> SMT reported `:unknown` (or Z3 unavailable),
+  #                     emit `W091` warning so the program still compiles
+
+  defp collect_refinement_assumptions(param_info) do
+    Enum.reduce(param_info, {[], %{}}, fn {pname, ptype}, {asmps, types} ->
+      case ptype do
+        {:refinement, base, binder, pred} when base in [:int, :float] and is_binary(pname) ->
+          substituted =
+            substitute_in_predicate(pred, %{
+              binder => {:variable, [scope: :local], pname}
+            })
+
+          {[substituted | asmps], Map.put(types, pname, base)}
+
+        # Non-refinement numeric parameters still need to be declared in
+        # case they appear free in some other refinement obligation that
+        # mentions them through call-site substitution.
+        base when base in [:int, :float] and is_binary(pname) ->
+          {asmps, Map.put(types, pname, base)}
+
+        _ ->
+          {asmps, types}
+      end
+    end)
+    |> then(fn {asmps, types} -> {Enum.reverse(asmps), types} end)
+  end
+
+  # Walk a predicate AST and substitute every free `{:variable, _, name}`
+  # node whose name appears as a key in `bindings` with the corresponding
+  # AST. Mirrors the shape recognised by `Cure.SMT.Translator.do_translate/1`
+  # so the resulting predicate is fully translatable.
+  defp substitute_in_predicate(ast, bindings) when is_map(bindings) do
+    case ast do
+      {:variable, _meta, name} when is_binary(name) ->
+        Map.get(bindings, name, ast)
+
+      {:literal, _meta, _value} ->
+        ast
+
+      {:binary_op, meta, [l, r]} ->
+        {:binary_op, meta, [substitute_in_predicate(l, bindings), substitute_in_predicate(r, bindings)]}
+
+      {:unary_op, meta, [inner]} ->
+        {:unary_op, meta, [substitute_in_predicate(inner, bindings)]}
+
+      {:function_call, meta, args} ->
+        {:function_call, meta, Enum.map(args, &substitute_in_predicate(&1, bindings))}
+
+      {:conditional, meta, [c, t, e]} ->
+        {:conditional, meta,
+         [
+           substitute_in_predicate(c, bindings),
+           substitute_in_predicate(t, bindings),
+           substitute_in_predicate(e, bindings)
+         ]}
+
+      other ->
+        other
+    end
+  end
+
+  # Build the SMT proof obligation `assumptions /\ NOT goal` and ask the
+  # solver whether it is satisfiable. The query AST is fed straight
+  # through `Cure.SMT.Solver.check_sat/2`, which delegates to the
+  # translator: every free variable is auto-declared from `var_types`
+  # (defaulting to `Int` when missing) and the connectives are mapped
+  # to their SMT-LIB counterparts.
+  defp discharge_refinement(assumptions, goal, var_types) do
+    obligation =
+      case assumptions do
+        [] ->
+          {:unary_op, [operator: :not, category: :boolean], [goal]}
+
+        [first | rest] ->
+          conj =
+            Enum.reduce(rest, first, fn pred, acc ->
+              {:binary_op, [operator: :and, category: :boolean], [acc, pred]}
+            end)
+
+          {:binary_op, [operator: :and, category: :boolean],
+           [conj, {:unary_op, [operator: :not, category: :boolean], [goal]}]}
+      end
+
+    case Cure.SMT.Solver.check_sat(obligation, var_types) do
+      :unsat -> :proved
+      :sat -> :failed
+      :unknown -> :unknown
+    end
+  end
+
+  defp verify_return_refinement(name, body_ast, {:refinement, base, binder, pred}, env, emit?, file, line)
+       when base in [:int, :float] do
+    goal = substitute_in_predicate(pred, %{binder => body_ast})
+    assumptions = Map.get(env, :refinement_assumptions, [])
+    var_types = Map.get(env, :refinement_var_types, %{})
+
+    case discharge_refinement(assumptions, goal, var_types) do
+      :proved ->
+        []
+
+      :failed ->
+        err =
+          {:refinement_violation,
+           "function '#{name}' return value violates refinement " <>
+             Type.display({:refinement, base, binder, pred}) <> " (E090)", line: line}
+
+        if emit? do
+          Events.emit(:type_checker, :type_error, err, Events.meta(file, line))
+        end
+
+        [err]
+
+      :unknown ->
+        warn =
+          {:refinement_unknown,
+           "function '#{name}': could not prove return value satisfies refinement " <>
+             Type.display({:refinement, base, binder, pred}) <> " (W091)", line: line}
+
+        if emit? do
+          Events.emit(:type_checker, :type_warning, warn, Events.meta(file, line))
+        end
+
+        []
+    end
+  end
+
+  defp verify_return_refinement(_name, _body_ast, _ret_type, _env, _emit?, _file, _line), do: []
+
+  defp verify_refinement_args(name, param_types, args, line, env) do
+    if length(param_types) != length(args) do
+      []
+    else
+      param_types
+      |> Enum.zip(args)
+      |> Enum.flat_map(fn {ptype, arg} ->
+        verify_refinement_arg(name, ptype, arg, line, env)
+      end)
+    end
+  end
+
+  defp verify_refinement_arg(name, {:refinement, base, binder, pred}, arg_ast, line, env)
+       when base in [:int, :float] do
+    goal = substitute_in_predicate(pred, %{binder => arg_ast})
+    assumptions = Map.get(env, :refinement_assumptions, [])
+    var_types = Map.get(env, :refinement_var_types, %{})
+    emit? = Map.get(env, :emit_events, false)
+    file = Map.get(env, :file, "nofile")
+
+    case discharge_refinement(assumptions, goal, var_types) do
+      :proved ->
+        []
+
+      :failed ->
+        err =
+          {:refinement_violation,
+           "call to '#{name}': argument violates refinement " <>
+             Type.display({:refinement, base, binder, pred}) <> " (E090)", line: line}
+
+        if emit? do
+          Events.emit(:type_checker, :type_error, err, Events.meta(file, line))
+        end
+
+        [err]
+
+      :unknown ->
+        warn =
+          {:refinement_unknown,
+           "call to '#{name}': could not prove argument satisfies refinement " <>
+             Type.display({:refinement, base, binder, pred}) <> " (W091)", line: line}
+
+        if emit? do
+          Events.emit(:type_checker, :type_warning, warn, Events.meta(file, line))
+        end
+
+        []
+    end
+  end
+
+  defp verify_refinement_arg(_name, _ptype, _arg_ast, _line, _env), do: []
 end

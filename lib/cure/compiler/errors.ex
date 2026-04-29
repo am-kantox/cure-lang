@@ -48,6 +48,16 @@ defmodule Cure.Compiler.Errors do
     format_diagnostic("error", "arity mismatch", file, line, message)
   end
 
+  def format_error({:refinement_violation, message, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+    format_diagnostic("error", "refinement violation (E090)", file, line, message)
+  end
+
+  def format_error({:refinement_unknown, message, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+    format_diagnostic("warning", "refinement unknown (W091)", file, line, message)
+  end
+
   # -- Parse Errors ------------------------------------------------------------
 
   def format_error({:parse_error, errors}, file) when is_list(errors) do
@@ -1367,6 +1377,42 @@ defmodule Cure.Compiler.Errors do
     Fix: locate the missing `.cure` file and run `:load <path>` to
     restore its bindings manually, or delete the entry from the snap
     file's `loaded_paths` list.
+    """,
+    "E090" => """
+    E090: Refinement Obligation Counterexample
+
+    A function's body, after substituting the actual return expression
+    into the declared return-type refinement, was disproven by Z3 under
+    the hypotheses derived from the parameter refinements. The solver
+    produced a counterexample assignment that violates the refinement.
+
+    Example:
+      use Std.Refine
+
+      fn shrink(n: Int) -> Positive = n - 1
+      # Error E090: when n = 1, n - 1 = 0 violates `x > 0`.
+
+    Fix: tighten the parameter type so the obligation discharges
+    (`shrink(n: {x: Int | x > 1})`), guard the body with a runtime
+    check (`pickup n > 1 -> n - 1; else -> 1`), or change the
+    declared return type so the body satisfies it.
+    """,
+    "W091" => """
+    W091: Refinement Obligation Unknown
+
+    The SMT solver returned `:unknown` for a refinement obligation
+    (parameter assumption => body satisfies declared return
+    refinement). The compilation continues -- W091 is a warning, not
+    an error -- but the obligation has not been proven.
+
+    Common causes are non-linear arithmetic, multiplications by
+    variables, or expressions outside the QF_LIA / QF_LRA fragments
+    Z3 can decide quickly under the default timeout.
+
+    Fix: simplify the body or the refinement, raise the solver
+    timeout via `cure check --hot-smt`, or accept the warning when
+    the obligation is true by hand and the cost of proving it
+    machine-checked is too high.
     """
   }
 

@@ -1052,9 +1052,21 @@ defmodule Cure.Compiler.Codegen do
 
   defp compile_variable(name, state) do
     line = state.line
-    var_atom = mangle_var(name)
-    form = {:var, line, var_atom}
-    {form, state}
+
+    # A bare PascalCase identifier in expression position is a reference
+    # to a nullary ADT constructor (e.g. `Positive` in `type Sign = Positive | ...`).
+    # Lower it to the same tagged-tuple shape that `Positive()` would
+    # produce via `compile_constructor_call/3`, so the BEAM linter does not
+    # see an unbound variable and so callers can pattern-match the value
+    # consistently with parameterised constructors.
+    if constructor?(name) do
+      tag = constructor_tag(name)
+      {{:tuple, line, [{:atom, line, tag}]}, state}
+    else
+      var_atom = mangle_var(name)
+      form = {:var, line, var_atom}
+      {form, state}
+    end
   end
 
   # -- Binary Operator Compilation ---------------------------------------------

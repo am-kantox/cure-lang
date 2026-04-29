@@ -7,9 +7,19 @@ defmodule Cure.Types.Env do
   built-in types and operators.
   """
 
-  defstruct scopes: [%{}], types: %{}, used: MapSet.new()
+  defstruct scopes: [%{}],
+            types: %{},
+            used: MapSet.new(),
+            refinement_assumptions: [],
+            refinement_var_types: %{}
 
-  @type t :: %__MODULE__{scopes: [map()], types: map(), used: MapSet.t(String.t())}
+  @type t :: %__MODULE__{
+          scopes: [map()],
+          types: map(),
+          used: MapSet.t(String.t()),
+          refinement_assumptions: [tuple()],
+          refinement_var_types: %{String.t() => atom()}
+        }
 
   # -- Construction ------------------------------------------------------------
 
@@ -117,4 +127,35 @@ defmodule Cure.Types.Env do
   def lookup_type(%__MODULE__{types: types}, name) do
     Map.fetch(types, name)
   end
+
+  @doc """
+  Recursively resolve `{:named, name}` references through the type
+  namespace, returning the underlying canonical type when an alias is
+  registered (e.g. a stdlib refinement type or ADT) and the input
+  unchanged otherwise.
+
+  Cycle-safe: an unresolved nominal name encountered for a second time
+  is returned as-is rather than recursed into.
+
+  Records are deliberately *not* unwrapped: callers that need record
+  field schemas continue to look the record up by name through
+  `lookup_type/2`. Anything else found in `env.types` (refinements,
+  ADTs, primitive aliases, function types) is followed.
+  """
+  @spec deref(t(), term()) :: term()
+  def deref(%__MODULE__{} = env, type), do: do_deref(env, type, MapSet.new())
+
+  defp do_deref(env, {:named, name} = orig, seen) when is_binary(name) do
+    if MapSet.member?(seen, name) do
+      orig
+    else
+      case lookup_type(env, name) do
+        {:ok, {:record, _, _}} -> orig
+        {:ok, resolved} -> do_deref(env, resolved, MapSet.put(seen, name))
+        :error -> orig
+      end
+    end
+  end
+
+  defp do_deref(_env, type, _seen), do: type
 end

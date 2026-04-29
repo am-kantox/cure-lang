@@ -33,23 +33,32 @@ defmodule Cure.Types.Stdlib do
 
   alias Cure.Compiler.{Lexer, Parser}
   alias Cure.Stdlib.Paths
-  alias Cure.Types.{Env, Type}
+  alias Cure.Types.{Env, Refinement, Type}
 
-  @persistent_key {__MODULE__, :signatures_v2}
+  @persistent_key {__MODULE__, :signatures_v3}
 
   @typedoc """
   Parsed stdlib signature bundle:
 
-    * `:qualified` -- map of fully qualified names (`"Std.List.map"`)
-      to function signatures. Safe to install in every inference
-      environment.
+    * `:qualified` -- map of fully qualified function names
+      (`"Std.List.map"`) to function signatures. Safe to install in
+      every inference environment.
     * `:short_by_module` -- map of `"Std.Mod"` to a map of short
-      names (`"map"`) to signatures. Installed selectively in response
-      to `use Std.Mod` imports.
+      function names (`"map"`) to signatures. Installed selectively
+      in response to `use Std.Mod` imports.
+    * `:qualified_types` -- map of fully qualified type names
+      (`"Std.Refine.Positive"`) to canonical types. Currently only
+      consumed by tests / introspection; Cure surface syntax does
+      not address types by qualified name yet.
+    * `:types_by_module` -- map of `"Std.Mod"` to a map of short
+      type names (`"Positive"`) to canonical types. Installed into
+      `env.types` selectively in response to `use Std.Mod`.
   """
   @type bundle :: %{
           qualified: %{String.t() => term()},
-          short_by_module: %{String.t() => %{String.t() => term()}}
+          short_by_module: %{String.t() => %{String.t() => term()}},
+          qualified_types: %{String.t() => term()},
+          types_by_module: %{String.t() => %{String.t() => term()}}
         }
 
   @doc """
@@ -81,8 +90,10 @@ defmodule Cure.Types.Stdlib do
 
   @doc false
   @spec empty?(bundle()) :: boolean()
-  def empty?(%{qualified: q, short_by_module: s}) do
-    map_size(q) == 0 and map_size(s) == 0
+  def empty?(%{qualified: q, short_by_module: s} = bundle) do
+    qt = Map.get(bundle, :qualified_types, %{})
+    tbm = Map.get(bundle, :types_by_module, %{})
+    map_size(q) == 0 and map_size(s) == 0 and map_size(qt) == 0 and map_size(tbm) == 0
   end
 
   @doc """
@@ -92,6 +103,16 @@ defmodule Cure.Types.Stdlib do
   @spec short_names_for(String.t()) :: %{String.t() => term()}
   def short_names_for(module_name) when is_binary(module_name) do
     all() |> Map.fetch!(:short_by_module) |> Map.get(module_name, %{})
+  end
+
+  @doc """
+  Return the short-name type map for one stdlib module. The values are
+  canonical Cure types (`{:refinement, ...}`, `{:adt, ...}`, primitive
+  atoms for plain aliases). Returns `%{}` when the module is unknown.
+  """
+  @spec short_types_for(String.t()) :: %{String.t() => term()}
+  def short_types_for(module_name) when is_binary(module_name) do
+    all() |> Map.get(:types_by_module, %{}) |> Map.get(module_name, %{})
   end
 
   @doc """
@@ -138,6 +159,40 @@ defmodule Cure.Types.Stdlib do
     end
   end
 
+  @doc """
+  Extend `env.types` with every fully qualified stdlib type alias.
+  Cure surface syntax does not currently address types by their
+  qualified name, but registering them keeps the type-level namespace
+  symmetrical with the value-level one and is useful for tooling.
+  """
+  @spec install_qualified_types(Env.t()) :: Env.t()
+  def install_qualified_types(%Env{} = env) do
+    Enum.reduce(all().qualified_types, env, fn {name, type}, e ->
+      Env.extend_type(e, name, type)
+    end)
+  end
+
+  @doc """
+  Extend `env.types` with short-name type aliases from a single stdlib
+  module. Mirrors `install_import/2` at the type level: a `use Std.Mod`
+  in user code now also brings every public type alias from that module
+  into scope, so a parameter declared as `Positive` resolves to its
+  underlying refinement type rather than remaining a bare nominal
+  reference.
+  """
+  @spec install_import_types(Env.t(), String.t()) :: Env.t()
+  def install_import_types(%Env{} = env, module_name) when is_binary(module_name) do
+    canonical = strip_cure_prefix(module_name)
+
+    case Map.get(all().types_by_module, canonical) do
+      nil ->
+        env
+
+      types ->
+        Enum.reduce(types, env, fn {name, type}, e -> Env.extend_type(e, name, type) end)
+    end
+  end
+
   defp strip_cure_prefix("Cure." <> rest), do: rest
   defp strip_cure_prefix(other), do: other
 
@@ -146,7 +201,7 @@ defmodule Cure.Types.Stdlib do
   # ---------------------------------------------------------------------------
 
   defp load_all do
-    empty = %{qualified: %{}, short_by_module: %{}}
+    empty = %{qualified: %{}, short_by_module: %{}, qualified_types: %{}, types_by_module: %{}}
 
     # The stdlib may live under `lib/std/` (cwd-relative, when Cure
     # itself is the current Mix project), under `:code.priv_dir(:cure)/std`
@@ -188,17 +243,31 @@ defmodule Cure.Types.Stdlib do
 
   defp merge_module(acc, module_name, stmts) do
     short_map = collect_signatures(stmts)
+    type_map = collect_types(stmts)
 
-    if map_size(short_map) == 0 do
+    acc =
+      if map_size(short_map) == 0 do
+        acc
+      else
+        qualified_map =
+          Enum.reduce(short_map, acc.qualified, fn {name, sig}, q ->
+            Map.put(q, "#{module_name}.#{name}", sig)
+          end)
+
+        short_by_module = Map.put(acc.short_by_module, module_name, short_map)
+        %{acc | qualified: qualified_map, short_by_module: short_by_module}
+      end
+
+    if map_size(type_map) == 0 do
       acc
     else
-      qualified_map =
-        Enum.reduce(short_map, acc.qualified, fn {name, sig}, q ->
-          Map.put(q, "#{module_name}.#{name}", sig)
+      qualified_types =
+        Enum.reduce(type_map, acc.qualified_types, fn {name, type}, q ->
+          Map.put(q, "#{module_name}.#{name}", type)
         end)
 
-      short_by_module = Map.put(acc.short_by_module, module_name, short_map)
-      %{acc | qualified: qualified_map, short_by_module: short_by_module}
+      types_by_module = Map.put(acc.types_by_module, module_name, type_map)
+      %{acc | qualified_types: qualified_types, types_by_module: types_by_module}
     end
   end
 
@@ -235,6 +304,75 @@ defmodule Cure.Types.Stdlib do
       _, acc ->
         acc
     end)
+  end
+
+  # Lift top-level type declarations:
+  #
+  #   * `{:type_annotation, [refinement: true, name: name, ...], children}`
+  #     -- a refinement type alias built via `Refinement.from_type_annotation/2`.
+  #   * `{:type_annotation, [name: name, ...], [inner_ast]}` (no
+  #     `:refinement` flag) -- a plain type alias resolved through
+  #     `Type.resolve/1`.
+  #   * `{:container, [container_type: :enum, name: name, type_params: tp], _}`
+  #     -- an ADT, registered as `{:adt, downcased_name_atom,
+  #     param_type_vars}` to match the user-side enum bookkeeping.
+  defp collect_types(stmts) do
+    Enum.reduce(stmts, %{}, fn
+      {:type_annotation, meta, children}, acc ->
+        case type_alias_from_annotation(meta, children) do
+          {name, type} when is_binary(name) -> Map.put(acc, name, type)
+          _ -> acc
+        end
+
+      {:container, meta, _body}, acc ->
+        case adt_from_container(meta) do
+          {name, type} when is_binary(name) -> Map.put(acc, name, type)
+          _ -> acc
+        end
+
+      _, acc ->
+        acc
+    end)
+  end
+
+  defp type_alias_from_annotation(meta, children) do
+    name = Keyword.get(meta, :name)
+
+    cond do
+      not is_binary(name) ->
+        nil
+
+      Keyword.get(meta, :refinement) ->
+        case Refinement.from_type_annotation(meta, children) do
+          nil -> nil
+          ref -> {name, ref}
+        end
+
+      true ->
+        case children do
+          [inner] -> {name, Type.resolve(inner)}
+          _ -> nil
+        end
+    end
+  end
+
+  defp adt_from_container(meta) do
+    case Keyword.get(meta, :container_type) do
+      :enum ->
+        name = Keyword.get(meta, :name)
+        params = Keyword.get(meta, :type_params, [])
+
+        if is_binary(name) do
+          atom = String.to_atom(String.downcase(name))
+          param_vars = Enum.map(params, fn p -> {:type_var, to_string(p)} end)
+          {name, {:adt, atom, param_vars}}
+        else
+          nil
+        end
+
+      _ ->
+        nil
+    end
   end
 
   defp signature_from_meta(meta) do

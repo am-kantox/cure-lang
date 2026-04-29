@@ -171,6 +171,13 @@ defmodule Cure.Types.Type do
     end
   end
 
+  # Phase-1 gradual rule: a value typed at the refinement's base type is
+  # accepted as a candidate inhabitant of the refinement. The actual
+  # SMT-driven obligation is enforced separately at the function
+  # boundary (Phase 2). Without this rule, declaring a refinement alias
+  # as a return type would always reject a non-refined body.
+  def subtype?(t, {:refinement, base, _, _}), do: subtype?(t, base)
+
   # Named type (user-defined record/ADT) subtyping
   # {:named, "Pair"} is a subtype of {:adt, :pair, _} when the lowercased name matches
   def subtype?({:named, name}, {:adt, key, _params}),
