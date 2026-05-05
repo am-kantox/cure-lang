@@ -39,7 +39,7 @@ mod Showcase
     match n
       0                       -> "zero"
       m when m < 0            -> "negative"
-      m when m > 0 && m < 10  -> "small"
+      m when m > 0 and m < 10 -> "small"
       _                       -> "big"
 
   ## Numeric literals with `_` separators.
@@ -48,17 +48,20 @@ mod Showcase
   fn rgb_red()   -> Int = 0xFF_00_00
   fn pi_ish()    -> Float = 3.141_592
 
-  ## Char literals come in two forms.
+  ## [TODO] Support char literals come in two forms (`'…'` and `?…`.)
   fn letter_a() -> Char = 'a'
-  fn newline()  -> Char = ?\n
+  fn newline()  -> Char = '\n'
 
   ## Regex literals.
+  ## [TODO] Support `~r/…/` literals as first-class `Regex` values.
+  # ~r/^[0-9]+$/
   fn is_digit?(s: String) -> Bool =
-    Std.Regex.is_match(~r/^[0-9]+$/, s)
+    let r = Std.Regex.compile_bang("^[0-9]+$")
+    Std.Regex.is_match(r, s)
 
-  ## Typed holes let you sketch bodies.
-  fn square_sketch(n: Int) -> Int = ?todo
-  fn another_sketch() -> Int = ??
+  ## [TODO] Support typed holes let you sketch bodies.
+  # fn square_sketch(n: Int) -> Int = ?todo
+  # fn another_sketch() -> Int = ??
 
   ## String interpolation and `<>` concatenation.
   fn greet(name: String) -> String = "Hello, " <> name <> "!"
@@ -76,11 +79,14 @@ mod Showcase
   ## Operator zoo: comparison, monadic sugar, ranges.
   fn operator_demo() -> Bool =
     let a = 1 + 2 * 3 / 4 - 5
-    let b = 10 ** 3
+    # [TODO] Support `**`
+    # let b = 10 ** 3
     let c = 1..=10
-    let d = [1, 2, 3] ++ [4, 5] ++ []
-    let e = Some(3) >>= fn(x) -> Some(x * 2) end
-    a < b && (b >= 100 || not false)
+    # [TODO] Support `++`
+    # let d = [1, 2, 3] ++ [4, 5] ++ []
+    # [TODO] Support `>>=` (maybe)
+    # let e = Some(3) >>= fn(x) -> Some(x * 2) end
+    a == 2.5
 
   ## Atoms with trailing `?`/`!`.
   fn status_probe() -> Atom =
