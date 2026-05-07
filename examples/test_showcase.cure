@@ -1,0 +1,209 @@
+mod TestShowcase
+  ## Comprehensive demonstration of every `Std.Test` helper.
+  ##
+  ## Covers five areas:
+  ##
+  ## 1. Basic assertions -- `assert`, `assert_eq`, `assert_ne`,
+  ##    `assert_gt`, `assert_lt`.
+  ## 2. Composing assertions into small unit-style checks.
+  ## 3. Property-based testing with `forall` and `forall_default`.
+  ## 4. Shrinking-aware properties via `forall_shrunk` and
+  ##    `forall_shrunk_default`.
+  ## 5. Combining generators from `Std.Gen` to test richer domains.
+  ##
+  ## Run with `cure run examples/test_showcase.cure`.
+
+  use Std.Test
+  use Std.Gen
+  use Std.List
+
+  # ---- 1. Basic assertions ---------------------------------------------------
+
+  ## `assert/1` -- the simplest predicate guard.
+  fn check_assert() -> Atom =
+    let _ = assert(true)
+    let _ = assert(1 + 1 == 2)
+    assert(42 > 0)
+
+  ## `assert_eq/2` -- structural equality; raises `:not_equal`.
+  fn check_assert_eq() -> Atom =
+    let _ = assert_eq(1 + 1, 2)
+    let _ = assert_eq(:hello, :hello)
+    assert_eq([1, 2, 3], [1, 2, 3])
+
+  ## `assert_ne/2` -- raises `:unexpectedly_equal` on a match.
+  fn check_assert_ne() -> Atom =
+    let _ = assert_ne(1, 2)
+    let _ = assert_ne(:ok, :error)
+    assert_ne([1], [1, 2])
+
+  ## `assert_gt/2` and `assert_lt/2` -- strict ordering.
+  fn check_ordering() -> Atom =
+    let _ = assert_gt(10, 5)
+    let _ = assert_gt(0, -1)
+    let _ = assert_lt(3, 7)
+    assert_lt(-100, 0)
+
+  # ---- 2. Unit-style checks --------------------------------------------------
+
+  ## Compose several assertions to verify a small `Std.List` contract:
+  ## reversing a known list and checking head/tail.
+  fn check_list_reverse() -> Atom =
+    let xs = [1, 2, 3, 4, 5]
+    let rev = reverse(xs)
+    let _ = assert_eq(head(rev, 0), 5)
+    let _ = assert_eq(last(rev, 0), 1)
+    assert_eq(length(rev), length(xs))
+
+  ## Demonstrate that `map` preserves length and transforms elements.
+  fn check_list_map() -> Atom =
+    let xs = [10, 20, 30]
+    let doubled = map(xs, fn(x) -> x * 2)
+    let _ = assert_eq(doubled, [20, 40, 60])
+    assert_eq(length(doubled), length(xs))
+
+  # ---- 3. Property-based testing (forall) ------------------------------------
+
+  ## `n + 0 == n` for every integer in a range.
+  fn prop_add_identity() -> Atom =
+    forall(
+      fn(_) -> int_in(-500, 500),
+      fn(n) -> n + 0 == n,
+      50
+    )
+
+  ## Doubling is always greater than the original for positives.
+  fn prop_double_gt() -> Atom =
+    forall(
+      fn(_) -> int_in(1, 1000),
+      fn(n) -> n * 2 > n,
+      50
+    )
+
+  ## Reversing a list twice yields the original (with `forall_default`,
+  ## 100 runs).
+  fn prop_reverse_involution() -> Atom =
+    forall_default(
+      fn(_) -> list_int(10, 0, 100),
+      fn(xs) -> reverse(reverse(xs)) == xs
+    )
+
+  ## Length of a mapped list equals the original.
+  fn prop_map_preserves_length() -> Atom =
+    forall_default(
+      fn(_) -> list_int(8, -50, 50),
+      fn(xs) -> length(map(xs, fn(x) -> x * x)) == length(xs)
+    )
+
+  ## `filter` never grows a list.
+  fn prop_filter_no_grow() -> Atom =
+    forall_default(
+      fn(_) -> list_int(12, 0, 100),
+      fn(xs) -> length(filter(xs, fn(x) -> x > 50)) <= length(xs)
+    )
+
+  ## `sum` of a list of non-negatives is non-negative.
+  fn prop_sum_nonneg() -> Atom =
+    forall(
+      fn(_) -> list_int(10, 0, 999),
+      fn(xs) -> sum(xs) >= 0,
+      80
+    )
+
+  ## `one_of` always picks an element from the input list.
+  fn prop_one_of_membership() -> Atom =
+    let candidates = [10, 20, 30, 40, 50]
+    forall(
+      fn(_) -> one_of(candidates, 0),
+      fn(v) -> contains(candidates, v),
+      60
+    )
+
+  # ---- 4. Shrinking-aware properties -----------------------------------------
+
+  ## `forall_shrunk` shrinks counterexamples when a property fails.
+  ## Here the property always holds, so no shrinking is triggered --
+  ## we just verify the happy path compiles and returns `:ok`.
+  fn prop_shrunk_happy() -> Int =
+    forall_shrunk(
+      fn(_) -> int_in(0, 200),
+      fn(n) -> n >= 0,
+      50
+    )
+
+  ## Same with the 100-run convenience wrapper.
+  fn prop_shrunk_default_happy() -> List(Int) =
+    forall_shrunk_default(
+      fn(_) -> list_int(6, 1, 50),
+      fn(xs) -> all(xs, fn(x) -> x > 0)
+    )
+
+  ## `forall_shrunk` over lists: appending [] is the identity.
+  fn prop_shrunk_append_nil() -> List(Int) =
+    forall_shrunk_default(
+      fn(_) -> list_int(8, -20, 20),
+      fn(xs) -> append(xs, []) == xs
+    )
+
+  # ---- 5. Generator combinator showcase --------------------------------------
+
+  ## `bool/0` -- every generated boolean is either true or false.
+  local fn is_bool(b: Bool) -> Bool =
+    match b
+      true  -> true
+      false -> true
+
+  fn prop_bool_range() -> Atom =
+    forall_default(fn(_) -> bool(), fn(b) -> is_bool(b))
+
+  ## `constant/1` -- every sample is the seeded value.
+  fn prop_constant() -> Atom =
+    forall(
+      fn(_) -> constant(42),
+      fn(v) -> v == 42,
+      30
+    )
+
+  ## `list_of_int/3` -- exact-length generation.
+  fn prop_exact_length() -> Atom =
+    forall(
+      fn(_) -> list_of_int(5, 0, 10),
+      fn(xs) -> length(xs) == 5,
+      40
+    )
+
+  # ---- Entry point -----------------------------------------------------------
+
+  ## Run every check and property, printing nothing on success.
+  ## Any failure raises an Erlang error with a descriptive atom.
+  fn main() -> Atom =
+    # -- basic assertions --
+    let _ = check_assert()
+    let _ = check_assert_eq()
+    let _ = check_assert_ne()
+    let _ = check_ordering()
+
+    # -- unit-style checks --
+    let _ = check_list_reverse()
+    let _ = check_list_map()
+
+    # -- forall properties --
+    let _ = prop_add_identity()
+    let _ = prop_double_gt()
+    let _ = prop_reverse_involution()
+    let _ = prop_map_preserves_length()
+    let _ = prop_filter_no_grow()
+    let _ = prop_sum_nonneg()
+    let _ = prop_one_of_membership()
+
+    # -- shrinking-aware properties --
+    let _ = prop_shrunk_happy()
+    let _ = prop_shrunk_default_happy()
+    let _ = prop_shrunk_append_nil()
+
+    # -- generator combinators --
+    let _ = prop_bool_range()
+    let _ = prop_constant()
+    let _ = prop_exact_length()
+
+    :ok
