@@ -10,6 +10,7 @@ defmodule Cure.Stdlib.PathsTest do
     previous_src = Application.get_env(:cure, :stdlib_source_dir)
     previous_beam = Application.get_env(:cure, :stdlib_beam_dir)
     previous_cure_home = System.get_env("CURE_HOME")
+    previous_cure_lib = System.get_env("CURE_LIB")
 
     on_exit(fn ->
       case previous_src do
@@ -25,6 +26,11 @@ defmodule Cure.Stdlib.PathsTest do
       case previous_cure_home do
         nil -> System.delete_env("CURE_HOME")
         value -> System.put_env("CURE_HOME", value)
+      end
+
+      case previous_cure_lib do
+        nil -> System.delete_env("CURE_LIB")
+        value -> System.put_env("CURE_LIB", value)
       end
     end)
 
@@ -310,6 +316,84 @@ defmodule Cure.Stdlib.PathsTest do
       # Just check the helper is empty; the full source_dirs/0 may
       # still surface the legacy `lib/std` from cwd.
       assert Paths.cure_home_source_dirs() == []
+    end
+  end
+
+  describe "cure_lib/0" do
+    test "returns nil when CURE_LIB is unset" do
+      System.delete_env("CURE_LIB")
+      assert Paths.cure_lib() == nil
+    end
+
+    test "returns nil when CURE_LIB is blank or whitespace" do
+      System.put_env("CURE_LIB", "")
+      assert Paths.cure_lib() == nil
+
+      System.put_env("CURE_LIB", "   \t  ")
+      assert Paths.cure_lib() == nil
+    end
+
+    test "returns the trimmed env value when set" do
+      System.put_env("CURE_LIB", "  /opt/cure/ebin  ")
+      assert Paths.cure_lib() == "/opt/cure/ebin"
+    end
+  end
+
+  describe "cure_lib_beam_dirs/0" do
+    test "returns the empty list when CURE_LIB is unset" do
+      System.delete_env("CURE_LIB")
+      assert Paths.cure_lib_beam_dirs() == []
+    end
+
+    test "returns the directory directly as a single-element list" do
+      System.put_env("CURE_LIB", "/opt/cure/ebin")
+      assert Paths.cure_lib_beam_dirs() == ["/opt/cure/ebin"]
+    end
+  end
+
+  describe "cure_lib_source_dirs/0" do
+    test "returns the empty list when CURE_LIB is unset" do
+      System.delete_env("CURE_LIB")
+      assert Paths.cure_lib_source_dirs() == []
+    end
+
+    test "returns the sibling ../std path" do
+      System.put_env("CURE_LIB", "/opt/cure/ebin")
+      [dir] = Paths.cure_lib_source_dirs()
+      assert String.ends_with?(dir, "/std")
+    end
+  end
+
+  describe "CURE_LIB resolution in beam_dirs/0" do
+    test "surfaces $CURE_LIB when it exists on disk" do
+      dir = make_tmp!()
+
+      try do
+        Application.delete_env(:cure, :stdlib_beam_dir)
+        System.delete_env("CURE_HOME")
+        System.put_env("CURE_LIB", dir)
+
+        assert dir in Paths.beam_dirs()
+      after
+        File.rm_rf!(dir)
+      end
+    end
+
+    test "the explicit :stdlib_beam_dir override still wins over CURE_LIB" do
+      lib = make_tmp!()
+      override = make_tmp!()
+
+      try do
+        Application.put_env(:cure, :stdlib_beam_dir, override)
+        System.put_env("CURE_LIB", lib)
+
+        dirs = Paths.beam_dirs()
+        assert List.first(dirs) == override
+        assert lib in dirs
+      after
+        File.rm_rf!(lib)
+        File.rm_rf!(override)
+      end
     end
   end
 

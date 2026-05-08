@@ -64,6 +64,7 @@ defmodule Cure.Stdlib.Paths do
   @legacy_cwd_beam Path.join(["_build", "cure", "ebin"])
 
   @cure_home_env_var "CURE_HOME"
+  @cure_lib_env_var "CURE_LIB"
 
   @doc """
   Return every candidate stdlib source directory that currently exists,
@@ -72,7 +73,9 @@ defmodule Cure.Stdlib.Paths do
   """
   @spec source_dirs() :: [String.t()]
   def source_dirs do
-    ([configured_source_dir(), bundled_source_dir()] ++
+    ([configured_source_dir()] ++
+       cure_lib_source_dirs() ++
+       [bundled_source_dir()] ++
        cure_home_source_dirs() ++
        [@legacy_cwd_source])
     |> Enum.reject(&is_nil/1)
@@ -99,7 +102,9 @@ defmodule Cure.Stdlib.Paths do
   """
   @spec beam_dirs() :: [String.t()]
   def beam_dirs do
-    ([configured_beam_dir(), bundled_beam_dir()] ++
+    ([configured_beam_dir()] ++
+       cure_lib_beam_dirs() ++
+       [bundled_beam_dir()] ++
        cure_home_beam_dirs() ++
        [@legacy_cwd_beam])
     |> Enum.reject(&is_nil/1)
@@ -183,6 +188,58 @@ defmodule Cure.Stdlib.Paths do
     case :code.priv_dir(:cure) do
       {:error, _} -> nil
       priv -> Path.join(to_string(priv), "ebin")
+    end
+  end
+
+  @doc """
+  Return the value of the `CURE_LIB` environment variable, normalised.
+
+  `CURE_LIB` points directly at a directory containing compiled
+  `Cure.Std.*.beam` files. Unlike `CURE_HOME` (which expects a Cure
+  checkout root), `CURE_LIB` requires no subdirectory convention: the
+  directory itself is placed on the BEAM search list.
+
+  Trailing whitespace is stripped and an empty value is treated as
+  unset (returning `nil`).
+  """
+  @spec cure_lib() :: String.t() | nil
+  def cure_lib do
+    case System.get_env(@cure_lib_env_var) do
+      value when is_binary(value) ->
+        case String.trim(value) do
+          "" -> nil
+          trimmed -> trimmed
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  @doc """
+  Return the candidate stdlib BEAM directories derived from
+  `CURE_LIB`. The directory itself is used directly (no subdirectory
+  convention). Always returns a list (possibly empty).
+  """
+  @spec cure_lib_beam_dirs() :: [String.t()]
+  def cure_lib_beam_dirs do
+    case cure_lib() do
+      nil -> []
+      dir -> [dir]
+    end
+  end
+
+  @doc """
+  Return the candidate stdlib source directories derived from
+  `CURE_LIB`. By convention, if `CURE_LIB` points at an ebin-style
+  directory the sibling `../std` is checked for sources. Always
+  returns a list (possibly empty).
+  """
+  @spec cure_lib_source_dirs() :: [String.t()]
+  def cure_lib_source_dirs do
+    case cure_lib() do
+      nil -> []
+      dir -> [Path.expand(Path.join(dir, "../std"))]
     end
   end
 

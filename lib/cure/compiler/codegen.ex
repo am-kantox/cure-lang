@@ -215,25 +215,35 @@ defmodule Cure.Compiler.Codegen do
     # Collect function definitions and build export list
     {fn_forms, state} = compile_module_body(body, state)
 
-    # Module attribute forms
-    mod_attr = {:attribute, 1, :module, module_atom}
-    export_attr = {:attribute, 2, :export, state.exports}
+    # Validate that all imported Cure.Std.* modules are loadable.
+    # Without this check, a missing stdlib module silently falls
+    # through to a local call and surfaces as a cryptic
+    # `undefined_function` lint error.
+    case validate_stdlib_imports(state.imports) do
+      :ok ->
+        # Module attribute forms
+        mod_attr = {:attribute, 1, :module, module_atom}
+        export_attr = {:attribute, 2, :export, state.exports}
 
-    # Suppress errors for functions that shadow auto-imported BIFs (OTP 27+)
-    no_auto_import_attr = build_no_auto_import_attr(fn_forms)
+        # Suppress errors for functions that shadow auto-imported BIFs (OTP 27+)
+        no_auto_import_attr = build_no_auto_import_attr(fn_forms)
 
-    # v0.31.0: monomorphisation can produce specialised clones whose only
-    # call sites get devoured by the inliner immediately afterwards. Tag
-    # those clones with `nowarn_unused_function` so erl_lint stays quiet.
-    nowarn_attr = build_monomorph_nowarn_attr(body, state)
+        # v0.31.0: monomorphisation can produce specialised clones whose only
+        # call sites get devoured by the inliner immediately afterwards. Tag
+        # those clones with `nowarn_unused_function` so erl_lint stays quiet.
+        nowarn_attr = build_monomorph_nowarn_attr(body, state)
 
-    forms = [mod_attr, export_attr] ++ no_auto_import_attr ++ nowarn_attr ++ fn_forms
+        forms = [mod_attr, export_attr] ++ no_auto_import_attr ++ nowarn_attr ++ fn_forms
 
-    if emit? do
-      Events.emit(:codegen, :module_assembled, forms, Events.meta(file, 1))
+        if emit? do
+          Events.emit(:codegen, :module_assembled, forms, Events.meta(file, 1))
+        end
+
+        {:ok, forms}
+
+      {:error, _} = err ->
+        err
     end
-
-    {:ok, forms}
   end
 
   defp compile_module_body(stmts, state) do
@@ -1925,6 +1935,42 @@ defmodule Cure.Compiler.Codegen do
     name
     |> Macro.underscore()
     |> String.to_atom()
+  end
+
+  # -- Stdlib Import Validation -------------------------------------------------
+  #
+  # After collecting imports, check that every `Cure.Std.*` module in the
+  # import list is actually loadable. A missing stdlib module means the
+  # user wrote `use Std.XXX` but the corresponding BEAM was not found on
+  # any search path. Surface this as a clear compile error instead of
+  # letting it fall through to a cryptic `undefined_function` lint error.
+
+  defp validate_stdlib_imports(imports) do
+    missing =
+      Enum.filter(imports, fn mod ->
+        mod_str = Atom.to_string(mod)
+
+        String.starts_with?(mod_str, "Cure.Std.") and
+          :code.ensure_loaded(mod) != {:module, mod}
+      end)
+
+    case missing do
+      [] ->
+        :ok
+
+      [first | _] ->
+        # Strip the "Cure." prefix for the user-facing message:
+        # :"Cure.Std.Nonexistent" -> "Std.Nonexistent"
+        user_name =
+          first
+          |> Atom.to_string()
+          |> String.replace_prefix("Cure.", "")
+
+        {:error,
+         {:missing_stdlib_module, first,
+          "use #{user_name}: module '#{first}' not found. " <>
+            "Set [compiler] stdlib_path in Cure.toml or export CURE_LIB."}}
+    end
   end
 
   # -- Import Resolution --------------------------------------------------------

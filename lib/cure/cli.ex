@@ -450,7 +450,15 @@ defmodule Cure.CLI do
     # fresh VM hitting a bulk `cure compile examples/` run would see
     # `undefined_function` lint errors for any module referencing a
     # stdlib function whose beam has not yet been loaded.
-    preload_stdlib()
+    # When a Cure.toml is available, its [compiler] stdlib_path takes
+    # priority over the default resolution chain.
+    project =
+      case Cure.Project.load() do
+        {:ok, p} -> p
+        _ -> nil
+      end
+
+    preload_stdlib(project)
 
     base_compile_opts = [
       output_dir: output_dir,
@@ -519,7 +527,13 @@ defmodule Cure.CLI do
     record_profile? = Keyword.get(opts, :record_profile, false)
     profile_dir = Keyword.get(opts, :profile_dir, Cure.PGO.Recorder.default_dir())
 
-    preload_stdlib()
+    project =
+      case Cure.Project.load() do
+        {:ok, p} -> p
+        _ -> nil
+      end
+
+    preload_stdlib(project)
 
     if record_profile? do
       case Cure.PGO.Recorder.start_link([]) do
@@ -677,12 +691,30 @@ defmodule Cure.CLI do
   # The dedicated helper avoids adding the output directories to the
   # global Erlang code path, so stale leftover lowercase beams (e.g. a
   # pre-rename examples/math.cure -> math.beam) can't shadow OTP modules.
-  defp preload_stdlib do
+  #
+  # When a `Cure.Project.t()` is given, its `[compiler] stdlib_path`
+  # takes the highest priority; falling back to `$CURE_LIB`, then the
+  # standard candidate chain in `Cure.Stdlib.Paths`.
+  defp preload_stdlib(project) do
     # CLI entry points (`cure run`, `cure compile`) want every stdlib
     # module available so user sources can `use Std.X` without thinking
     # about groups. The REPL is the only caller with a narrower default
     # (`:none`); see `Cure.REPL.start/1`.
-    Cure.Stdlib.Preload.preload(examples: true, kind: :all)
+    opts = [examples: true, kind: :all]
+
+    opts =
+      case project do
+        %Cure.Project{} ->
+          case Cure.Project.stdlib_path(project) do
+            path when is_binary(path) and path != "" -> Keyword.put(opts, :stdlib_ebin, path)
+            _ -> opts
+          end
+
+        _ ->
+          opts
+      end
+
+    Cure.Stdlib.Preload.preload(opts)
   end
 
   # -- check -------------------------------------------------------------------
@@ -766,7 +798,7 @@ defmodule Cure.CLI do
         # `cure deps` may have to compile path/git dependencies that
         # `use Std.*`. Preload the full stdlib up front so those
         # imports resolve at compile time without extra plumbing.
-        preload_stdlib()
+        preload_stdlib(project)
 
         case project.dependencies do
           [] ->
@@ -800,7 +832,7 @@ defmodule Cure.CLI do
   defp cmd_deps_update do
     case Cure.Project.load() do
       {:ok, project} ->
-        preload_stdlib()
+        preload_stdlib(project)
 
         case project.dependencies do
           [] ->
@@ -867,7 +899,13 @@ defmodule Cure.CLI do
     # `cmd_run/2` does for stdlib, then JIT-compile every `lib/**/*.cure`
     # so user modules (`Money.hello/0`, etc.) are reachable from the
     # test bodies below.
-    preload_stdlib()
+    project =
+      case Cure.Project.load() do
+        {:ok, p} -> p
+        _ -> nil
+      end
+
+    preload_stdlib(project)
     load_project_lib()
 
     test_files = Path.wildcard("test/**/*.cure")

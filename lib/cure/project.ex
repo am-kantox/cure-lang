@@ -274,6 +274,7 @@ defmodule Cure.Project do
     [compiler]
     type_check = false
     optimize = false
+    # stdlib_path = "/path/to/cure/ebin"
 
     [application]
     name           = "#{name}"
@@ -307,6 +308,7 @@ defmodule Cure.Project do
     [compiler]
     type_check = false
     optimize = false
+    # stdlib_path = "/path/to/cure/ebin"
     """
   end
 
@@ -476,6 +478,20 @@ defmodule Cure.Project do
     ]
   end
 
+  @doc """
+  Return the stdlib BEAM directory configured in `[compiler] stdlib_path`,
+  or fall back to `$CURE_LIB` if the key is absent.
+
+  Returns `nil` when neither source provides a value.
+  """
+  @spec stdlib_path(t()) :: String.t() | nil
+  def stdlib_path(%__MODULE__{compiler_opts: opts}) do
+    case Keyword.get(opts, :stdlib_path) do
+      path when is_binary(path) and path != "" -> path
+      _ -> Cure.Stdlib.Paths.cure_lib()
+    end
+  end
+
   # -- Project-wide compile driver (v0.26.0) ---------------------------------
 
   @doc """
@@ -511,6 +527,22 @@ defmodule Cure.Project do
 
     emit_events? = Keyword.get(opts, :emit_events, false)
     check? = Keyword.get(opts, :check_types, false)
+
+    # Ensure the stdlib is loaded before compiling project files so that
+    # `use Std.XXX` imports resolve. The project's [compiler] stdlib_path
+    # takes priority; falls back to $CURE_LIB, then the default chain.
+    preload_opts = [kind: :all]
+
+    preload_opts =
+      case stdlib_path(project) do
+        path when is_binary(path) and path != "" ->
+          Keyword.put(preload_opts, :stdlib_ebin, path)
+
+        _ ->
+          preload_opts
+      end
+
+    Cure.Stdlib.Preload.preload(preload_opts)
 
     cure_files =
       extra_paths
@@ -745,6 +777,9 @@ defmodule Cure.Project do
     case parse_kv(line) do
       {"", _} ->
         acc
+
+      {"stdlib_path", val} ->
+        %{acc | compiler: [{:stdlib_path, strip_quotes(val)} | acc.compiler]}
 
       {key, val} ->
         atom_key = String.to_atom(key)
