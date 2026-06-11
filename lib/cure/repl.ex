@@ -100,7 +100,13 @@ defmodule Cure.REPL do
     # loads all of them (preload_kind: :all), making Std.* callable from
     # any expression. The helper is a no-op when the bundled BEAMs and
     # sources are both absent (e.g. a partial escript build).
-    _ = Preload.preload(examples: false, kind: preload_kind)
+    #
+    # A project's `[compiler] stdlib_path` in Cure.toml (falling back to
+    # `$CURE_LIB`) is threaded through as `:stdlib_ebin`, mirroring the CLI
+    # (`cure compile` / `cure run`). Without this, loading a file that
+    # `use`s a stdlib module raised `:missing_stdlib_module` whenever the
+    # path was configured in Cure.toml but not also exported as `$CURE_LIB`.
+    _ = Preload.preload(__stdlib_preload_opts__(examples: false, kind: preload_kind))
 
     # If any requested stdlib module is still not loaded after the
     # preload, surface a diagnostic so the user understands why a
@@ -169,6 +175,38 @@ defmodule Cure.REPL do
         _ -> Code.ensure_loaded?(module)
       end
     end)
+  end
+
+  @doc false
+  # Build the option list for `Cure.Stdlib.Preload.preload/1`, injecting
+  # `:stdlib_ebin` from the project's `[compiler] stdlib_path` (Cure.toml)
+  # or, failing that, `$CURE_LIB`. When neither is configured the option is
+  # omitted so `Cure.Stdlib.Paths` falls back to its default candidate
+  # chain (bundled `priv/ebin`, `$CURE_HOME`, legacy `_build/cure/ebin`).
+  #
+  # `project_dir` defaults to the current working directory -- where the
+  # REPL is launched and where its Cure.toml lives. Exposed for tests.
+  @spec __stdlib_preload_opts__(keyword(), String.t()) :: keyword()
+  def __stdlib_preload_opts__(base_opts, project_dir \\ ".") do
+    case resolve_stdlib_ebin(project_dir) do
+      path when is_binary(path) and path != "" ->
+        Keyword.put(base_opts, :stdlib_ebin, path)
+
+      _ ->
+        base_opts
+    end
+  end
+
+  # The configured stdlib BEAM directory: the project's
+  # `[compiler] stdlib_path`, else `$CURE_LIB`, else `nil`.
+  # `Cure.Project.stdlib_path/1` already applies the `$CURE_LIB` fallback;
+  # we apply it again for the no-Cure.toml case so a bare `$CURE_LIB`
+  # still pins the directory.
+  defp resolve_stdlib_ebin(project_dir) do
+    case Cure.Project.load(project_dir) do
+      {:ok, project} -> Cure.Project.stdlib_path(project)
+      _ -> Cure.Stdlib.Paths.cure_lib()
+    end
   end
 
   defp maybe_preload_warning(_state, []), do: :ok

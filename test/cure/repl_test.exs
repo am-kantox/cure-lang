@@ -448,6 +448,74 @@ defmodule Cure.REPLTest do
     end
   end
 
+  describe "stdlib preload options (Cure.toml [compiler] stdlib_path)" do
+    # Regression: setting `[compiler] stdlib_path` in Cure.toml had no
+    # effect in the REPL -- only `$CURE_LIB` did -- so loading a file that
+    # `use`d a stdlib module raised `:missing_stdlib_module`. The REPL now
+    # threads the project's stdlib_path into the preload, like the CLI.
+    @tag :tmp_dir
+    test "injects :stdlib_ebin from [compiler] stdlib_path", %{tmp_dir: tmp} do
+      ebin = Path.join(tmp, "ebin")
+
+      File.write!(Path.join(tmp, "Cure.toml"), """
+      [project]
+      name = "demo"
+      version = "0.1.0"
+
+      [compiler]
+      type_check = false
+      stdlib_path = "#{ebin}"
+      """)
+
+      opts = REPL.__stdlib_preload_opts__([kind: :all], tmp)
+
+      assert Keyword.get(opts, :stdlib_ebin) == ebin
+      # Base opts are preserved.
+      assert Keyword.get(opts, :kind) == :all
+    end
+
+    @tag :tmp_dir
+    test "falls back to $CURE_LIB when stdlib_path is absent", %{tmp_dir: tmp} do
+      previous = System.get_env("CURE_LIB")
+
+      try do
+        System.put_env("CURE_LIB", "/fallback/ebin")
+
+        File.write!(Path.join(tmp, "Cure.toml"), """
+        [project]
+        name = "demo"
+        version = "0.1.0"
+
+        [compiler]
+        type_check = false
+        """)
+
+        opts = REPL.__stdlib_preload_opts__([kind: :all], tmp)
+        assert Keyword.get(opts, :stdlib_ebin) == "/fallback/ebin"
+      after
+        restore_env("CURE_LIB", previous)
+      end
+    end
+
+    @tag :tmp_dir
+    test "omits :stdlib_ebin when neither Cure.toml nor $CURE_LIB is set", %{tmp_dir: tmp} do
+      previous = System.get_env("CURE_LIB")
+
+      try do
+        System.delete_env("CURE_LIB")
+        # `tmp` has no Cure.toml, so project load fails and CURE_LIB is unset.
+        opts = REPL.__stdlib_preload_opts__([kind: :all], tmp)
+        refute Keyword.has_key?(opts, :stdlib_ebin)
+        assert Keyword.get(opts, :kind) == :all
+      after
+        restore_env("CURE_LIB", previous)
+      end
+    end
+  end
+
+  defp restore_env(key, nil), do: System.delete_env(key)
+  defp restore_env(key, val), do: System.put_env(key, val)
+
   # Feed `line` through the REPL pipeline, silencing any captured IO. Used
   # for setup steps whose stdout/stderr is not the subject of the
   # assertion.
