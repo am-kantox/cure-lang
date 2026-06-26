@@ -24,6 +24,7 @@ Copied from the spec + verified v1 codebase conventions; apply to EVERY task:
 - **Private helpers** use `local fn` (verified in `lib/std/access.cure`).
 - **Cure forms confirmed safe** (use these; avoid `or`, `let x = match`, `let x = pickup` — no stdlib precedent): `match`/arms, `pickup`/`else` (as a match-arm body or function body), `and`, `==`, `+`, `-`, `/`, `let %[a,b] = t` destructuring, single-line curried lambda `fn(a) -> fn(b) -> expr`, multi-statement match arms with `let`.
 - **TDD per task:** append failing tests → `mix test test/cure/stdlib/cure_std_signal_test.exs` (red) → implement → rerun (green) → commit. One `mix test` at a time.
+- **v2 tests are immutable once written.** Each new assertion encodes the intended behavior (the exact runtime tuple per the §"Runtime encodings" rules). Make a red test green by changing the Cure implementation in `lib/std/signal.cure` only — never by deleting, skipping, loosening, or rewriting the assertion to match observed output. The sole exception: an assertion that is itself provably wrong (e.g. an arithmetic slip in the expected tuple); in that case state why it is wrong before correcting it, then proceed.
 - **All git ops inside the worktree** (`/Users/ch/Develop/esp32-beam/cure-lang/.claude/worktrees/std-signal`) so commits land on `autopilot/std-signal`.
 
 **Test-file append anchor:** new `describe` blocks go immediately before the final `end` of the `Cure.Stdlib.SignalTest` module (after v1's `with_default` describe). New `defp` test helpers go beside the existing `defp sum_folder` (top level of the module).
@@ -146,6 +147,11 @@ git commit -m "feat(std-signal): merge_all, filter_map"
     test "zip pairs the latest values when either fires" do
       assert @sig.zip({0, 0}, {:sig, {:some, 1}}, {:sig, {:some, 2}}) ==
                {{:sig, {:some, {1, 2}}}, {1, 2}}
+    end
+
+    test "zip emits absent and preserves state when neither fires" do
+      assert @sig.zip({3, 4}, {:sig, {:none}}, {:sig, {:none}}) ==
+               {{:sig, {:none}}, {3, 4}}
     end
   end
 ```
@@ -432,6 +438,11 @@ git commit -m "feat(std-signal): meta, unmeta"
       assert @sig.running_sum(10, {:sig, {:none}}) == {{:sig, {:none}}, 10}
     end
 
+    test "running_sum hands state off across two consecutive present ticks" do
+      # tick 1 above emits new state 15; feed it as tick 2's prior state
+      assert @sig.running_sum(15, {:sig, {:some, 4}}) == {{:sig, {:some, 19}}, 19}
+    end
+
     test "running_mean reports the truncating integer average" do
       assert @sig.running_mean({0, 0}, {:sig, {:some, 10}}) == {{:sig, {:some, 10}}, {10, 1}}
       # {sum 10, count 1} + 5 -> sum 15, count 2, mean 15/2 = 7 (truncated)
@@ -501,7 +512,7 @@ git commit -m "feat(std-signal): toggle, running_sum, running_mean"
 - §4a stateless (`merge_all`, `filter_map`, `unzip`, `partition`, `sample`, `meta`, `unmeta`) → Tasks 1, 3, 4, 5. ✓
 - §4b stateful (`map2`, `zip`, `throttle`, `toggle`, `running_sum`, `running_mean`) → Tasks 2, 4, 6. ✓ (All 13 combinators covered.)
 - §3 research finding → already documented in the spec; no code task (it's a "don't build" finding). ✓
-- §6 verification (ExUnit, present/absent/state-handoff per combinator) → each task's tests cover present, absent, and (stateful) two-tick handoff (`map2` two-tick, `throttle` boundary + suppress, `toggle` flip, `running_mean` div). ✓
+- §6 verification (ExUnit, present/absent/state-handoff per combinator) → each task's tests cover present, absent, and (for every stateful combinator) two-tick handoff: `map2` two-tick + neither-present, `zip` either-present + neither-present (absent path), `throttle` boundary + suppress + handoff, `toggle` flip handoff, `running_sum` present + absent + two-tick handoff, `running_mean` truncating div + handoff. ✓
 - §5 purity (no FFI) → every implementation uses only `match`/`pickup`/`+`/`-`/`/`/`==` and `local fn`; no `@extern`. ✓
 - §7 out-of-scope (variadic merge, buffer_n, join, delay/distinct/sink) → correctly absent. ✓
 
