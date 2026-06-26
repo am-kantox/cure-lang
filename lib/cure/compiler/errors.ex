@@ -53,6 +53,16 @@ defmodule Cure.Compiler.Errors do
     format_diagnostic("error", "refinement violation (E090)", file, line, message)
   end
 
+  def format_error({:extern_untyped_head, message, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+    format_diagnostic("error", "@extern declaration missing a typed head (E056)", file, line, message)
+  end
+
+  def format_error({:extern_has_body, message, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+    format_diagnostic("error", "@extern declaration has a body (E057)", file, line, message)
+  end
+
   def format_error({:refinement_unknown, message, meta}, file) do
     line = Keyword.get(meta, :line, 0)
     format_diagnostic("warning", "refinement unknown (W091)", file, line, message)
@@ -1237,6 +1247,61 @@ defmodule Cure.Compiler.Errors do
 
     Fix: address the underlying systools error, then re-run
     `cure release`.
+    """,
+    "E056" => """
+    E056: @extern Declaration Missing a Typed Head
+
+    A function annotated with `@extern(:mod, :fun, arity)` is a type-only
+    foreign-function signature: the compiler does not see its implementation,
+    so it must trust the declared types and lower the call to a direct Erlang
+    remote call. That trust only holds if the head is fully typed -- every
+    parameter annotated and a return type declared. An untyped head would
+    silently default to `Any`, defeating the type checker at every call site.
+
+    Rejected:
+      @extern(:erlang, :abs, 1)
+      fn abs(x)                  # parameter `x` has no type, no return type
+
+    Fix: annotate the whole head.
+      @extern(:erlang, :abs, 1)
+      fn abs(x: Int) -> Int
+
+    A zero-parameter extern still needs its return type:
+      @extern(:math, :pi, 0)
+      fn pi() -> Float
+    """,
+    "E057" => """
+    E057: @extern Declaration Has a Body
+
+    A function annotated with `@extern` is a signature only. Codegen lowers it
+    to a direct remote call to the external function, so any body you write is
+    dead code -- it is never compiled or run. To stop that silent discard from
+    misleading readers, a body on an `@extern` function is an error. This covers
+    both a `= ...` body and a multi-clause `|` definition.
+
+    Rejected:
+      @extern(:erlang, :abs, 1)
+      fn abs(x: Int) -> Int = x  # the `= x` body is ignored by codegen
+
+    Also rejected (the clauses are ignored just the same):
+      @extern(:erlang, :abs, 1)
+      fn abs(x: Int) -> Int
+        | 0 -> 0
+        | n -> n
+
+    Fix: drop the body; keep only the typed head.
+      @extern(:erlang, :abs, 1)
+      fn abs(x: Int) -> Int
+
+    If you actually need local logic, write a normal function and call the
+    extern from inside it:
+      @extern(:erlang, :abs, 1)
+      fn raw_abs(x: Int) -> Int
+
+      fn abs_or_zero(x: Int) -> Int =
+        pickup
+          x < -1000 -> 0
+          else      -> raw_abs(x)
     """,
     "E063" => """
     E063: Parse Error (recovered)

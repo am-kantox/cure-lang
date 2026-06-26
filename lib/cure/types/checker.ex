@@ -577,17 +577,25 @@ defmodule Cure.Types.Checker do
     declared_ret = if return_type_ast, do: resolve_with_env(env, return_type_ast), else: nil
 
     cond do
-      # @extern: trust declared types, classify effects
+      # @extern: a type-only FFI signature. Validate its shape, then trust the
+      # declared types and classify effects. The body, if any, is rejected here
+      # rather than silently discarded by codegen.
       extern != nil ->
-        extern_effects = Effects.classify_extern(extern)
+        case validate_extern_decl(params, return_type_ast, body, clauses, line) do
+          [] ->
+            extern_effects = Effects.classify_extern(extern)
 
-        if emit? do
-          ret = declared_ret || :any
-          Events.emit(:type_checker, :type_checked, {name, {:fun, [], ret}}, Events.meta(file, line))
-          Effects.emit_effects(name, extern_effects, file, line)
+            if emit? do
+              ret = declared_ret || :any
+              Events.emit(:type_checker, :type_checked, {name, {:fun, [], ret}}, Events.meta(file, line))
+              Effects.emit_effects(name, extern_effects, file, line)
+            end
+
+            []
+
+          errors ->
+            errors
         end
-
-        []
 
       # Multi-clause function
       clauses != nil ->
@@ -626,6 +634,57 @@ defmodule Cure.Types.Checker do
 
         type_errors
     end
+  end
+
+  # An @extern function is a type-only FFI signature: the compiler trusts its
+  # declared types and lowers the call to a direct Erlang remote call. Two
+  # invariants make that trust sound, and both are enforced here:
+  #
+  #   * E056 — the head must be fully typed (every parameter annotated and a
+  #     return type declared). Without types there is nothing to trust, and the
+  #     signature would otherwise default to `any`, defeating the type checker.
+  #   * E057 — the declaration must not have a body. Codegen ignores any body on
+  #     an @extern function, so a body is dead code that misleads the reader.
+  #     This covers both the `= ...` form (a non-empty `body`) and the
+  #     multi-clause `|` form (a non-nil `clauses`), which codegen discards too.
+  defp validate_extern_decl(params, return_type_ast, body, clauses, line) do
+    untyped_params =
+      params
+      |> Enum.filter(fn {:param, pmeta, _name} -> Keyword.get(pmeta, :type) == nil end)
+      |> Enum.map(fn {:param, _pmeta, pname} -> pname end)
+
+    missing =
+      []
+      |> then(fn acc ->
+        if untyped_params == [],
+          do: acc,
+          else: acc ++ ["parameter(s) " <> Enum.map_join(untyped_params, ", ", &"`#{&1}`")]
+      end)
+      |> then(fn acc -> if return_type_ast == nil, do: acc ++ ["a return type"], else: acc end)
+
+    head_errors =
+      if missing == [] do
+        []
+      else
+        [
+          {:extern_untyped_head,
+           "@extern declarations must have a fully typed head; add #{Enum.join(missing, " and ")}",
+           [line: line]}
+        ]
+      end
+
+    body_errors =
+      if body == [] and clauses == nil do
+        []
+      else
+        [
+          {:extern_has_body,
+           "@extern declarations are type-only signatures and must not have a body; remove the body (a `= ...` body or multi-clause `|` definition) -- the call is lowered directly to the external function",
+           [line: line]}
+        ]
+      end
+
+    head_errors ++ body_errors
   end
 
   defp maybe_check_declared_effects(nil, _inferred, _name, _file, _line), do: :ok

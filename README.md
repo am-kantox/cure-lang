@@ -352,6 +352,7 @@ cure check examples/protocols.cure
 
 - [Language Specification](docs/LANGUAGE_SPEC.md) -- syntax, keywords, operators, all constructs
 - [Type System](docs/TYPE_SYSTEM.md) -- bidirectional checking, refinement types, SMT verification
+- [FFI](docs/FFI.md) -- `@extern` foreign-function interface: module forms, effects, and lowering
 - [FSM Guide](docs/FSM_GUIDE.md) -- FSM definition, compilation, runtime, verification
 - [Supervision](docs/SUPERVISION.md) -- typed actors, `sup` containers, the Melquiades Operator, links and monitors (v0.25.0)
 - [Applications](docs/APP.md) -- `app` containers, `Cure.toml` `[application]` / `[release]` sections, the `cure release` subcommand, and `Std.App` (v0.26.0)
