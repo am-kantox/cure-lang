@@ -119,3 +119,19 @@ mod Std.Signal
           level == false and prev == true -> %[Sig(Some(nil)), level]
           else -> %[Sig(None()), level]
       Sig(None()) -> %[Sig(None()), prev]
+
+  ## Emit a value only after it has been stable (unchanged) for at least
+  ## `interval` ms. State is `%[candidate, since]`: the value being timed
+  ## and when it was first seen. Seed with `%[None(), 0]`.
+  fn debounce(interval: Int, now: Int, st: Tuple, sig: Signal(A)) -> Tuple =
+    match sig
+      Sig(None()) -> %[Sig(None()), st]
+      Sig(Some(v)) ->
+        let %[cand, since] = st
+        match cand
+          Some(c) ->
+            pickup
+              c == v and now - since >= interval -> %[Sig(Some(v)), %[Some(v), now]]
+              c == v -> %[Sig(None()), st]
+              else -> %[Sig(None()), %[Some(v), now]]
+          None() -> %[Sig(None()), %[Some(v), now]]

@@ -147,4 +147,35 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.falling_edge(false, {:sig, {:some, false}}) == {{:sig, {:none}}, false}
     end
   end
+
+  describe "debounce" do
+    @init {{:none}, 0}
+
+    test "first appearance starts timing, emits absent, records candidate+since" do
+      assert @sig.debounce(50, 100, @init, {:sig, {:some, 7}}) ==
+               {{:sig, {:none}}, {{:some, 7}, 100}}
+    end
+
+    test "same value before interval elapses stays absent, since unchanged" do
+      st = {{:some, 7}, 100}
+      assert @sig.debounce(50, 130, st, {:sig, {:some, 7}}) == {{:sig, {:none}}, st}
+    end
+
+    test "same value after interval elapses emits the value" do
+      st = {{:some, 7}, 100}
+      assert @sig.debounce(50, 160, st, {:sig, {:some, 7}}) ==
+               {{:sig, {:some, 7}}, {{:some, 7}, 160}}
+    end
+
+    test "a different value restarts timing from now" do
+      st = {{:some, 7}, 100}
+      assert @sig.debounce(50, 120, st, {:sig, {:some, 9}}) ==
+               {{:sig, {:none}}, {{:some, 9}, 120}}
+    end
+
+    test "absent tick is a no-op: emits absent, state unchanged" do
+      st = {{:some, 7}, 100}
+      assert @sig.debounce(50, 200, st, {:sig, {:none}}) == {{:sig, {:none}}, st}
+    end
+  end
 end
