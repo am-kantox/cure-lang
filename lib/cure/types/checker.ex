@@ -1529,7 +1529,18 @@ defmodule Cure.Types.Checker do
   defp do_infer(env, {:function_def, _meta, _body}), do: {:ok, :any, env}
   defp do_infer(env, {:import, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:exception_handling, _meta, _}), do: {:ok, :any, env}
-  defp do_infer(env, {:async_operation, _meta, _}), do: {:ok, :any, env}
+  # Raw `spawn`/`receive` (the shared `:async_operation` node) are unverified
+  # process primitives with no codegen support -- they previously typed as
+  # `:any` and silently compiled to `undefined`. Reject them at elaboration:
+  # model concurrency with `fsm`/`actor`, or use `@extern` for Erlang interop.
+  defp do_infer(_env, {:async_operation, meta, _}) do
+    line = Keyword.get(meta, :line, 0)
+
+    {:error,
+     {:unsupported_async,
+      "raw `spawn`/`receive` are not supported (E043); model concurrency with a " <>
+        "`fsm`/`actor`, or drop to Erlang via `@extern`", line: line}}
+  end
 
   # Melquiades send (`pid <-| msg`, `pid ✉ msg`, or `send pid, msg`).
   #
