@@ -26,7 +26,7 @@ Two deliverables:
   `test/cure/stdlib/cure_std_signal_test.exs` (same harness as v1).
 - No new language features; no FFI (Std.Signal stays 100% pure Cure — confirmed
   in §5 that integer division `/` and `Std.Option`/`Std.List` cover every need).
-- The full stdlib ExUnit suite stays green (no regressions to v1's 36 tests).
+- The full stdlib ExUnit suite stays green (no regressions to v1's 35 tests).
 
 ## 2. Model (unchanged from v1 — restated so this spec stands alone)
 
@@ -122,6 +122,9 @@ noted.
 - `running_sum` overlaps `foldp(+)` but is a zero-friction convenience for the
   most common numeric fold; `running_mean` is the genuinely useful sensor helper
   (v1's demo hand-rolled an accumulator — the tell).
+- `sample` shares v1 `map_to`'s one-line body (`Sig(Some(_))` → emit the held
+  value, absent → absent); it earns a distinct name as the FRP sample-and-hold
+  idiom (host threads `held` via `latch`), not as new expressive power.
 
 ## 5. Purity / dependencies (confirming "no FFI")
 
