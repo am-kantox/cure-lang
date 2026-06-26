@@ -237,4 +237,18 @@ defmodule Cure.Stdlib.SignalTest do
                {{:sig, {:none}}, {3, 4}}
     end
   end
+
+  describe "unzip / partition" do
+    test "unzip splits a present tuple-signal into two present signals" do
+      assert @sig.unzip({:sig, {:some, {1, 2}}}) == {{:sig, {:some, 1}}, {:sig, {:some, 2}}}
+      assert @sig.unzip({:sig, {:none}}) == {{:sig, {:none}}, {:sig, {:none}}}
+    end
+
+    test "partition routes present values by the predicate" do
+      big = fn x -> x > 10 end
+      assert @sig.partition(big, {:sig, {:some, 20}}) == {{:sig, {:some, 20}}, {:sig, {:none}}}
+      assert @sig.partition(big, {:sig, {:some, 5}}) == {{:sig, {:none}}, {:sig, {:some, 5}}}
+      assert @sig.partition(big, {:sig, {:none}}) == {{:sig, {:none}}, {:sig, {:none}}}
+    end
+  end
 end

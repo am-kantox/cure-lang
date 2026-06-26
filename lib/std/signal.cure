@@ -193,3 +193,20 @@ mod Std.Signal
   fn zip(st: Tuple, sa: Signal(A), sb: Signal(B)) -> Tuple =
     let mk = fn(a) -> fn(b) -> %[a, b]
     map2(mk, st, sa, sb)
+
+  ## Split a tuple-signal into two signals. Absent -> both absent.
+  fn unzip(s: Signal(Tuple)) -> Tuple =
+    match s
+      Sig(Some(pair)) ->
+        let %[a, b] = pair
+        %[Sig(Some(a)), Sig(Some(b))]
+      Sig(None()) -> %[Sig(None()), Sig(None())]
+
+  ## Route a present value: `%[matching, non_matching]`. Absent -> both absent.
+  fn partition(p: A -> Bool, s: Signal(A)) -> Tuple =
+    match s
+      Sig(Some(v)) ->
+        pickup
+          p(v) -> %[Sig(Some(v)), Sig(None())]
+          else -> %[Sig(None()), Sig(Some(v))]
+      Sig(None()) -> %[Sig(None()), Sig(None())]
