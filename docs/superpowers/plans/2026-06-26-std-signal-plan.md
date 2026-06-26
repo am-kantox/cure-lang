@@ -680,10 +680,12 @@ Expected: FAIL — file does not exist (`no such file`).
 - [ ] **Step 2: Write the demo**
 
 Create `examples/signal_sensor.cure`. The driver feeds a fixed list of
-`%[reading, now]` ticks through the pipeline (simulating one process consuming
-its mailbox one message at a time), threads pipeline state, drives an `Alarm`
-FSM when a debounced+de-duplicated reading crosses a threshold, and prints a
-summary. State threading is explicit (spec §2).
+`%[reading, now]` ticks through the full spec pipeline
+`debounce -> dropRepeats -> foldp` (simulating one process consuming its mailbox
+one message at a time), threads each stage's state, drives an `Alarm` FSM when a
+debounced+de-duplicated reading crosses a threshold, and prints a summary
+(`foldp` maintains the running alarm count). State threading is explicit
+(spec §2).
 
 ```cure
 fsm Alarm with Integer
@@ -703,6 +705,16 @@ mod SignalSensor
   @extern(:erlang, :atom_to_binary, 1)
   fn atom_to_string(a: Atom) -> String
 
+  @extern(:erlang, :integer_to_binary, 1)
+  fn int_to_string(n: Int) -> String
+
+  # Build the runtime FSM module atom from its source name. An `fsm Alarm`
+  # container compiles to the module `Cure.FSM.Alarm` (proven in
+  # `esp32-beam/phase3/driver.cure`, which builds `Cure.FSM.Turnstile` the
+  # same way); a bare `:Alarm` atom would not resolve.
+  @extern(:erlang, :binary_to_atom, 1)
+  fn to_module(s: String) -> Atom
+
   # Start Cure's FSM runtime before spawning any FSM (portability pattern:
   # no OTP application boots it under AtomVM; harmless on host BEAM).
   @extern(Elixir.Cure.FSM.Runtime, :start_link, 0)
@@ -711,21 +723,30 @@ mod SignalSensor
   # Threshold above which a clean reading trips the alarm.
   fn threshold() -> Int = 50
 
-  # Process one tick: run the value through debounce -> dropRepeats, and when a
-  # clean value emerges, send the Alarm FSM :trip (>= threshold) or :clear.
-  # Carries %[dbState, drState, pid] and returns the same shape.
+  # Process one tick: run the value through the full spec pipeline
+  # debounce -> dropRepeats -> foldp, and when a clean value emerges, send the
+  # Alarm FSM :trip (>= threshold) or :clear. `foldp` folds the clean stream
+  # into a running alarm count (its curried folder bumps on a threshold
+  # crossing); on an absent tick foldp keeps the count unchanged (absent-tick
+  # convention), so there is no double-counting. Carries
+  # %[dbState, drState, alarms, pid] and returns the same shape.
   fn step(reading: Int, now: Int, st: Tuple) -> Tuple =
-    let %[dbState, drState, pid] = st
+    let %[dbState, drState, alarms, pid] = st
     let %[dbSig, dbState2] = Std.Signal.debounce(30, now, dbState, Std.Signal.constant(reading))
     let %[drSig, drState2] = Std.Signal.dropRepeats(drState, dbSig)
+    let bump = fn(v) -> fn(c) ->
+      pickup
+        v >= threshold() -> c + 1
+        else -> c
+    let %[_cnt_sig, alarms2] = Std.Signal.foldp(bump, alarms, drSig)
     match drSig
       Sig(Some(v)) ->
         let _e =
           pickup
             v >= threshold() -> send_trip(pid, v)
             else -> send_clear(pid)
-        %[dbState2, drState2, pid]
-      Sig(None()) -> %[dbState2, drState2, pid]
+        %[dbState2, drState2, alarms2, pid]
+      Sig(None()) -> %[dbState2, drState2, alarms2, pid]
 
   # Helpers so `step` stays readable. Each forwards an event to the FSM.
   fn send_trip(pid: Any, _v: Int) -> Any = Std.Fsm.send(pid, :trip)
@@ -739,23 +760,35 @@ mod SignalSensor
 
   fn start() -> Atom =
     let _r = start_fsm_runtime()
-    let pid = Std.Fsm.spawn_with_payload(:Alarm, 0)
+    let pid = Std.Fsm.spawn_with_payload(to_module("Cure.FSM.Alarm"), 0)
     # Same value 60 repeated (debounce passes one, dropRepeats keeps one trip),
     # then a sub-threshold 10 that clears, timestamps 30ms apart so debounce fires.
     let ticks = [%[60, 0], %[60, 40], %[60, 80], %[10, 120], %[10, 160]]
-    let initSt = %[%[None(), 0], None(), pid]
-    let _done = run_ticks(ticks, initSt)
+    let initSt = %[%[None(), 0], None(), 0, pid]
+    let finalSt = run_ticks(ticks, initSt)
+    let %[_db, _dr, alarms, _pid] = finalSt
     let finalState = Std.Fsm.state(pid)
-    let _p = puts("SIGNAL demo: final_state=" <> atom_to_string(finalState) <> "\n")
+    let _p = puts("SIGNAL demo: alarms=" <> int_to_string(alarms) <> " final=" <> atom_to_string(finalState) <> "\n")
     :ok
 ```
 
+> **Traced expectation:** with these five ticks and `threshold = 50`, debounce
+> (30ms window) admits the first stable `60` at tick 2, `dropRepeats` emits it
+> once (tick 3's repeat is suppressed), `foldp` bumps the count to `1`, and the
+> FSM trips `Normal -> Alert`; tick 5's stable `10` is a new value, emitted by
+> `dropRepeats`, below threshold, so `foldp` keeps the count at `1` and the FSM
+> clears `Alert -> Normal`. Output line: `SIGNAL demo: alarms=1 final=normal`.
+> The exact numbers are observational; the gating requirement is the printed
+> line in this format with the pipeline intact.
+
 > **Implementer note (two bounded risks — resolve, do not weaken the pipeline):**
-> 1. **`Std.Fsm` API:** `send`/`spawn_with_payload`/`state` are used as in
->    `esp32-beam/phase3/driver.cure`. Verify against `lib/std/fsm.cure`; if the
->    spawn key or `state` accessor differs, adjust so the program prints one
->    `SIGNAL demo: final_state=<atom>` line. (`Std.Fsm.state/1` returns the state
->    Atom — proven in driver.cure.)
+> 1. **`Std.Fsm` API:** `send`/`spawn_with_payload`/`state` and the
+>    `to_module("Cure.FSM.Alarm")` spawn key are used exactly as in
+>    `esp32-beam/phase3/driver.cure` (which spawns `to_module("Cure.FSM.Turnstile")`).
+>    Verify against `lib/std/fsm.cure` + `driver.cure`; if the spawn key or
+>    `state` accessor differs, adjust so the program prints one
+>    `SIGNAL demo: alarms=<int> final=<atom>` line. (`Std.Fsm.state/1` returns the
+>    state Atom — proven in driver.cure.)
 > 2. **Matching the `Sig` constructor in `step`:** `Sig`/`Signal` are defined in
 >    `Std.Signal`. If Cure rejects the bare `Sig(Some(v))` pattern from another
 >    module (unresolved constructor), first try qualifying it
@@ -768,8 +801,8 @@ mod SignalSensor
 >    §4 lacks); keep the debounce → dropRepeats pipeline intact either way.
 >
 > The *gating requirement* is a clean compile + a single printed
-> `SIGNAL demo: final_state=...` line with the pipeline intact; exact state value
-> is observational.
+> `SIGNAL demo: alarms=<int> final=<atom>` line with the pipeline intact; exact
+> count/state values are observational.
 
 - [ ] **Step 3: Run to verify it compiles and runs**
 
@@ -807,6 +840,6 @@ git commit -m "feat(std-signal): worked sensor pipeline + FSM demo"
 
 **2. Placeholder scan:** No "TBD"/"handle edge cases"/"similar to Task N". Every code step shows complete code. The one deferral the spec sanctioned (`debounce` state fields) is resolved concretely in Task 8 (a `%[candidate, since]` tuple). ✓
 
-**3. Type consistency:** `Signal(A) = Sig(Option(A))` defined in Task 1 and matched as `Sig(Some(_))`/`Sig(None())` everywhere. Stateful returns are uniformly `%[output_signal, new_state]` → `{output, state}` at runtime. The curried-folder convention (`f(v)(st)`) is pinned in Task 4 and reused nowhere else (other stateful combinators take no folder). `debounce` state shape `{{candidate}, since}` is consistent between its implementation and its tests. Demo (Task 9) consumes `debounce`/`dropRepeats` with the exact arities defined in Tasks 8/5. ✓
+**3. Type consistency:** `Signal(A) = Sig(Option(A))` defined in Task 1 and matched as `Sig(Some(_))`/`Sig(None())` everywhere. Stateful returns are uniformly `%[output_signal, new_state]` → `{output, state}` at runtime. The curried-folder convention (`f(v)(st)`) is pinned in Task 4 and reused once more in the Task 9 demo's `foldp` alarm counter (anonymous curried `fn(v) -> fn(c) -> ...`, the shape proven in `lib/std/list.cure`); other stateful combinators take no folder. `debounce` state shape `{{candidate}, since}` is consistent between its implementation and its tests. Demo (Task 9) consumes `debounce`/`dropRepeats`/`foldp` with the exact arities defined in Tasks 8/5/4. ✓
 
 **Two spec-sanctioned refinements, made explicit:** (1) folder type curried `A -> S -> S` (spec R1 said to pin the calling convention here; forced by Cure); (2) `debounce` state is a tuple, not the tentative `Debounce(A)` record (spec deferred the fields to this plan). Neither changes any combinator's parameter set, types, or semantics.
