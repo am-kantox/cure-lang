@@ -16,3 +16,18 @@ mod Std.Signal
 
   ## Always-absent signal.
   fn never() -> Signal(A) = Sig(None())
+
+  ## Apply `f` to the value when present; preserve absence.
+  fn map(f: A -> B, s: Signal(A)) -> Signal(B) =
+    match s
+      Sig(Some(v)) -> Sig(Some(f(v)))
+      Sig(None()) -> Sig(None())
+
+  ## Replace a present value with the constant `v`; preserve absence.
+  fn map_to(v: B, s: Signal(A)) -> Signal(B) =
+    match s
+      Sig(Some(_)) -> Sig(Some(v))
+      Sig(None()) -> Sig(None())
+
+  ## Collapse a present value to the unit value; preserve absence.
+  fn to_unit(s: Signal(A)) -> Signal(Unit) = map_to(nil, s)
