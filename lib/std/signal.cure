@@ -92,3 +92,11 @@ mod Std.Signal
         let n2 = n + 1
         %[Sig(Some(n2)), n2]
       Sig(None()) -> %[Sig(None()), n]
+
+  ## Emit `now` at most once per `interval`-ms window. State is the last
+  ## pulse timestamp; caller seeds `last` (e.g. `now - interval`) so the
+  ## first eligible tick fires.
+  fn every(interval: Int, now: Int, last: Int) -> Tuple =
+    pickup
+      now - last >= interval -> %[Sig(Some(now)), now]
+      else -> %[Sig(None()), last]

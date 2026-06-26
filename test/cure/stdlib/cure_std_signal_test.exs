@@ -111,4 +111,18 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.count(2, {:sig, {:none}}) == {{:sig, {:none}}, 2}
     end
   end
+
+  describe "every" do
+    test "fires when the interval has elapsed, emitting now and updating state" do
+      assert @sig.every(1000, 1000, 0) == {{:sig, {:some, 1000}}, 1000}
+    end
+
+    test "does not fire before the interval elapses, state unchanged" do
+      assert @sig.every(1000, 1500, 1000) == {{:sig, {:none}}, 1000}
+    end
+
+    test "fires exactly at the interval boundary (>=)" do
+      assert @sig.every(1000, 2000, 1000) == {{:sig, {:some, 2000}}, 2000}
+    end
+  end
 end
