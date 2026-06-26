@@ -55,3 +55,12 @@ mod Std.Signal
     match sa
       Sig(Some(v)) -> Sig(Some(v))
       Sig(None()) -> sb
+
+  ## Fold over the past. On a present value, compute `st2 = f(v)(st)` and
+  ## emit it; on absent, emit absent and keep `st`. `f` is curried.
+  fn foldp(f: A -> S -> S, st: S, sig: Signal(A)) -> Tuple =
+    match sig
+      Sig(Some(v)) ->
+        let st2 = f(v)(st)
+        %[Sig(Some(st2)), st2]
+      Sig(None()) -> %[Sig(None()), st]

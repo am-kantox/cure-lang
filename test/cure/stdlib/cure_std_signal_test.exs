@@ -61,4 +61,23 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.merge({:sig, {:none}}, {:sig, {:none}}) == {:sig, {:none}}
     end
   end
+
+  # f for foldp is curried: f(val)(state). Running-sum folder.
+  # (A function literal can't live in a module attribute, so use a helper.)
+  defp sum_folder, do: fn v -> fn s -> v + s end end
+
+  describe "foldp" do
+    test "present tick folds and emits the new state" do
+      assert @sig.foldp(sum_folder(), 10, {:sig, {:some, 5}}) == {{:sig, {:some, 15}}, 15}
+    end
+
+    test "absent tick is a no-op: emits absent, state unchanged" do
+      assert @sig.foldp(sum_folder(), 10, {:sig, {:none}}) == {{:sig, {:none}}, 10}
+    end
+
+    test "state hands off correctly across two consecutive present ticks" do
+      {_sig1, st1} = @sig.foldp(sum_folder(), 0, {:sig, {:some, 3}})
+      assert {{:sig, {:some, 7}}, 7} = @sig.foldp(sum_folder(), st1, {:sig, {:some, 4}})
+    end
+  end
 end
