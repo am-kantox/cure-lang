@@ -1749,7 +1749,7 @@ defmodule Cure.CLI do
   defp cmd_story(opts) do
     out = Keyword.get(opts, :out)
     stdout? = Keyword.get(opts, :verbose, false)
-    diagrams? = false
+    diagrams? = Keyword.get(opts, :diagrams, false)
 
     cli_args =
       if(out, do: ["--out", out], else: []) ++

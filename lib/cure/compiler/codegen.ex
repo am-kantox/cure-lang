@@ -1120,12 +1120,12 @@ defmodule Cure.Compiler.Codegen do
   defp compile_function_call(meta, args, state) do
     line = Keyword.get(meta, :line, state.line)
     name = Keyword.get(meta, :name, "unknown")
-    is_record = Keyword.get(meta, :record, false)
+    record? = Keyword.get(meta, :record, false)
 
     # Record field pairs must be compiled as map_field_assoc forms, not as
     # plain expressions.  The {:pair, ...} MetaAST node has no handler in
     # do_compile_expr and would fall through to the :undefined fallback.
-    if is_record do
+    if record? do
       {user_field_forms, state} =
         Enum.map_reduce(args, state, fn pair, st ->
           case pair do
@@ -1154,10 +1154,6 @@ defmodule Cure.Compiler.Codegen do
 
       form =
         cond do
-          # Record construction handled above; this branch is unreachable when is_record.
-          is_record ->
-            compile_record_construction(name, arg_forms, line)
-
           # Qualified call: Mod.fun(args) -- must come before constructor check
           String.contains?(name, ".") ->
             compile_qualified_call(name, arg_forms, line)

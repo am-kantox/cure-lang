@@ -489,16 +489,10 @@ defmodule Cure.Types.PatternRefinement do
     size_value = resolve_size_literal(size) || default_size
     unit_value = resolve_unit_literal(unit) || default_unit
 
-    cond do
-      size_value == nil ->
-        :unknown
-
-      is_integer(size_value) and is_integer(unit_value) and
-          rem(size_value * unit_value, 8) == 0 ->
-        {:ok, {:literal, [subtype: :integer, line: 1], div(size_value * unit_value, 8)}}
-
-      true ->
-        :unknown
+    if rem(size_value * unit_value, 8) == 0 do
+      {:ok, {:literal, [subtype: :integer, line: 1], div(size_value * unit_value, 8)}}
+    else
+      :unknown
     end
   end
 
