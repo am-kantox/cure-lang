@@ -228,3 +228,17 @@ mod Std.Signal
     match trigger
       Sig(Some(_)) -> Sig(Some(held))
       Sig(None()) -> Sig(None())
+
+  ## Reify presence: an always-present signal carrying the input as an
+  ## `Option`. Present `v` -> `Some(Some(v))`; absent -> `Some(None())`.
+  fn meta(s: Signal(A)) -> Signal(Option(A)) =
+    match s
+      Sig(Some(v)) -> Sig(Some(Some(v)))
+      Sig(None()) -> Sig(Some(None()))
+
+  ## Inverse of `meta`: collapse a signal of `Option` back to a signal.
+  fn unmeta(s: Signal(Option(A))) -> Signal(A) =
+    match s
+      Sig(Some(Some(v))) -> Sig(Some(v))
+      Sig(Some(None())) -> Sig(None())
+      Sig(None()) -> Sig(None())

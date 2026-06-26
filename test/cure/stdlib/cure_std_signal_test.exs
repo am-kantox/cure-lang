@@ -268,4 +268,17 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.sample(42, {:sig, {:none}}) == {:sig, {:none}}
     end
   end
+
+  describe "meta / unmeta" do
+    test "meta reifies presence as an always-present Option signal" do
+      assert @sig.meta({:sig, {:some, 7}}) == {:sig, {:some, {:some, 7}}}
+      assert @sig.meta({:sig, {:none}}) == {:sig, {:some, {:none}}}
+    end
+
+    test "unmeta is the inverse of meta" do
+      assert @sig.unmeta({:sig, {:some, {:some, 7}}}) == {:sig, {:some, 7}}
+      assert @sig.unmeta({:sig, {:some, {:none}}}) == {:sig, {:none}}
+      assert @sig.unmeta({:sig, {:none}}) == {:sig, {:none}}
+    end
+  end
 end
