@@ -100,3 +100,22 @@ mod Std.Signal
     pickup
       now - last >= interval -> %[Sig(Some(now)), now]
       else -> %[Sig(None()), last]
+
+  ## Emit unit on a false->true transition of the present level. State is
+  ## the latest observed level; absent ticks keep it.
+  fn rising_edge(prev: Bool, sig: Signal(Bool)) -> Tuple =
+    match sig
+      Sig(Some(level)) ->
+        pickup
+          level == true and prev == false -> %[Sig(Some(nil)), level]
+          else -> %[Sig(None()), level]
+      Sig(None()) -> %[Sig(None()), prev]
+
+  ## Emit unit on a true->false transition of the present level.
+  fn falling_edge(prev: Bool, sig: Signal(Bool)) -> Tuple =
+    match sig
+      Sig(Some(level)) ->
+        pickup
+          level == false and prev == true -> %[Sig(Some(nil)), level]
+          else -> %[Sig(None()), level]
+      Sig(None()) -> %[Sig(None()), prev]

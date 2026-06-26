@@ -125,4 +125,26 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.every(1000, 2000, 1000) == {{:sig, {:some, 2000}}, 2000}
     end
   end
+
+  describe "rising_edge / falling_edge" do
+    test "rising_edge fires on false->true, emitting unit, state becomes true" do
+      assert @sig.rising_edge(false, {:sig, {:some, true}}) == {{:sig, {:some, nil}}, true}
+    end
+
+    test "rising_edge does not fire when level stays true" do
+      assert @sig.rising_edge(true, {:sig, {:some, true}}) == {{:sig, {:none}}, true}
+    end
+
+    test "rising_edge absent tick keeps prev level" do
+      assert @sig.rising_edge(true, {:sig, {:none}}) == {{:sig, {:none}}, true}
+    end
+
+    test "falling_edge fires on true->false, emitting unit, state becomes false" do
+      assert @sig.falling_edge(true, {:sig, {:some, false}}) == {{:sig, {:some, nil}}, false}
+    end
+
+    test "falling_edge does not fire when level stays false" do
+      assert @sig.falling_edge(false, {:sig, {:some, false}}) == {{:sig, {:none}}, false}
+    end
+  end
 end
