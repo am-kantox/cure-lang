@@ -27,6 +27,22 @@ defmodule Cure.Compiler.ErrorsTest do
       assert result =~ "expects 2 arguments"
     end
 
+    test "@extern untyped head (E056)" do
+      err = {:extern_untyped_head, "@extern declarations must have a fully typed head; add a return type", line: 2}
+      result = Errors.format_error(err, "ffi.cure")
+      assert result =~ "@extern declaration missing a typed head (E056)"
+      assert result =~ "ffi.cure:2"
+      assert result =~ "fully typed head"
+    end
+
+    test "@extern has a body (E057)" do
+      err = {:extern_has_body, "@extern declarations are type-only signatures and must not have a body", line: 3}
+      result = Errors.format_error(err, "ffi.cure")
+      assert result =~ "@extern declaration has a body (E057)"
+      assert result =~ "ffi.cure:3"
+      assert result =~ "must not have a body"
+    end
+
     test "wrapped type_error list" do
       errs =
         {:type_error,
@@ -122,6 +138,17 @@ defmodule Cure.Compiler.ErrorsTest do
       result = Errors.format_error(:something_unexpected, "test.cure")
       assert result =~ "compilation error"
       assert result =~ "something_unexpected"
+    end
+  end
+
+  describe "@extern catalog entries" do
+    for code <- ~w(E056 E057) do
+      test "explain/#{code}" do
+        assert {:ok, text} = Errors.explain(unquote(code))
+        assert text =~ unquote(code)
+        assert text =~ "@extern"
+        assert text =~ "Fix:"
+      end
     end
   end
 end

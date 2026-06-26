@@ -338,6 +338,108 @@ defmodule Cure.Types.CheckerTest do
       assert {:ok, _} = Checker.check_module(ast, emit_events: false)
     end
 
+    test "@extern with no params and a typed return is valid" do
+      ast =
+        {:container, [container_type: :module, name: "M", line: 1],
+         [
+           {:function_def,
+            [
+              name: "pi",
+              params: [],
+              return_type: {:variable, [], "Float"},
+              visibility: :public,
+              arity: 0,
+              line: 1,
+              extern: {:math, :pi, 0}
+            ], []}
+         ]}
+
+      assert {:ok, _} = Checker.check_module(ast, emit_events: false)
+    end
+
+    test "@extern without a return type is rejected (E056)" do
+      ast =
+        {:container, [container_type: :module, name: "M", line: 1],
+         [
+           {:function_def,
+            [
+              name: "abs_val",
+              params: [{:param, [type: {:variable, [], "Int"}], "n"}],
+              visibility: :public,
+              arity: 1,
+              line: 1,
+              extern: {:erlang, :abs, 1}
+            ], []}
+         ]}
+
+      assert {:error, errors} = Checker.check_module(ast, emit_events: false)
+      assert Enum.any?(errors, &match?({:extern_untyped_head, _, _}, &1))
+    end
+
+    test "@extern with an untyped parameter is rejected (E056)" do
+      ast =
+        {:container, [container_type: :module, name: "M", line: 1],
+         [
+           {:function_def,
+            [
+              name: "abs_val",
+              params: [{:param, [], "n"}],
+              return_type: {:variable, [], "Int"},
+              visibility: :public,
+              arity: 1,
+              line: 1,
+              extern: {:erlang, :abs, 1}
+            ], []}
+         ]}
+
+      assert {:error, errors} = Checker.check_module(ast, emit_events: false)
+      assert Enum.any?(errors, &match?({:extern_untyped_head, _, _}, &1))
+    end
+
+    test "@extern with a body is rejected (E057)" do
+      ast =
+        {:container, [container_type: :module, name: "M", line: 1],
+         [
+           {:function_def,
+            [
+              name: "abs_val",
+              params: [{:param, [type: {:variable, [], "Int"}], "n"}],
+              return_type: {:variable, [], "Int"},
+              visibility: :public,
+              arity: 1,
+              line: 1,
+              extern: {:erlang, :abs, 1}
+            ], [{:variable, [scope: :local, line: 1], "n"}]}
+         ]}
+
+      assert {:error, errors} = Checker.check_module(ast, emit_events: false)
+      assert Enum.any?(errors, &match?({:extern_has_body, _, _}, &1))
+    end
+
+    test "@extern with multi-clause bodies is rejected (E057)" do
+      ast =
+        {:container, [container_type: :module, name: "M", line: 1],
+         [
+           {:function_def,
+            [
+              name: "abs_val",
+              params: [{:param, [type: {:variable, [], "Int"}], "n"}],
+              return_type: {:variable, [], "Int"},
+              visibility: :public,
+              arity: 1,
+              line: 1,
+              extern: {:erlang, :abs, 1},
+              clauses: [
+                %{params: [{:literal, [subtype: :integer], 0}], guard: nil, body: [{:literal, [subtype: :integer, line: 1], 0}]},
+                %{params: [{:variable, [scope: :local], "n"}], guard: nil, body: [{:variable, [scope: :local, line: 1], "n"}]}
+              ]
+            ], []}
+         ]}
+
+      assert {:error, errors} = Checker.check_module(ast, emit_events: false)
+      assert Enum.any?(errors, &match?({:extern_has_body, _, _}, &1))
+    end
+
     test "multi-clause function passes when clauses agree" do
       ast =
         {:container, [container_type: :module, name: "M", line: 1],

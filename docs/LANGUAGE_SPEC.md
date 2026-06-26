@@ -137,10 +137,29 @@ fn classify(x: Int) -> String
 
 ### FFI (Foreign Function Interface)
 
+`@extern(<module>, <function>, <arity>)` binds a Cure function to an external
+BEAM function. It is a **type-only signature**: the compiler trusts the declared
+types and lowers each call to a direct remote call.
+
 ```cure
 @extern(:erlang, :abs, 1)
 fn abs(x: Int) -> Int
 ```
+
+Two rules are enforced:
+
+- The head must be **fully typed** -- every parameter annotated and a return type
+  declared (`E056`). An untyped head would default to `Any` and defeat the type
+  checker.
+- The declaration must **not have a body** (`E057`). Codegen ignores any body,
+  so a `= ...` is dead code.
+
+Erlang/OTP modules are plain atoms (`:erlang`, `:io`); Elixir modules use their
+dotted `Elixir.` path (`Elixir.Cure.FSM.Builtins`). `@extern` composes with
+`local` for private bindings.
+
+See `docs/FFI.md` for the full guide (module forms, effects, lowering, and
+patterns).
 
 ## Types
 
