@@ -66,6 +66,9 @@ defmodule Cure.Stdlib.SignalTest do
   # (A function literal can't live in a module attribute, so use a helper.)
   defp sum_folder, do: fn v -> fn s -> v + s end end
 
+  # f for map2 is curried: f(a)(b). Running-add combiner.
+  defp add2, do: fn a -> fn b -> a + b end end
+
   describe "foldp" do
     test "present tick folds and emits the new state" do
       assert @sig.foldp(sum_folder(), 10, {:sig, {:some, 5}}) == {{:sig, {:some, 15}}, 15}
@@ -205,6 +208,33 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.filter_map(keep_even, {:sig, {:some, 4}}) == {:sig, {:some, 40}}
       assert @sig.filter_map(keep_even, {:sig, {:some, 3}}) == {:sig, {:none}}
       assert @sig.filter_map(keep_even, {:sig, {:none}}) == {:sig, {:none}}
+    end
+  end
+
+  describe "map2 / zip" do
+    test "map2 fires when either input is present, using the latest of the other" do
+      # state seeds lastA=0, lastB=0; a=3 arrives, b absent -> 3 + last b(0)
+      assert @sig.map2(add2(), {0, 0}, {:sig, {:some, 3}}, {:sig, {:none}}) ==
+               {{:sig, {:some, 3}}, {3, 0}}
+
+      # next tick: b=4 arrives, a absent -> remembered a(3) + 4
+      assert @sig.map2(add2(), {3, 0}, {:sig, {:none}}, {:sig, {:some, 4}}) ==
+               {{:sig, {:some, 7}}, {3, 4}}
+    end
+
+    test "map2 with neither present emits absent, state unchanged" do
+      assert @sig.map2(add2(), {3, 4}, {:sig, {:none}}, {:sig, {:none}}) ==
+               {{:sig, {:none}}, {3, 4}}
+    end
+
+    test "zip pairs the latest values when either fires" do
+      assert @sig.zip({0, 0}, {:sig, {:some, 1}}, {:sig, {:some, 2}}) ==
+               {{:sig, {:some, {1, 2}}}, {1, 2}}
+    end
+
+    test "zip emits absent and preserves state when neither fires" do
+      assert @sig.zip({3, 4}, {:sig, {:none}}, {:sig, {:none}}) ==
+               {{:sig, {:none}}, {3, 4}}
     end
   end
 end

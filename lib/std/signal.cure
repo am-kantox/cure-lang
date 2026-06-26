@@ -162,3 +162,34 @@ mod Std.Signal
           Some(b) -> Sig(Some(b))
           None() -> Sig(None())
       Sig(None()) -> Sig(None())
+
+  ## Present value, or the supplied default when absent (internal).
+  local fn sig_or(s: Signal(A), default: A) -> A =
+    match s
+      Sig(Some(v)) -> v
+      Sig(None()) -> default
+
+  ## True when at least one of the two signals is present (internal).
+  local fn either_present(sa: Signal(A), sb: Signal(B)) -> Bool =
+    match sa
+      Sig(Some(_)) -> true
+      Sig(None()) ->
+        match sb
+          Sig(Some(_)) -> true
+          Sig(None()) -> false
+
+  ## Combine two streams (a.k.a. combine_latest): state `%[lastA, lastB]`.
+  ## Each present value updates its slot; emit `f(na)(nb)` if either input
+  ## is present this tick, else absent. `f` is curried.
+  fn map2(f: A -> B -> C, st: Tuple, sa: Signal(A), sb: Signal(B)) -> Tuple =
+    let %[la, lb] = st
+    let na = sig_or(sa, la)
+    let nb = sig_or(sb, lb)
+    match either_present(sa, sb)
+      true -> %[Sig(Some(f(na)(nb))), %[na, nb]]
+      false -> %[Sig(None()), %[na, nb]]
+
+  ## `map2` specialised to pair the latest values into a tuple signal.
+  fn zip(st: Tuple, sa: Signal(A), sb: Signal(B)) -> Tuple =
+    let mk = fn(a) -> fn(b) -> %[a, b]
+    map2(mk, st, sa, sb)
