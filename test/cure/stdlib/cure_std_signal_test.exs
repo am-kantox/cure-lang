@@ -188,4 +188,23 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.with_default(-1, {:sig, {:none}}) == -1
     end
   end
+
+  describe "merge_all / filter_map" do
+    test "merge_all returns the first present signal, left-biased" do
+      assert @sig.merge_all([{:sig, {:none}}, {:sig, {:some, 2}}, {:sig, {:some, 3}}]) ==
+               {:sig, {:some, 2}}
+    end
+
+    test "merge_all of all-absent (and of empty) is absent" do
+      assert @sig.merge_all([{:sig, {:none}}, {:sig, {:none}}]) == {:sig, {:none}}
+      assert @sig.merge_all([]) == {:sig, {:none}}
+    end
+
+    test "filter_map keeps mapped Some, drops mapped None and absence" do
+      keep_even = fn x -> if rem(x, 2) == 0, do: {:some, x * 10}, else: {:none} end
+      assert @sig.filter_map(keep_even, {:sig, {:some, 4}}) == {:sig, {:some, 40}}
+      assert @sig.filter_map(keep_even, {:sig, {:some, 3}}) == {:sig, {:none}}
+      assert @sig.filter_map(keep_even, {:sig, {:none}}) == {:sig, {:none}}
+    end
+  end
 end

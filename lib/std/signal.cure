@@ -142,3 +142,23 @@ mod Std.Signal
     match s
       Sig(Some(v)) -> v
       Sig(None()) -> default
+
+  ## Left-biased N-ary merge: the first present signal in the list, else
+  ## absent. Empty list is absent.
+  fn merge_all(sigs: List(Signal(A))) -> Signal(A) =
+    match sigs
+      [] -> Sig(None())
+      [s | rest] ->
+        match s
+          Sig(Some(v)) -> Sig(Some(v))
+          Sig(None()) -> merge_all(rest)
+
+  ## Map and keep only the `Some` results: present `v` whose `f(v)` is
+  ## `Some(b)` emits `b`; `None()` (and an absent input) emit absent.
+  fn filter_map(f: A -> Option(B), s: Signal(A)) -> Signal(B) =
+    match s
+      Sig(Some(v)) ->
+        match f(v)
+          Some(b) -> Sig(Some(b))
+          None() -> Sig(None())
+      Sig(None()) -> Sig(None())
