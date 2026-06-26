@@ -1,0 +1,89 @@
+mod SignalSensor
+  ## Worked Std.Signal integration demo: a per-tick pipeline
+  ## debounce -> drop_repeats -> foldp, threading state across ticks (one
+  ## process consuming its mailbox one message at a time), feeding an
+  ## `Alarm` FSM (the consumer where real modes exist). The pipeline counts
+  ## threshold crossings via `foldp`; the FSM tracks the alert MODE.
+  ##
+  ## This driver and the `Cure.FSM.Alarm` module in `signal_alarm.cure` are
+  ## two modules, so the single-module `cure run` cannot host both. It is
+  ## run + verified by the ExUnit integration test
+  ## `test/cure/stdlib/cure_std_signal_demo_test.exs`, which loads both Cure
+  ## modules and asserts the console line below. `main/0` is the host entry;
+  ## `start/0` is the AtomVM entry (for the esp32-beam packbeam path).
+
+  @extern(:io, :put_chars, 1)
+  fn puts(s: String) -> Atom
+
+  @extern(:erlang, :atom_to_binary, 1)
+  fn atom_to_string(a: Atom) -> String
+
+  @extern(:erlang, :integer_to_binary, 1)
+  fn int_to_string(n: Int) -> String
+
+  # An `fsm Alarm` container compiles to module `Cure.FSM.Alarm`; build the
+  # atom from its name (proven pattern from esp32-beam/phase3/driver.cure).
+  @extern(:erlang, :binary_to_atom, 1)
+  fn to_module(s: String) -> Atom
+
+  # No OTP application boots Cure's FSM runtime under AtomVM, so start it
+  # ourselves before spawning any FSM (harmless on host BEAM).
+  @extern(Elixir.Cure.FSM.Runtime, :start_link, 0)
+  fn start_fsm_runtime() -> Any
+
+  # Readings at or above this trip the alarm.
+  fn threshold() -> Int = 50
+
+  # foldp accumulator step contribution: 1 when v crosses the threshold.
+  fn over_threshold(v: Int) -> Int =
+    pickup
+      v >= threshold() -> 1
+      else -> 0
+
+  fn send_trip(pid: Any) -> Any = Std.Fsm.send(pid, :trip)
+  fn send_clear(pid: Any) -> Any = Std.Fsm.send(pid, :clear)
+
+  # Drive the Alarm FSM from a clean reading. `-1` is the absent sentinel
+  # returned by `with_default` when the pipeline emitted nothing this tick.
+  fn drive(pid: Any, clean: Int) -> Any =
+    pickup
+      clean == -1 -> :ok
+      clean >= threshold() -> send_trip(pid)
+      else -> send_clear(pid)
+
+  # One tick: debounce -> drop_repeats -> foldp (running alarm count), then
+  # drive the FSM from the de-noised value. Carries
+  # %[dbState, drState, alarms, pid] and returns the same shape.
+  fn step(reading: Int, now: Int, st: Tuple) -> Tuple =
+    let %[dbState, drState, alarms, pid] = st
+    let %[dbSig, dbState2] = Std.Signal.debounce(30, now, dbState, Std.Signal.constant(reading))
+    let %[drSig, drState2] = Std.Signal.drop_repeats(drState, dbSig)
+    let bump = fn(v) -> fn(c) -> c + over_threshold(v)
+    let %[_cnt, alarms2] = Std.Signal.foldp(bump, alarms, drSig)
+    let clean = Std.Signal.with_default(-1, drSig)
+    let _e = drive(pid, clean)
+    %[dbState2, drState2, alarms2, pid]
+
+  fn run_ticks(ticks: List(Tuple), st: Tuple) -> Tuple =
+    match ticks
+      [] -> st
+      [%[r, t] | rest] -> run_ticks(rest, step(r, t, st))
+
+  fn run() -> Atom =
+    let _r = start_fsm_runtime()
+    let pid = Std.Fsm.spawn_with_payload(to_module("Cure.FSM.Alarm"), 0)
+    # Stable 60 (>=50, trips once after debounce+dedup), then stable 10
+    # (<50, clears). Timestamps 40ms apart so the 30ms debounce fires.
+    let ticks = [%[60, 0], %[60, 40], %[60, 80], %[10, 120], %[10, 160]]
+    let initSt = %[%[None(), 0], None(), 0, pid]
+    let finalSt = run_ticks(ticks, initSt)
+    let %[_db, _dr, alarms, _pid] = finalSt
+    let finalState = Std.Fsm.state(pid)
+    let _p = puts("SIGNAL demo: alarms=" <> int_to_string(alarms) <> " final=" <> atom_to_string(finalState) <> "\n")
+    :ok
+
+  ## Host (`cure run`) entry point.
+  fn main() -> Atom = run()
+
+  ## AtomVM entry point.
+  fn start() -> Atom = run()

@@ -1,0 +1,18 @@
+## Two-mode alarm FSM consumed by the Std.Signal demo
+## (`examples/signal_sensor.cure`). Compiles to module `Cure.FSM.Alarm`.
+## It tracks only the MODE (Normal/Alert); a `:trip` while Normal raises the
+## alert, a `:clear` while Alert stands it down. The alarm *count* is the
+## pipeline's job (`Std.Signal.foldp` in the driver), so each transition
+## just threads the FSM data through unchanged (the 4th `on_transition`
+## argument is the runtime FSM-state struct, not a bare counter). Compile
+## before running the driver so `Cure.FSM.Alarm` is on the code path:
+##   ./cure compile examples/signal_alarm.cure --output-dir _build/cure/ebin
+fsm Alarm with Integer
+  Normal --trip--> Alert
+  Alert  --clear--> Normal
+  Normal --clear--> Normal
+  Alert  --trip--> Alert
+  on_transition
+    (:normal, :trip,  _p, data) -> %[:ok, :alert,  data]
+    (:alert,  :clear, _p, data) -> %[:ok, :normal, data]
+    (_, _, _p, data) -> %[:ok, :__same__, data]

@@ -178,4 +178,14 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.debounce(50, 200, st, {:sig, {:none}}) == {{:sig, {:none}}, st}
     end
   end
+
+  describe "with_default" do
+    test "returns the present value" do
+      assert @sig.with_default(-1, {:sig, {:some, 42}}) == 42
+    end
+
+    test "returns the default when absent" do
+      assert @sig.with_default(-1, {:sig, {:none}}) == -1
+    end
+  end
 end

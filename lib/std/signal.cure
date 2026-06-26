@@ -135,3 +135,10 @@ mod Std.Signal
               c == v -> %[Sig(None()), st]
               else -> %[Sig(None()), %[Some(v), now]]
           None() -> %[Sig(None()), %[Some(v), now]]
+
+  ## Observe a signal: return the present value, or `default` when absent.
+  ## The terminal eliminator a host uses to read a pipeline's output.
+  fn with_default(default: A, s: Signal(A)) -> A =
+    match s
+      Sig(Some(v)) -> v
+      Sig(None()) -> default
