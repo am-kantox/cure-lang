@@ -242,3 +242,34 @@ mod Std.Signal
       Sig(Some(Some(v))) -> Sig(Some(v))
       Sig(Some(None())) -> Sig(None())
       Sig(None()) -> Sig(None())
+
+  ## Flip between `a` and `b` on each present trigger. State is the current
+  ## value (seed with `a` or `b`). Absent trigger -> absent, state unchanged.
+  fn toggle(a: A, b: A, st: A, trigger: Signal(C)) -> Tuple =
+    match trigger
+      Sig(Some(_)) ->
+        pickup
+          st == a -> %[Sig(Some(b)), b]
+          else -> %[Sig(Some(a)), a]
+      Sig(None()) -> %[Sig(None()), st]
+
+  ## Running total of present `Int` values.
+  fn running_sum(st: Int, s: Signal(Int)) -> Tuple =
+    match s
+      Sig(Some(v)) ->
+        let s2 = st + v
+        %[Sig(Some(s2)), s2]
+      Sig(None()) -> %[Sig(None()), st]
+
+  ## Moving average. State `%[sum, count]`; each present `v` updates both
+  ## and emits the truncating integer mean (count >= 1 here, so no div0).
+  ## Seed with `%[0, 0]`.
+  fn running_mean(st: Tuple, s: Signal(Int)) -> Tuple =
+    match s
+      Sig(Some(v)) ->
+        let %[sum, cnt] = st
+        let sum2 = sum + v
+        let cnt2 = cnt + 1
+        let mean = sum2 / cnt2
+        %[Sig(Some(mean)), %[sum2, cnt2]]
+      Sig(None()) -> %[Sig(None()), st]

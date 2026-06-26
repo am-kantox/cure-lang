@@ -281,4 +281,32 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.unmeta({:sig, {:none}}) == {:sig, {:none}}
     end
   end
+
+  describe "toggle / running_sum / running_mean" do
+    test "toggle flips between two values on each present trigger" do
+      assert @sig.toggle(:off, :on, :off, {:sig, {:some, :press}}) == {{:sig, {:some, :on}}, :on}
+      assert @sig.toggle(:off, :on, :on, {:sig, {:some, :press}}) == {{:sig, {:some, :off}}, :off}
+    end
+
+    test "toggle on an absent trigger emits absent, state unchanged" do
+      assert @sig.toggle(:off, :on, :on, {:sig, {:none}}) == {{:sig, {:none}}, :on}
+    end
+
+    test "running_sum accumulates present values" do
+      assert @sig.running_sum(10, {:sig, {:some, 5}}) == {{:sig, {:some, 15}}, 15}
+      assert @sig.running_sum(10, {:sig, {:none}}) == {{:sig, {:none}}, 10}
+    end
+
+    test "running_sum hands state off across two consecutive present ticks" do
+      # tick-1 produced output state 15; feeding it as the seed accumulates on
+      assert @sig.running_sum(15, {:sig, {:some, 4}}) == {{:sig, {:some, 19}}, 19}
+    end
+
+    test "running_mean reports the truncating integer average" do
+      assert @sig.running_mean({0, 0}, {:sig, {:some, 10}}) == {{:sig, {:some, 10}}, {10, 1}}
+      # {sum 10, count 1} + 5 -> sum 15, count 2, mean 15/2 = 7 (truncated)
+      assert @sig.running_mean({10, 1}, {:sig, {:some, 5}}) == {{:sig, {:some, 7}}, {15, 2}}
+      assert @sig.running_mean({10, 1}, {:sig, {:none}}) == {{:sig, {:none}}, {10, 1}}
+    end
+  end
 end
