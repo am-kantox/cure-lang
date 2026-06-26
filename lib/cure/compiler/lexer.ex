@@ -755,7 +755,11 @@ defmodule Cure.Compiler.Lexer do
 
       c ->
         state = advance(state, 1)
-        lex_string_body(state, start_col, [<<c::utf8>> | acc])
+        # `c` is a raw source byte (peek/1 is :binary.at/2). The source is
+        # UTF-8, so appending the byte verbatim preserves multi-byte
+        # characters. Re-encoding here with <<c::utf8>> would double-encode
+        # every non-ASCII byte (e.g. E2 80 99 -> C3 A2 C2 80 C2 99).
+        lex_string_body(state, start_col, [<<c>> | acc])
     end
   end
 
@@ -1243,7 +1247,10 @@ defmodule Cure.Compiler.Lexer do
 
       c ->
         if pred.(c) do
-          consume_while(advance(state, 1), pred, [<<c::utf8>> | acc])
+          # `c` is a raw source byte; append it verbatim to preserve UTF-8.
+          # Re-encoding with <<c::utf8>> would double-encode non-ASCII bytes
+          # in comments and doc comments (whose predicate accepts any byte).
+          consume_while(advance(state, 1), pred, [<<c>> | acc])
         else
           {IO.iodata_to_binary(Enum.reverse(acc)), state}
         end
