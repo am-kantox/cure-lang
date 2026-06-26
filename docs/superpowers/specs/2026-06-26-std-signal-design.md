@@ -36,7 +36,7 @@ that shapes the event stream feeding such a fold.
 A signal is **"a value present or absent this tick"**:
 
 ```cure
-type Signal(a) = Sig(Option(a))
+type Signal(A) = Sig(Option(A))
 ```
 
 Three roles, deliberately separated:
@@ -60,14 +60,20 @@ Three roles, deliberately separated:
 
 Cure has no `inout` (BEAM values are immutable), so Juniper's in-place state
 mutation becomes **state-in / state-out**. Stateless combinators are pure
-`Signal(a) -> Signal(b)`. Stateful combinators take prior state as an argument
+`Signal(A) -> Signal(B)`. Stateful combinators take prior state as an argument
 and **return new state in a tuple** alongside the output signal:
 
 ```
-stateless:  fn map(f, s: Signal(a)) -> Signal(b)
-stateful:   fn dropRepeats(prev: Option(a), s: Signal(a)) -> %[Signal(a), Option(a)]
-                                                              #  ^output      ^new state
+stateless:  fn map(f, s: Signal(A)) -> Signal(B)
+stateful:   fn dropRepeats(prev: Option(A), s: Signal(A)) -> Tuple
+                                                          #  runtime shape: %[Signal(A), Option(A)]
+                                                          #                  ^output      ^new state
 ```
+
+The Cure return-type annotation for every stateful combinator is the opaque
+built-in `Tuple` (the same convention `Std.Pair`/`Std.Access` use for
+tuple-returning functions); the `%[Output, State]` notation used throughout §4
+denotes the *runtime tuple shape*, not a literal type annotation.
 
 The host actor stores each stateful combinator's state in its `data` record and
 threads it each tick. This is explicit (no auto-threading like an arrowized
@@ -94,22 +100,26 @@ Cure.
 
 ## 4. API surface (v1 scope)
 
-Names follow Cure stdlib conventions. Signatures use Cure syntax. `Signal(a)`
-is `Sig(Option(a))`. Higher-order params of arity ≥2 are curried at the BEAM
-boundary (matches `Std.Iter`); arity-1 params are plain.
+Names follow Cure stdlib conventions. Signatures use Cure syntax, with two
+notational conventions: (1) type variables are capital letters (`A`, `B`, `S`) —
+Cure requires this (lowercase identifiers in type position name concrete types);
+(2) a stateful combinator's literal Cure return type is the opaque `Tuple`, and
+the `%[Output, State]` form shown is its runtime tuple shape (see §2, §6).
+`Signal(A)` is `Sig(Option(A))`. Higher-order params of arity ≥2 are curried at
+the BEAM boundary (matches `Std.Iter`); arity-1 params are plain.
 
-### 4a. Stateless (pure `Signal -> Signal`)
+### 4a. Stateless (pure, no threaded state — mostly `Signal -> Signal`, plus the `constant`/`never` sources)
 
 | Function | Signature | Semantics |
 |---|---|---|
-| `constant` | `(v: a) -> Signal(a)` | always-present signal of `v` (`Sig(Some(v))`) |
-| `never` | `() -> Signal(a)` | always-absent (`Sig(None)`) |
-| `map` | `(f: (a) -> b, s: Signal(a)) -> Signal(b)` | apply `f` when present, else absent |
-| `filterS` | `(p: (a) -> Bool, s: Signal(a)) -> Signal(a)` | keep value when `p` is **true**, else absent |
-| `reject` | `(p: (a) -> Bool, s: Signal(a)) -> Signal(a)` | inverse of `filterS` |
-| `merge` | `(a: Signal(a), b: Signal(a)) -> Signal(a)` | left-biased: `a` if present, else `b` |
-| `mapTo` | `(v: b, s: Signal(a)) -> Signal(b)` | replace present value with constant `v` |
-| `toUnit` | `(s: Signal(a)) -> Signal(Unit)` | `mapTo(())` |
+| `constant` | `(v: A) -> Signal(A)` | always-present signal of `v` (`Sig(Some(v))`) |
+| `never` | `() -> Signal(A)` | always-absent (`Sig(None())`) |
+| `map` | `(f: (A) -> B, s: Signal(A)) -> Signal(B)` | apply `f` when present, else absent |
+| `filterS` | `(p: (A) -> Bool, s: Signal(A)) -> Signal(A)` | keep value when `p` is **true**, else absent |
+| `reject` | `(p: (A) -> Bool, s: Signal(A)) -> Signal(A)` | inverse of `filterS` |
+| `merge` | `(sa: Signal(A), sb: Signal(A)) -> Signal(A)` | left-biased: `sa` if present, else `sb` |
+| `mapTo` | `(v: B, s: Signal(A)) -> Signal(B)` | replace present value with constant `v` |
+| `toUnit` | `(s: Signal(A)) -> Signal(Unit)` | `mapTo(nil)` (Cure's `Unit` value is `nil`, not `()`) |
 
 > **Naming note:** the keep-when-true combinator is `filterS` (not `filter`) to
 > avoid colliding with / being confused for `Std.List.filter`, and because
@@ -121,13 +131,24 @@ boundary (matches `Std.Iter`); arity-1 params are plain.
 
 | Function | Signature | Semantics |
 |---|---|---|
-| `foldp` | `(f: (a, s) -> s, st: s, sig: Signal(a)) -> %[Signal(s), s]` | fold over the past: when present, `st' = f(val, st)`, emit `st'`; when absent, emit absent and keep `st` |
-| `dropRepeats` | `(prev: Option(a), sig: Signal(a)) -> %[Signal(a), Option(a)]` | suppress a value equal to the previous emitted value |
-| `latch` | `(prev: a, sig: Signal(a)) -> %[Signal(a), a]` | emit incoming when present (and remember it); when absent, re-emit last remembered |
-| `count` | `(n: Int, sig: Signal(a)) -> %[Signal(Int), Int]` | running count of present ticks |
+| `foldp` | `(f: (A, S) -> S, st: S, sig: Signal(A)) -> %[Signal(S), S]` | fold over the past: when present, `st' = f(val, st)`, emit `st'`; when absent, emit absent and keep `st` |
+| `dropRepeats` | `(prev: Option(A), sig: Signal(A)) -> %[Signal(A), Option(A)]` | suppress a value equal to the previous emitted value |
+| `latch` | `(prev: A, sig: Signal(A)) -> %[Signal(A), A]` | emit incoming when present (and remember it); when absent, re-emit last remembered |
+| `count` | `(n: Int, sig: Signal(A)) -> %[Signal(Int), Int]` | running count of present ticks |
 
 `foldp` is the load-bearing primitive; `dropRepeats`/`latch`/`count` are defined
 in terms of it where natural.
+
+**Absent-tick convention (normative, applies to every stateful combinator in
+§4b and every edge/debounce combinator in §4c):** on an *absent* input tick
+(`Sig(None())`) a combinator emits absent (`Sig(None())`) and returns its state
+**unchanged** — an absent tick is a no-op. The sole exception is `latch`, which
+re-emits its last remembered value (and keeps it). This makes the absent path of
+`dropRepeats` (keep `prev`), `count` (count only present ticks, so the running
+total is unchanged), `risingEdge`/`fallingEdge` (no edge, keep `prev` level), and
+`debounce` (pending candidate and `since` unchanged) explicit. `every` and
+`constant`/`never` take no input signal, so the convention does not apply to
+them.
 
 ### 4c. Timer + edge (embedded sweet spot — #3)
 
@@ -136,12 +157,12 @@ module.
 
 | Function | Signature | Semantics |
 |---|---|---|
-| `every` | `(interval: Int, now: Int, last: Int) -> %[Signal(Int), Int]` | emit `now` at most once per `interval`-ms window; state is the last-pulse timestamp |
+| `every` | `(interval: Int, now: Int, last: Int) -> %[Signal(Int), Int]` | emit `now` at most once per `interval`-ms window: emits `Sig(Some(now))` and sets new state `:= now` when `now - last >= interval`, else `Sig(None())` with state unchanged. State is the last-pulse timestamp; caller seeds `last` so the first eligible tick fires (e.g. `last = now - interval`) |
 | `risingEdge` | `(prev: Bool, sig: Signal(Bool)) -> %[Signal(Unit), Bool]` | emit unit on a false→true transition of the present level |
 | `fallingEdge` | `(prev: Bool, sig: Signal(Bool)) -> %[Signal(Unit), Bool]` | emit unit on a true→false transition |
-| `debounce` | `(interval: Int, now: Int, st: Debounce(a), sig: Signal(a)) -> %[Signal(a), Debounce(a)]` | emit a value only after it has been stable for `interval` ms; state holds the pending candidate + its first-seen timestamp |
+| `debounce` | `(interval: Int, now: Int, st: Debounce(A), sig: Signal(A)) -> %[Signal(A), Debounce(A)]` | emit a value only after it has been stable for `interval` ms; state holds the pending candidate + its first-seen timestamp |
 
-`Debounce(a)` is a record defined in the module (candidate `Option(a)` + `since:
+`Debounce(A)` is a record defined in the module (candidate `Option(A)` + `since:
 Int`). Exact fields finalized in the plan; behavior is the contract.
 
 ### Out of v1 scope (YAGNI)
@@ -179,10 +200,10 @@ end
 
 **Runtime value encoding (confirmed from `iter_test.exs`):**
 
-- ADT constructors → tagged tuples: `Some(x)` → `{:some, x}`, `None` → `{:none}`,
-  so `Sig(Some(5))` → `{:sig, {:some, 5}}` and `Sig(None)` → `{:sig, {:none}}`.
-- Cure tuple `%[a, b]` → Erlang `{a, b}`, so a `%[Signal(s), s]` return →
-  `{{:sig, {:some, v}}, s}`.
+- ADT constructors → tagged tuples: `Some(x)` → `{:some, x}`, `None()` → `{:none}`,
+  so `Sig(Some(5))` → `{:sig, {:some, 5}}` and `Sig(None())` → `{:sig, {:none}}`.
+- Cure tuple `%[a, b]` → Erlang `{a, b}`, so a `%[Signal(S), S]` return (lowercase
+  letters below are runtime values) → `{{:sig, {:some, v}}, s}`.
 - Higher-order params of arity ≥2 are **curried** (`fn a -> fn b -> ... end
   end`); arity-1 params are plain `fn a -> ... end`.
 
@@ -206,10 +227,10 @@ combinators are driven with synthetic `now`/level sequences.
 
 ## 7. Risks & open questions
 
-- **R1 — Curried HOF boundary.** If `foldp`'s `f: (a, s) -> s` is *not* curried
+- **R1 — Curried HOF boundary.** If `foldp`'s `f: (A, S) -> S` is *not* curried
   the way `Std.Iter.fold` is, test call shape differs. *Mitigation:* the very
   first `foldp` test pins the calling convention; adjust once, centrally.
-- **R2 — `dropRepeats` equality.** Requires value equality on `a`. Cure compares
+- **R2 — `dropRepeats` equality.** Requires value equality on `A`. Cure compares
   via structural equality (`==`); confirm it works for the demo's value type.
   *Acceptable:* v1 demo uses `Int`.
 - **R3 — Stdlib recompile in the test loop. [RESOLVED on worktree baseline].**
