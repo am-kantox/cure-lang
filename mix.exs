@@ -171,7 +171,8 @@ defmodule Cure.MixProject do
         "docs/SNAP.md",
         "docs/STORY.md",
         "docs/MATCH.md",
-        "docs/PICKUP.md"
+        "docs/PICKUP.md",
+        "docs/FFI.md"
       ],
       source_url: @source_url,
       source_ref: "v#{@version}",

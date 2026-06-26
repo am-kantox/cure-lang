@@ -668,8 +668,7 @@ defmodule Cure.Types.Checker do
       else
         [
           {:extern_untyped_head,
-           "@extern declarations must have a fully typed head; add #{Enum.join(missing, " and ")}",
-           [line: line]}
+           "@extern declarations must have a fully typed head; add #{Enum.join(missing, " and ")}", [line: line]}
         ]
       end
 

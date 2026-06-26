@@ -430,8 +430,16 @@ defmodule Cure.Types.CheckerTest do
               line: 1,
               extern: {:erlang, :abs, 1},
               clauses: [
-                %{params: [{:literal, [subtype: :integer], 0}], guard: nil, body: [{:literal, [subtype: :integer, line: 1], 0}]},
-                %{params: [{:variable, [scope: :local], "n"}], guard: nil, body: [{:variable, [scope: :local, line: 1], "n"}]}
+                %{
+                  params: [{:literal, [subtype: :integer], 0}],
+                  guard: nil,
+                  body: [{:literal, [subtype: :integer, line: 1], 0}]
+                },
+                %{
+                  params: [{:variable, [scope: :local], "n"}],
+                  guard: nil,
+                  body: [{:variable, [scope: :local, line: 1], "n"}]
+                }
               ]
             ], []}
          ]}
