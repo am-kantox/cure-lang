@@ -40,4 +40,25 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.to_unit({:sig, {:none}}) == {:sig, {:none}}
     end
   end
+
+  describe "filter_s / reject / merge" do
+    test "filter_s keeps a value when the predicate is true" do
+      assert @sig.filter_s(fn x -> x > 3 end, {:sig, {:some, 5}}) == {:sig, {:some, 5}}
+    end
+
+    test "filter_s drops a value when the predicate is false" do
+      assert @sig.filter_s(fn x -> x > 3 end, {:sig, {:some, 1}}) == {:sig, {:none}}
+    end
+
+    test "reject is the inverse of filter_s" do
+      assert @sig.reject(fn x -> x > 3 end, {:sig, {:some, 5}}) == {:sig, {:none}}
+      assert @sig.reject(fn x -> x > 3 end, {:sig, {:some, 1}}) == {:sig, {:some, 1}}
+    end
+
+    test "merge is left-biased" do
+      assert @sig.merge({:sig, {:some, 1}}, {:sig, {:some, 2}}) == {:sig, {:some, 1}}
+      assert @sig.merge({:sig, {:none}}, {:sig, {:some, 2}}) == {:sig, {:some, 2}}
+      assert @sig.merge({:sig, {:none}}, {:sig, {:none}}) == {:sig, {:none}}
+    end
+  end
 end

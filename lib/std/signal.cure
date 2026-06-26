@@ -31,3 +31,27 @@ mod Std.Signal
 
   ## Collapse a present value to the unit value; preserve absence.
   fn to_unit(s: Signal(A)) -> Signal(Unit) = map_to(nil, s)
+
+  ## Keep the value when `p` is true, else drop to absent.
+  fn filter_s(p: A -> Bool, s: Signal(A)) -> Signal(A) =
+    match s
+      Sig(Some(v)) ->
+        pickup
+          p(v) -> Sig(Some(v))
+          else -> Sig(None())
+      Sig(None()) -> Sig(None())
+
+  ## Drop the value when `p` is true, else keep it (inverse of filter_s).
+  fn reject(p: A -> Bool, s: Signal(A)) -> Signal(A) =
+    match s
+      Sig(Some(v)) ->
+        pickup
+          p(v) -> Sig(None())
+          else -> Sig(Some(v))
+      Sig(None()) -> Sig(None())
+
+  ## Left-biased merge: emit `sa` if present, otherwise `sb`.
+  fn merge(sa: Signal(A), sb: Signal(A)) -> Signal(A) =
+    match sa
+      Sig(Some(v)) -> Sig(Some(v))
+      Sig(None()) -> sb
