@@ -1,0 +1,18 @@
+mod Std.Signal
+  ## Synchronous stream combinators. A `Signal(A)` is "a value present or
+  ## absent this tick": `Sig(Some(v))` or `Sig(None())`. Stateless
+  ## combinators are pure `Signal -> Signal`; stateful ones take prior
+  ## state and return `%[output_signal, new_state]`. See the design spec
+  ## at docs/superpowers/specs/2026-06-26-std-signal-design.md.
+
+  ## Group tag consumed by `Cure.Stdlib.Preload`.
+  fn __group__() -> Atom = :signal
+
+  ## A value present or absent this tick.
+  type Signal(A) = Sig(Option(A))
+
+  ## Always-present signal carrying `v`.
+  fn constant(v: A) -> Signal(A) = Sig(Some(v))
+
+  ## Always-absent signal.
+  fn never() -> Signal(A) = Sig(None())
