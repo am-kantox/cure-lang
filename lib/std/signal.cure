@@ -210,3 +210,21 @@ mod Std.Signal
           p(v) -> %[Sig(Some(v)), Sig(None())]
           else -> %[Sig(None()), Sig(Some(v))]
       Sig(None()) -> %[Sig(None()), Sig(None())]
+
+  ## Leading-edge rate-limit: emit a present value if `now - last_emit >=
+  ## interval` (new state `now`); otherwise absent, state unchanged. Caller
+  ## seeds `last_emit` (e.g. `now - interval`) so the first value fires.
+  fn throttle(interval: Int, now: Int, last_emit: Int, s: Signal(A)) -> Tuple =
+    match s
+      Sig(Some(v)) ->
+        pickup
+          now - last_emit >= interval -> %[Sig(Some(v)), now]
+          else -> %[Sig(None()), last_emit]
+      Sig(None()) -> %[Sig(None()), last_emit]
+
+  ## Emit the `held` value whenever `trigger` is present, else absent
+  ## (event x behavior sampling; the host threads `held`, e.g. via `latch`).
+  fn sample(held: A, trigger: Signal(B)) -> Signal(A) =
+    match trigger
+      Sig(Some(_)) -> Sig(Some(held))
+      Sig(None()) -> Sig(None())

@@ -251,4 +251,21 @@ defmodule Cure.Stdlib.SignalTest do
       assert @sig.partition(big, {:sig, {:none}}) == {{:sig, {:none}}, {:sig, {:none}}}
     end
   end
+
+  describe "throttle / sample" do
+    test "throttle emits when the interval has elapsed, then suppresses" do
+      assert @sig.throttle(100, 100, 0, {:sig, {:some, :a}}) == {{:sig, {:some, :a}}, 100}
+      assert @sig.throttle(100, 150, 100, {:sig, {:some, :b}}) == {{:sig, {:none}}, 100}
+      assert @sig.throttle(100, 200, 100, {:sig, {:some, :c}}) == {{:sig, {:some, :c}}, 200}
+    end
+
+    test "throttle passes an absent tick through, state unchanged" do
+      assert @sig.throttle(100, 999, 100, {:sig, {:none}}) == {{:sig, {:none}}, 100}
+    end
+
+    test "sample emits the held value when the trigger fires" do
+      assert @sig.sample(42, {:sig, {:some, :tick}}) == {:sig, {:some, 42}}
+      assert @sig.sample(42, {:sig, {:none}}) == {:sig, {:none}}
+    end
+  end
 end
