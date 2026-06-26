@@ -43,6 +43,11 @@ defmodule Cure.Compiler.Errors do
     format_diagnostic("error", "unbound variable", file, line, message)
   end
 
+  def format_error({:unsupported_async, message, meta}, file) do
+    line = Keyword.get(meta, :line, 0)
+    format_diagnostic("error", "unsupported concurrency primitive (E043)", file, line, message)
+  end
+
   def format_error({:arity_mismatch, message, meta}, file) do
     line = Keyword.get(meta, :line, 0)
     format_diagnostic("error", "arity mismatch", file, line, message)
@@ -1045,6 +1050,21 @@ defmodule Cure.Compiler.Errors do
       literal sizes so the arithmetic can be emitted; otherwise accept
       that `rest` binds to plain `Bitstring` and let runtime pattern
       matching enforce the remaining invariants.
+    """,
+    "E043" => """
+    E043: Unsupported Concurrency Primitive
+
+    `spawn` and `receive` are raw, unverified process primitives. Cure models
+    concurrency through first-class `fsm` and `actor` constructs the compiler
+    can verify (reachability, exhaustiveness, typed inboxes). These primitives
+    have no code generation and previously compiled silently to `undefined`.
+
+    Example:
+      receive
+        :ping -> handle()
+
+    Fix: model the protocol as an `fsm` or `actor`, or call out to Erlang via
+    `@extern` for low-level interop.
     """,
     "E045" => """
     E045: Untyped Send

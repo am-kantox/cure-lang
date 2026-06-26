@@ -83,6 +83,17 @@ defmodule Cure.Types.CheckerTest do
       assert msg =~ "numeric"
     end
 
+    test "raw receive/spawn is rejected (E043), not silently typed as :any" do
+      # `receive` and `spawn` both lower to :async_operation, have no codegen,
+      # and used to compile silently to `undefined`. They must error instead.
+      recv = {:async_operation, [line: 1], [{:match_clause, [], []}]}
+      assert {:error, {:unsupported_async, msg, _}} = Checker.infer_expr(recv)
+      assert msg =~ "E043"
+
+      spawn_node = {:async_operation, [line: 1], [{:literal, [subtype: :symbol], :x}]}
+      assert {:error, {:unsupported_async, _, _}} = Checker.infer_expr(spawn_node)
+    end
+
     test "bool and bool = bool" do
       ast =
         {:binary_op, [category: :boolean, operator: :and, line: 1],
