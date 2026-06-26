@@ -80,4 +80,35 @@ defmodule Cure.Stdlib.SignalTest do
       assert {{:sig, {:some, 7}}, 7} = @sig.foldp(sum_folder(), st1, {:sig, {:some, 4}})
     end
   end
+
+  describe "drop_repeats / latch / count" do
+    test "drop_repeats passes the first value and remembers it" do
+      assert @sig.drop_repeats({:none}, {:sig, {:some, 7}}) == {{:sig, {:some, 7}}, {:some, 7}}
+    end
+
+    test "drop_repeats suppresses a value equal to the previous, state unchanged" do
+      assert @sig.drop_repeats({:some, 7}, {:sig, {:some, 7}}) == {{:sig, {:none}}, {:some, 7}}
+    end
+
+    test "drop_repeats passes a value different from the previous" do
+      assert @sig.drop_repeats({:some, 7}, {:sig, {:some, 8}}) == {{:sig, {:some, 8}}, {:some, 8}}
+    end
+
+    test "drop_repeats absent tick keeps prev unchanged" do
+      assert @sig.drop_repeats({:some, 7}, {:sig, {:none}}) == {{:sig, {:none}}, {:some, 7}}
+    end
+
+    test "latch emits and remembers a present value" do
+      assert @sig.latch(0, {:sig, {:some, 9}}) == {{:sig, {:some, 9}}, 9}
+    end
+
+    test "latch re-emits the remembered value on an absent tick" do
+      assert @sig.latch(9, {:sig, {:none}}) == {{:sig, {:some, 9}}, 9}
+    end
+
+    test "count increments only on present ticks" do
+      assert @sig.count(2, {:sig, {:some, :anything}}) == {{:sig, {:some, 3}}, 3}
+      assert @sig.count(2, {:sig, {:none}}) == {{:sig, {:none}}, 2}
+    end
+  end
 end

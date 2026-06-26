@@ -64,3 +64,31 @@ mod Std.Signal
         let st2 = f(v)(st)
         %[Sig(Some(st2)), st2]
       Sig(None()) -> %[Sig(None()), st]
+
+  ## Suppress a value equal to the previously emitted one. State is the
+  ## last emitted value as `Option(A)` (`None()` until the first emit).
+  fn drop_repeats(prev: Option(A), sig: Signal(A)) -> Tuple =
+    match sig
+      Sig(None()) -> %[Sig(None()), prev]
+      Sig(Some(v)) ->
+        match prev
+          Some(p) ->
+            pickup
+              v == p -> %[Sig(None()), prev]
+              else -> %[Sig(Some(v)), Some(v)]
+          None() -> %[Sig(Some(v)), Some(v)]
+
+  ## Emit the incoming value when present (and remember it); on absent,
+  ## re-emit the last remembered value.
+  fn latch(prev: A, sig: Signal(A)) -> Tuple =
+    match sig
+      Sig(Some(v)) -> %[Sig(Some(v)), v]
+      Sig(None()) -> %[Sig(Some(prev)), prev]
+
+  ## Running count of present ticks.
+  fn count(n: Int, sig: Signal(A)) -> Tuple =
+    match sig
+      Sig(Some(_)) ->
+        let n2 = n + 1
+        %[Sig(Some(n2)), n2]
+      Sig(None()) -> %[Sig(None()), n]
