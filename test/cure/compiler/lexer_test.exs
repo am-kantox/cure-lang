@@ -137,6 +137,27 @@ defmodule Cure.Compiler.LexerTest do
       assert [%Token{type: :string, value: ""}, _] = lex!(~s(""))
     end
 
+    test "non-ASCII characters keep their UTF-8 bytes (regression: were double-encoded)" do
+      # U+2019 RIGHT SINGLE QUOTATION MARK, UTF-8 <<0xE2, 0x80, 0x99>>.
+      # The lexer read the source byte-by-byte and re-encoded each byte with
+      # <<c::utf8>>, turning E2 80 99 into C3 A2 C2 80 C2 99 (mojibake).
+      [%Token{type: :string, value: v1}, _] = lex!(~s("Dusty’s Place"))
+      assert v1 == "Dusty’s Place"
+      assert byte_size(v1) == byte_size("Dusty’s Place")
+
+      # A two-byte char as well: U+00E9 é, UTF-8 <<0xC3, 0xA9>>.
+      [%Token{type: :string, value: v2}, _] = lex!(~s("café"))
+      assert v2 == "café"
+      assert byte_size(v2) == 5
+    end
+
+    test "doc comments keep their UTF-8 bytes (same consume_while path)" do
+      # The same byte-vs-utf8 bug also affected comment/doc-comment text,
+      # which feeds `cure doc`.
+      [%Token{type: :doc_comment, value: text} | _] = lex!("## café’s\n")
+      assert text == "café’s"
+    end
+
     test "unterminated string returns error" do
       assert {:error, {:unterminated_string, 1, 1}} = Lexer.tokenize(~s("hello), emit_events: false)
     end
