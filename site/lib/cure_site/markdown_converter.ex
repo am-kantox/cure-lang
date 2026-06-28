@@ -163,7 +163,9 @@ defmodule CureSite.MarkdownConverter do
     {"&lt;", ?<},
     {"&gt;", ?>},
     {"&quot;", ?\"},
-    {"&#39;", ?'}
+    {"&#39;", ?'},
+    {"&lbrace;", ?{},
+    {"&rbrace;", ?}}
   ]
 
   for {encoded, decoded} <- @entities do
