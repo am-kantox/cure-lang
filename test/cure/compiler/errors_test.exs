@@ -151,4 +151,18 @@ defmodule Cure.Compiler.ErrorsTest do
       end
     end
   end
+
+  describe "tuple type deprecation catalog entry (E086)" do
+    test "explain/E086 describes the %[A, B] migration" do
+      assert {:ok, text} = Errors.explain("E086")
+      assert text =~ "E086"
+      assert text =~ "E-TYPE-TUPLE-PAREN"
+      assert text =~ "%[A, B]"
+      assert text =~ "Fix:"
+    end
+
+    test "E086 is case-insensitive like other codes" do
+      assert {:ok, _text} = Errors.explain("e086")
+    end
+  end
 end

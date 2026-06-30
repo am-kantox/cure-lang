@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added -- `%[A, B]` tuple-type syntax
+
+Tuple *types* now use the same `%[...]` sigil as tuple *values*. A
+function that returns a pair can be annotated `-> %[Int, String]`,
+mirroring the value it constructs (`%[a, b]`). This removes the
+long-standing inconsistency where values were written `%[a, b]` but
+their types were written `(A, B)`.
+
+- **Parser** -- `Cure.Compiler.Parser` accepts `%[A, B]` in any type
+  position and elaborates it to the same `{:tuple, _, elems}` node the
+  parenthesised form produced, so type resolution
+  (`Cure.Types.Type.resolve/1`), display, and codegen are unchanged.
+  `%[A]` is a one-element tuple, `%[]` is the empty tuple, and
+  `%[A, B] -> C` is a unary function over a tuple.
+- **Deprecation** -- the legacy parenthesised tuple type `(A, B)` is
+  still parsed, but every occurrence now emits a `:deprecation`
+  pipeline event carrying the new diagnostic code
+  `E086 / E-TYPE-TUPLE-PAREN`. `cure explain E086` describes the
+  mechanical migration to `%[A, B]`. Grouped types `(A)` and
+  function-type parameter lists `(A, B) -> C` are unaffected.
+- **Backward compatibility** -- sources that spell tuple types
+  `(A, B)` keep compiling and produce identical BEAM output; the only
+  change is the new deprecation hint. The standard library and bundled
+  examples already avoid the parenthesised tuple type, so they compile
+  without the new event.
+
 ### Added -- `Std.Iter` becomes a peer of `Std.List`
 
 The lazy half of the collections story is fleshed out. `Std.Iter`

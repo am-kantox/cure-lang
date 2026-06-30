@@ -37,6 +37,19 @@ Functions are checked in two passes:
 - `Ref` -- monitor reference returned by `Std.Process.monitor/1`
   (v0.25.0)
 
+## Composite Types
+
+- `List(T)` -- homogeneous linked list
+- `Map(K, V)` -- hash map from `K` to `V`
+- `%[A, B, ...]` -- tuple. The type sigil mirrors the value-tuple
+  syntax `%[a, b]`, so a function that builds a pair is annotated
+  `-> %[Int, String]`. The legacy parenthesised form `(A, B)` is still
+  parsed but deprecated in favour of `%[A, B]`
+  (`E086 / E-TYPE-TUPLE-PAREN`); both elaborate to the same internal
+  `{:tuple, [...]}` type. A parenthesised list before an arrow,
+  `(A, B) -> C`, is a function type and is unaffected.
+- `A -> B`, `(A, B) -> C` -- function types
+
 ## Subtyping
 
 - `Int <: Float` (numeric widening)

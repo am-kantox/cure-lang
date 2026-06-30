@@ -935,6 +935,26 @@ defmodule Cure.Compiler.Errors do
     `mix cure.rewrite if-to-pickup <path>` to convert the file in
     place.
     """,
+    "E086" => """
+    E086: Parenthesised Tuple Type Deprecated (E-TYPE-TUPLE-PAREN)
+
+    A type expression uses the legacy parenthesised tuple form
+    `(A, B)`. Cure writes value tuples with the `%[a, b]` sigil, and
+    tuple *types* now share it: `%[A, B]`. The parser still accepts
+    `(A, B)` so existing sources keep compiling, but `cure check`
+    surfaces this hint so authors can migrate. The parenthesised form
+    is ambiguous with a grouped type `(A)` and with the parameter
+    list of a function type `(A, B) -> C`; the `%[...]` sigil removes
+    that ambiguity.
+
+    Example:
+      fn divmod(a: Int, b: Int) -> (Int, Int)     # deprecated
+      fn divmod(a: Int, b: Int) -> %[Int, Int]    # preferred
+
+    Fix: replace `(A, B)` with `%[A, B]`. The change is mechanical --
+    both forms elaborate to the same tuple type. Note that
+    `(A, B) -> C` is a function type, not a tuple, and is unaffected.
+    """,
     "E034" => """
     E034: Let Pattern Not Exhaustive
 

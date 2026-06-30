@@ -2395,11 +2395,18 @@ defmodule Cure.Compiler.Parser do
     end
   end
 
-  defp parse_type_param_list(state) do
+  defp parse_type_param_list(state), do: parse_type_param_list(state, :rparen)
+
+  # Parse a comma-separated list of type expressions, stopping at
+  # `closing`. The parenthesised forms pass `:rparen`; the `%[...]`
+  # tuple-type form passes `:rbracket`. Only the empty-list fast path
+  # depends on `closing` -- a non-empty list always terminates when the
+  # next token is not a comma, and the caller consumes `closing` itself.
+  defp parse_type_param_list(state, closing) do
     state = skip_newlines(state)
 
     case peek(state) do
-      %Token{type: :rparen} ->
+      %Token{type: ^closing} ->
         {[], state}
 
       _ ->
@@ -2410,7 +2417,7 @@ defmodule Cure.Compiler.Parser do
           %Token{type: :comma} ->
             state = advance(state)
             state = skip_newlines(state)
-            {rest, state} = parse_type_param_list(state)
+            {rest, state} = parse_type_param_list(state, closing)
             {[t | rest], state}
 
           _ ->
@@ -3357,13 +3364,37 @@ defmodule Cure.Compiler.Parser do
   # -- Enhanced Type Expression Parser ----------------------------------------
 
   # Replaces the simple version from Milestone 2.
-  # Handles: PascalCase, Type(A, B), A -> B, (A, B) -> C, {x: T | pred}
+  # Handles: PascalCase, Type(A, B), A -> B, %[A, B] (tuple),
+  # (A, B) -> C, and {x: T | pred}. The legacy parenthesised tuple
+  # type `(A, B)` is still parsed but deprecated in favour of `%[A, B]`.
   defp parse_type_expr(state) do
     token = peek(state)
 
     case token.type do
+      # Tuple type: `%[A, B]`. This is the canonical tuple-type form
+      # (LANGUAGE_SPEC "Composite types"), mirroring the value-tuple
+      # sigil `%[a, b]`. It parses a comma-separated list of type
+      # expressions and yields the same `{:tuple, _, elems}` node the
+      # legacy parenthesised form produces, so type resolution
+      # (`Cure.Types.Type.resolve/1`), display, and codegen are
+      # unchanged. A trailing `->` makes the tuple the domain of a
+      # function type, so `%[A, B] -> C` is a unary function over a
+      # tuple.
+      :tuple_open ->
+        state = advance(state)
+        {inner, state} = parse_type_param_list(state, :rbracket)
+        state = expect(state, :rbracket)
+        ast = {:tuple, [line: token.line, col: token.col], inner}
+        maybe_parse_function_type(state, ast)
+
       :lparen ->
-        # Tuple type or function type: (A, B) -> C
+        # Grouped type `(A)`, function type `(A, B) -> C`, or the
+        # legacy parenthesised tuple type `(A, B)`. Only a
+        # parenthesised group with two or more members and no trailing
+        # `->` is a tuple, and that reading is deprecated in favour of
+        # `%[A, B]` (see `emit_tuple_type_paren_deprecation/2`). The
+        # parameter list of a function type and a grouped single type
+        # are unaffected.
         state = advance(state)
         {inner, state} = parse_type_param_list(state)
         state = expect(state, :rparen)
@@ -3378,8 +3409,12 @@ defmodule Cure.Compiler.Parser do
           _ ->
             # Just a grouped type or tuple type
             case inner do
-              [single] -> {single, state}
-              _ -> {{:tuple, [], inner}, state}
+              [single] ->
+                {single, state}
+
+              _ ->
+                state = emit_tuple_type_paren_deprecation(state, token)
+                {{:tuple, [line: token.line, col: token.col], inner}, state}
             end
         end
 
@@ -4109,6 +4144,28 @@ defmodule Cure.Compiler.Parser do
       payload =
         {:if_deprecated, "`if`/`elif` are deprecated; rewrite as `pickup` (E-IF-REMOVED, see docs/PICKUP.md §17)",
          line: token.line, col: token.col}
+
+      Events.emit(:parser, :deprecation, payload, Events.meta(state.file, token.line))
+    end
+
+    state
+  end
+
+  # Emit a deprecation event whenever the legacy parenthesised tuple
+  # type `(A, B)` is parsed. The canonical tuple-type form is
+  # `%[A, B]` (LANGUAGE_SPEC "Composite types"), which mirrors the
+  # value-tuple sigil `%[a, b]` and removes the ambiguity between a
+  # tuple, a grouped type `(A)`, and a function-type parameter list
+  # `(A, B) -> C`. The spec-reserved diagnostic code
+  # `E086 / E-TYPE-TUPLE-PAREN` lets the LSP, `cure check`, and
+  # `cure explain` surface the migration hint. `%[A, B]` parses to the
+  # same `{:tuple, _, elems}` node, so the rewrite is mechanical.
+  defp emit_tuple_type_paren_deprecation(state, token) do
+    if state.emit_events do
+      payload =
+        {:tuple_type_paren_deprecated,
+         "parenthesised tuple type `(A, B)` is deprecated; use `%[A, B]` instead " <>
+           "(E086 / E-TYPE-TUPLE-PAREN)", line: token.line, col: token.col}
 
       Events.emit(:parser, :deprecation, payload, Events.meta(state.file, token.line))
     end

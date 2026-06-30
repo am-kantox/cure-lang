@@ -177,8 +177,14 @@ type) against which the Melquiades Operator type-checks every send.
 
 - `List(T)` -- linked list
 - `Map(K, V)` -- hash map
-- `%[A, B]` -- tuple
+- `%[A, B]` -- tuple (mirrors the value-tuple sigil `%[a, b]`)
 - `A -> B` -- function type
+
+The tuple-type sigil `%[A, B]` is the canonical form. The legacy
+parenthesised form `(A, B)` is still accepted but deprecated
+(`E086 / E-TYPE-TUPLE-PAREN`); `cure check` flags it and the rewrite to
+`%[A, B]` is mechanical. A parenthesised parameter list before an arrow,
+`(A, B) -> C`, is a function type rather than a tuple and is unaffected.
 
 ### ADT (sum types)
 

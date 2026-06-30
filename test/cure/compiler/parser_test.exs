@@ -9,6 +9,13 @@ defmodule Cure.Compiler.ParserTest do
     ast
   end
 
+  # Parse a `let` binding and return its `:type_annotation` meta -- the
+  # simplest way to exercise the private type-expression parser.
+  defp type_annotation!(source) do
+    {:assignment, meta, _} = parse!(source)
+    Keyword.fetch!(meta, :type_annotation)
+  end
+
   # ── Literals ──────────────────────────────────────────────────────────
 
   describe "literals" do
@@ -440,6 +447,99 @@ defmodule Cure.Compiler.ParserTest do
       Parser.parse(tokens, emit_events: true)
 
       assert_receive {Cure.Pipeline.Events, :parser, :parse_complete, _, _}
+    end
+  end
+
+  # ── Tuple types (%[A, B]) ──────────────────────────────────────────
+
+  describe "tuple types" do
+    test "%[A, B] parses as a tuple type" do
+      ann = type_annotation!("let x: %[Int, String] = y")
+      assert {:tuple, _, [{:variable, _, "Int"}, {:variable, _, "String"}]} = ann
+    end
+
+    test "%[A] is a single-element tuple type" do
+      ann = type_annotation!("let x: %[Int] = y")
+      assert {:tuple, _, [{:variable, _, "Int"}]} = ann
+    end
+
+    test "%[] is an empty tuple type" do
+      ann = type_annotation!("let x: %[] = y")
+      assert {:tuple, _, []} = ann
+    end
+
+    test "legacy (A, B) still parses to the same tuple type" do
+      legacy = type_annotation!("let x: (Int, String) = y")
+      sigil = type_annotation!("let x: %[Int, String] = y")
+      assert {:tuple, _, [{:variable, _, "Int"}, {:variable, _, "String"}]} = legacy
+      assert {:tuple, _, legacy_elems} = legacy
+      assert {:tuple, _, sigil_elems} = sigil
+      assert legacy_elems == sigil_elems
+    end
+
+    test "grouped single type (A) stays a plain type, not a tuple" do
+      ann = type_annotation!("let x: (Int) = y")
+      assert {:variable, _, "Int"} = ann
+    end
+
+    test "(A, B) -> C remains a function type, not a tuple" do
+      ann = type_annotation!("let f: (Int, String) -> Bool = g")
+      assert {:function_call, meta, [_, _, _]} = ann
+      assert Keyword.get(meta, :name) == "Function"
+      assert Keyword.get(meta, :function_type) == true
+    end
+
+    test "%[A, B] -> C is a unary function over a tuple" do
+      ann = type_annotation!("let f: %[Int, String] -> Bool = g")
+      assert {:function_call, meta, [tuple_arg, {:variable, _, "Bool"}]} = ann
+      assert Keyword.get(meta, :function_type) == true
+      assert {:tuple, _, [{:variable, _, "Int"}, {:variable, _, "String"}]} = tuple_arg
+    end
+
+    test "%[A, B] and legacy (A, B) resolve to the same canonical type" do
+      new_ann = type_annotation!("let x: %[Int, String] = y")
+      legacy_ann = type_annotation!("let x: (Int, String) = y")
+      assert Cure.Types.Type.resolve(new_ann) == {:tuple, [:int, :string]}
+      assert Cure.Types.Type.resolve(legacy_ann) == {:tuple, [:int, :string]}
+    end
+  end
+
+  # ── Tuple type deprecation (E086 / E-TYPE-TUPLE-PAREN) ─────────────
+
+  describe "legacy (A, B) tuple type deprecation" do
+    test "legacy (A, B) tuple type emits a :deprecation event" do
+      Cure.Pipeline.Events.subscribe(:parser, :deprecation)
+      {:ok, tokens} = Lexer.tokenize("let x: (Int, String) = y", emit_events: false)
+      Parser.parse(tokens, emit_events: true)
+
+      assert_receive {Cure.Pipeline.Events, :parser, :deprecation, payload, _}
+      assert {:tuple_type_paren_deprecated, msg, _} = payload
+      assert msg =~ "E-TYPE-TUPLE-PAREN"
+      assert msg =~ "%[A, B]"
+    end
+
+    test "%[A, B] tuple type does not emit a :deprecation event" do
+      Cure.Pipeline.Events.subscribe(:parser, :deprecation)
+      {:ok, tokens} = Lexer.tokenize("let x: %[Int, String] = y", emit_events: false)
+      Parser.parse(tokens, emit_events: true)
+
+      refute_receive {Cure.Pipeline.Events, :parser, :deprecation, _, _}, 50
+    end
+
+    test "(A, B) -> C function type does not emit a tuple deprecation" do
+      Cure.Pipeline.Events.subscribe(:parser, :deprecation)
+      {:ok, tokens} = Lexer.tokenize("let f: (Int, String) -> Bool = g", emit_events: false)
+      Parser.parse(tokens, emit_events: true)
+
+      refute_receive {Cure.Pipeline.Events, :parser, :deprecation, _, _}, 50
+    end
+
+    test "grouped single type (A) does not emit a deprecation" do
+      Cure.Pipeline.Events.subscribe(:parser, :deprecation)
+      {:ok, tokens} = Lexer.tokenize("let x: (Int) = y", emit_events: false)
+      Parser.parse(tokens, emit_events: true)
+
+      refute_receive {Cure.Pipeline.Events, :parser, :deprecation, _, _}, 50
     end
   end
 end
